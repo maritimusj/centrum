@@ -1,7 +1,14 @@
 package mysqlStore
 
 import (
+	"errors"
+	"github.com/maritimusj/centrum/dirty"
+	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/resource"
+	"github.com/maritimusj/centrum/status"
+	"github.com/maritimusj/centrum/store"
+	"github.com/maritimusj/centrum/util"
 	"time"
 )
 
@@ -11,90 +18,214 @@ type User struct {
 
 	name      string
 	title     string
-	password  string
+	password  []byte
 	mobile    string
 	email     string
 	createdAt time.Time
 
+	dirty *dirty.Dirty
 	store *mysqlStore
 }
 
+func NewUser(s *mysqlStore, id int64) *User {
+	return &User{
+		id:    id,
+		dirty: dirty.New(),
+		store: s,
+	}
+}
+
 func (u *User) GetID() int64 {
-	panic("implement me")
+	return u.id
 }
 
 func (u *User) Enable() error {
-	panic("implement me")
+	if u.enable != status.Enable {
+		u.enable = status.Enable
+		u.dirty.Set("enable", func() interface{} {
+			return u.enable
+		})
+	}
+	return u.Save()
 }
 
 func (u *User) Disable() error {
-	panic("implement me")
+	if u.enable != status.Disable {
+		u.enable = status.Disable
+		u.dirty.Set("enable", func() interface{} {
+			return u.enable
+		})
+	}
+	return u.Save()
 }
 
 func (u *User) IsEnabled() bool {
-	panic("implement me")
-}
-
-func (u *User) Simple() model.Map {
-	panic("implement me")
-}
-
-func (u *User) Brief() model.Map {
-	panic("implement me")
-}
-
-func (u *User) Detail() model.Map {
-	panic("implement me")
+	return u.enable == status.Enable
 }
 
 func (u *User) Name() string {
-	panic("implement me")
+	return u.name
 }
 
 func (u *User) Title() string {
-	panic("implement me")
+	return u.title
 }
 
 func (u *User) Mobile() string {
-	panic("implement me")
+	return u.mobile
 }
 
 func (u *User) Email() string {
-	panic("implement me")
-}
-
-func (u *User) ResetPassword(password string) error {
-	panic("implement me")
-}
-
-func (u *User) CheckPassword(password string) error {
-	panic("implement me")
-}
-
-func (u *User) Update(profile model.Map) error {
-	panic("implement me")
-}
-
-func (u *User) SetRoles(roles ...interface{}) error {
-	panic("implement me")
-}
-
-func (u *User) GetRoles() ([]model.Role, error) {
-	panic("implement me")
+	return u.email
 }
 
 func (u *User) CreatedAt() time.Time {
-	panic("implement me")
+	return u.createdAt
+}
+
+func (u *User) ResetPassword(password string) error {
+	data, err := util.HashPassword([]byte(password))
+	if err != nil {
+		return err
+	}
+	u.password = data
+	u.dirty.Set("password", func() interface{} {
+		return u.password
+	})
+	return u.Save()
+}
+
+func (u *User) CheckPassword(password string) bool {
+	return util.ComparePassword(u.password, []byte(password))
+}
+
+func (u *User) Update(profile model.Map) error {
+	if enable, ok := profile["enable"].(int8); ok && enable != u.enable {
+		u.enable = enable
+		u.dirty.Set("enable", func() interface{} {
+			return u.enable
+		})
+	}
+	if title, ok := profile["title"].(string); ok && title != u.title {
+		u.title = title
+		u.dirty.Set("title", func() interface{} {
+			return u.title
+		})
+	}
+
+	if mobile, ok := profile["mobile"].(string); ok && mobile != u.mobile {
+		u.mobile = mobile
+		u.dirty.Set("mobile", func() interface{} {
+			return u.mobile
+		})
+	}
+
+	if email, ok := profile["email"].(string); ok && email != u.email {
+		u.email = email
+		u.dirty.Set("email", func() interface{} {
+			return u.email
+		})
+	}
+	return u.Save()
+}
+
+func (u *User) SetRoles(roles ...interface{}) error {
+	return u.store.TransactionDo(func(db store.DB) error {
+		err := RemoveData(db, TbUserRoles, "user_id=?", u.id)
+		if err != nil {
+			return err
+		}
+		now := time.Now()
+		for _, role := range roles {
+			var roleID int64
+			switch v := role.(type) {
+			case int64:
+				roleID = v
+			case model.Role:
+				roleID = v.GetID()
+			default:
+				panic(errors.New("SetRoles: unknown roles"))
+			}
+			_, err := u.store.GetRole(roleID)
+			if err != nil {
+				return err
+			}
+			_, err = CreateData(db, TbUserRoles, map[string]interface{}{
+				"user_id":    u.id,
+				"role_id":    roleID,
+				"created_at": now,
+			})
+			if err != nil {
+				return lang.InternalError(err)
+			}
+		}
+		return nil
+	})
+}
+
+func (u *User) GetRoles() ([]model.Role, error) {
+	roles, _, err := u.store.GetRoleList(u.id)
+	if err != nil {
+		return nil, err
+	}
+	return roles, nil
 }
 
 func (u *User) Destroy() error {
-	panic("implement me")
-}
-
-func (u *User) IsAllowed(request model.Request) error {
-	panic("implement me")
+	return u.store.RemoveUser(u.id)
 }
 
 func (u *User) Save() error {
-	panic("implement me")
+	err := SaveData(u.store.db, TbUsers, u.dirty.Data(true), "id=?", u.id)
+	if err != nil {
+		return lang.InternalError(err)
+	}
+	return nil
+}
+
+func (u *User) IsAllowed(resource resource.Resource, action resource.Action) error {
+	roles, err := u.GetRoles()
+	if err != nil {
+		return err
+	}
+
+	for _, role := range roles {
+		if err := role.IsAllowed(resource, action); err == nil {
+			return nil
+		}
+	}
+
+	return lang.Error(lang.ErrNoPermission)
+}
+
+func (u *User) Simple() model.Map {
+	return model.Map{
+		"id":     u.id,
+		"enable": u.enable,
+		"name":   u.name,
+	}
+}
+
+func (u *User) Brief() model.Map {
+	return model.Map{
+		"id":         u.id,
+		"enable":     u.enable,
+		"name":       u.name,
+		"title":      u.title,
+		"mobile":     u.mobile,
+		"email":      u.email,
+		"created_at": u.createdAt,
+	}
+}
+
+func (u *User) Detail() model.Map {
+	return model.Map{
+		"id":         u.id,
+		"enable":     u.enable,
+		"name":       u.name,
+		"title":      u.title,
+		"mobile":     u.mobile,
+		"email":      u.email,
+		"created_at": u.createdAt,
+	}
 }

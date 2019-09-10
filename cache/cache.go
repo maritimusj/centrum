@@ -1,12 +1,7 @@
 package cache
 
 import (
-	"errors"
 	"github.com/maritimusj/centrum/model"
-)
-
-var (
-	ErrNotFound = errors.New("cache: not found")
 )
 
 type Cache interface {

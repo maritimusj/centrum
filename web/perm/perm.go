@@ -8,7 +8,11 @@ import (
 )
 
 func AdminUser(ctx iris.Context) model.User {
-	return ctx.Values().Get("__admin__").(model.User)
+	v := ctx.Values().Get("__admin__")
+	if v != nil {
+		return v.(model.User)
+	}
+	return nil
 }
 
 func IsAdminOk(ctx iris.Context, fn func(admin model.User) interface{}) (interface{}, bool) {

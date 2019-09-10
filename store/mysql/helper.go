@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/util"
 	"log"
 	"strings"
@@ -13,6 +14,20 @@ type DB interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
 	Query(query string, args ...interface{}) (*sql.Rows, error)
 	QueryRow(query string, args ...interface{}) *sql.Row
+}
+
+func getUserIDByName(db DB, name string) (int64, error) {
+	var userID int64
+	err := LoadData(db, TbUsers, map[string]interface{}{
+		"id": &userID,
+	}, "name=?", name)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return 0, lang.InternalError(err)
+		}
+		return 0, lang.Error(lang.ErrUserNotFound)
+	}
+	return userID, nil
 }
 
 func LoadData(db DB, tbName string, data map[string]interface{}, cond string, params ...interface{}) error {
@@ -43,10 +58,10 @@ func LoadData(db DB, tbName string, data map[string]interface{}, cond string, pa
 		if err != nil {
 			return err
 		}
+		return nil
 	}
 
 	panic(errors.New("LoadData: empty data"))
-	return nil
 }
 
 func CreateData(db DB, tbName string, data map[string]interface{}) (int64, error) {
@@ -85,7 +100,6 @@ func CreateData(db DB, tbName string, data map[string]interface{}) (int64, error
 	}
 
 	panic(errors.New("CreateData: empty data"))
-	return 0, nil
 }
 
 func SaveData(db DB, tbName string, data map[string]interface{}, cond string, params ...interface{}) error {
@@ -115,10 +129,10 @@ func SaveData(db DB, tbName string, data map[string]interface{}, cond string, pa
 		if err != nil {
 			return err
 		}
+		return nil
 	}
 
 	panic(errors.New("SaveData: empty data"))
-	return nil
 }
 
 func RemoveData(db DB, tbName string, cond string, params ...interface{}) error {
@@ -128,7 +142,6 @@ func RemoveData(db DB, tbName string, cond string, params ...interface{}) error 
 			return err
 		}
 	}
-
 	return nil
 }
 

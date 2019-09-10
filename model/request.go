@@ -1,7 +1,9 @@
 package model
 
+import "github.com/maritimusj/centrum/resource"
+
 //请求
 type Request interface {
-	Resource() Resource
-	Action() Action
+	Resource() resource.Resource
+	Action() resource.Action
 }

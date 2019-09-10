@@ -6,7 +6,9 @@ import (
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/status"
 	"github.com/maritimusj/centrum/store"
+	"github.com/maritimusj/centrum/util"
 	"github.com/maritimusj/centrum/web/response"
 	"gopkg.in/go-playground/validator.v9"
 )
@@ -36,8 +38,8 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
-			Name     string `json:"name" validate:"required"`
-			Password []byte `json:"password" validate:"required"`
+			Username string `json:"username" validate:"required"`
+			Password string `json:"password" validate:"required"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
@@ -48,7 +50,11 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 			return lang.ErrInvalidRequestData
 		}
 
-		user, err := s.CreateUser(form.Name, form.Password)
+		if _, err := s.GetUser(form.Username); err != lang.Error(lang.ErrUserNotFound) {
+			return lang.ErrUserExists
+		}
+
+		user, err := s.CreateUser(form.Username, []byte(form.Password))
 		if err != nil {
 			return err
 		}
@@ -67,7 +73,7 @@ func Detail(userID int64, s store.Store) hero.Result {
 	})
 }
 
-func Update(userID int64, ctx iris.Context, s store.Store) hero.Result {
+func Update(userID int64, ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
 		user, err := s.GetUser(userID)
 		if err != nil {
@@ -75,6 +81,7 @@ func Update(userID int64, ctx iris.Context, s store.Store) hero.Result {
 		}
 
 		var form struct {
+			Enable   *bool   `json:"enable"`
 			Password *string `json:"password"`
 			Title    *string `json:"title"`
 			Mobile   *string `json:"mobile"`
@@ -104,16 +111,21 @@ func Update(userID int64, ctx iris.Context, s store.Store) hero.Result {
 				return err
 			}
 		}
-
 		var data = model.Map{}
+		if form.Enable != nil {
+			if !*form.Enable && user.Name() == cfg.DefaultUserName() {
+				return lang.ErrFailedRemoveDefaultUser
+			}
+			data["enable"] = util.If(*form.Enable, status.Enable, status.Disable)
+		}
 		if form.Title != nil {
-			data["title"] = form.Title
+			data["title"] = *form.Title
 		}
 		if form.Mobile != nil {
-			data["mobile"] = form.Mobile
+			data["mobile"] = *form.Mobile
 		}
 		if form.Email != nil {
-			data["email"] = form.Email
+			data["email"] = *form.Email
 		}
 		if len(data) > 0 {
 			err = user.Update(data)
@@ -121,7 +133,6 @@ func Update(userID int64, ctx iris.Context, s store.Store) hero.Result {
 				return err
 			}
 		}
-
 		err = user.Save()
 		if err != nil {
 			return err
@@ -130,12 +141,17 @@ func Update(userID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Delete(userID int64, s store.Store) hero.Result {
+func Delete(userID int64, s store.Store, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
 		user, err := s.GetUser(userID)
 		if err != nil {
 			return err
 		}
+
+		if user.Name() == cfg.DefaultUserName() {
+			return lang.ErrFailedRemoveDefaultUser
+		}
+
 		err = user.Destroy()
 		if err != nil {
 			return err

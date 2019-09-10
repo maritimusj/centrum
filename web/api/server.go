@@ -5,6 +5,8 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/core/router"
 	"github.com/kataras/iris/hero"
+	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/web/api/web"
 	"gopkg.in/go-playground/validator.v9"
 
 	"github.com/maritimusj/centrum/web/api/device"
@@ -13,12 +15,11 @@ import (
 	"github.com/maritimusj/centrum/web/api/resource"
 	"github.com/maritimusj/centrum/web/api/role"
 	"github.com/maritimusj/centrum/web/api/user"
-	"github.com/maritimusj/centrum/web/perm"
 )
 
 type Server interface {
 	Register(values ...interface{})
-	Start(ctx context.Context) error
+	Start(ctx context.Context, cfg config.Config) error
 	Close()
 }
 
@@ -30,11 +31,13 @@ func (server *server) Register(values ...interface{}) {
 	hero.Register(values...)
 }
 
-func (server *server) Start(ctx context.Context) error {
+func (server *server) Start(ctx context.Context, cfg config.Config) error {
 	hero.Register(validator.New())
 
+	server.app.Post("/v1/web/login/", hero.Handler(web.Login))
 	server.app.PartyFunc("/v1/web", func(p router.Party) {
-		p.Use(hero.Handler(perm.Check))
+		web.RequireToken(p, cfg)
+		//p.Use(hero.Handler(perm.Check))
 		//资源
 		p.PartyFunc("/resource", func(p router.Party) {
 			p.Get("/", hero.Handler(resource.GroupList))
@@ -110,5 +113,7 @@ func (server *server) Close() {
 }
 
 func New() Server {
-	return &server{}
+	return &server{
+		app: iris.Default(),
+	}
 }

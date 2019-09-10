@@ -1,7 +1,10 @@
 package mysqlStore
 
 import (
+	"fmt"
+	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/resource"
 	"time"
 )
 
@@ -9,12 +12,44 @@ type State struct {
 	id          int64
 	enable      int8
 	title       string
+	desc        string
 	equipmentID int64
 	measureID   int64
 	script      string
 	createdAt   time.Time
 
+	resourceUID *string
+
+	dirty *dirty.Dirty
 	store *mysqlStore
+}
+
+func NewState(s *mysqlStore, id int64) *State {
+	return &State{
+		id:    id,
+		dirty: dirty.New(),
+		store: s,
+	}
+}
+
+func (s *State) ResourceClass() resource.Class {
+	return resource.State
+}
+
+func (s *State) ResourceUID() string {
+	if s.resourceUID == nil {
+		uid := fmt.Sprintf("%d.%d", resource.State, s.id)
+		s.resourceUID = &uid
+	}
+	return *s.resourceUID
+}
+
+func (s *State) ResourceTitle() string {
+	return s.title
+}
+
+func (s *State) ResourceDesc() string {
+	return s.desc
 }
 
 func (s *State) GetID() int64 {
@@ -74,6 +109,14 @@ func (s *State) Title() string {
 }
 
 func (s *State) SetTitle(string) error {
+	panic("implement me")
+}
+
+func (s *State) Desc() string {
+	panic("implement me")
+}
+
+func (s *State) SetDesc(desc string) error {
 	panic("implement me")
 }
 

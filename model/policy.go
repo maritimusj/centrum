@@ -1,20 +1,6 @@
 package model
 
-//动作
-type Action int
-
-const (
-	View Action = iota
-	Ctrl
-)
-
-//结果
-type Effect int
-
-const (
-	Allow Effect = iota
-	Deny
-)
+import "github.com/maritimusj/centrum/resource"
 
 //策略
 type Policy interface {
@@ -24,7 +10,12 @@ type Policy interface {
 
 	Role() Role
 
-	Resource() Resource
-	Action() Action
-	Effect() Effect
+	SetEffect(effect resource.Effect) error
+
+	IsAllow() bool
+	IsDeny() bool
+
+	Resource() resource.Resource
+	Action() resource.Action
+	Effect() resource.Effect
 }

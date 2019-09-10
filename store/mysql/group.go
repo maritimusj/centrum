@@ -1,7 +1,10 @@
 package mysqlStore
 
 import (
+	"fmt"
+	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/resource"
 	"time"
 )
 
@@ -9,9 +12,41 @@ type Group struct {
 	id        int64
 	parentID  int64
 	title     string
+	desc      string
 	createdAt time.Time
 
+	resourceUID *string
+
+	dirty *dirty.Dirty
 	store *mysqlStore
+}
+
+func NewGroup(s *mysqlStore, id int64) *Group {
+	return &Group{
+		id:    id,
+		dirty: dirty.New(),
+		store: s,
+	}
+}
+
+func (g *Group) ResourceClass() resource.Class {
+	return resource.Group
+}
+
+func (g *Group) ResourceUID() string {
+	if g.resourceUID == nil {
+		uid := fmt.Sprintf("%d.%d", resource.Group, g.id)
+		g.resourceUID = &uid
+	}
+	return *g.resourceUID
+}
+
+func (g *Group) ResourceTitle() string {
+	return g.title
+}
+
+func (g *Group) ResourceDesc() string {
+	panic("implement me")
 }
 
 func (g *Group) GetID() int64 {
@@ -51,6 +86,14 @@ func (g *Group) Title() string {
 }
 
 func (g *Group) SetTitle(title string) error {
+	panic("implement me")
+}
+
+func (g *Group) Desc() string {
+	panic("implement me")
+}
+
+func (g *Group) SetDesc(desc string) error {
 	panic("implement me")
 }
 

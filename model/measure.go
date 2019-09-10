@@ -1,5 +1,7 @@
 package model
 
+import "github.com/maritimusj/centrum/resource"
+
 type MeasureKind int
 
 const (
@@ -15,6 +17,8 @@ type Measure interface {
 	DBEntry
 	EnableEntry
 	Profile
+
+	resource.Resource
 
 	Device() Device
 

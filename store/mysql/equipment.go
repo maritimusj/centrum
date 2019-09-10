@@ -1,7 +1,10 @@
 package mysqlStore
 
 import (
+	"fmt"
+	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/resource"
 	"time"
 )
 
@@ -12,7 +15,38 @@ type Equipment struct {
 	desc      string
 	createdAt time.Time
 
+	resourceUID *string
+
+	dirty *dirty.Dirty
 	store *mysqlStore
+}
+
+func NewEquipment(s *mysqlStore, id int64) *Equipment {
+	return &Equipment{
+		id:    id,
+		dirty: dirty.New(),
+		store: s,
+	}
+}
+
+func (e *Equipment) ResourceClass() resource.Class {
+	return resource.Equipment
+}
+
+func (e *Equipment) ResourceUID() string {
+	if e.resourceUID == nil {
+		uid := fmt.Sprintf("%d.%d", resource.Equipment, e.id)
+		e.resourceUID = &uid
+	}
+	return *e.resourceUID
+}
+
+func (e *Equipment) ResourceTitle() string {
+	return e.title
+}
+
+func (e *Equipment) ResourceDesc() string {
+	return e.desc
 }
 
 func (e *Equipment) GetID() int64 {

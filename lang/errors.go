@@ -18,11 +18,27 @@ const (
 	ErrTokenExpired
 	ErrNoPermission
 
+	ErrCacheNotFound
+
 	ErrInvalidUser
+	ErrUserNotFound
+	ErrUserExists
 
-	ErrorUnknownRole
+	ErrFailedDisableDefaultUser
+	ErrFailedRemoveDefaultUser
 
-	ErrInvalidResourceGroup
+	ErrPasswordWrong
+
+	ErrUnknownRole
+	ErrRoleNotFound
+
+	ErrPolicyNotFound
+	ErrGroupNotFound
+
+	ErrDeviceNotFound
+	ErrMeasureNotFound
+	ErrEquipmentNotFound
+	ErrStateNotFound
 )
 
 var (
@@ -38,10 +54,24 @@ var (
 		ErrTokenExpired:       "请先登录！",
 		ErrNoPermission:       "没有权限！",
 
-		ErrInvalidUser: "当前用户不可用或者登录超时！",
+		ErrCacheNotFound: "缓存中没有数据！",
 
-		ErrorUnknownRole:        "用户角色不正确！",
-		ErrInvalidResourceGroup: "无效的分组！",
+		ErrInvalidUser:   "当前用户不可用或者登录超时！",
+		ErrPasswordWrong: "密码不正确！",
+
+		ErrUnknownRole: "用户角色不正确！",
+
+		ErrUserNotFound:             "用户不存在！",
+		ErrUserExists:               "用户已经存在！",
+		ErrFailedDisableDefaultUser: "不能禁用系统默认用户！",
+		ErrFailedRemoveDefaultUser:  "不能删除系统默认用户！",
+		ErrRoleNotFound:             "用户角色不存在！",
+		ErrPolicyNotFound:           "策略不存在！",
+		ErrGroupNotFound:            "设备分组不存在！",
+		ErrDeviceNotFound:           "设备不存在！",
+		ErrMeasureNotFound:          "点位不存在！",
+		ErrEquipmentNotFound:        "自定设备不存在！",
+		ErrStateNotFound:            "自定义点位不存在！",
 	}
 )
 

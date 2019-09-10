@@ -25,7 +25,7 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 			}
 		}
 
-		groups, total, err := s.GetGroupList(parentGroupID, store.Keyword(keyword), store.Page(page, pageSize))
+		groups, total, err := s.GetGroupList(store.Parent(parentGroupID), store.Keyword(keyword), store.Page(page, pageSize))
 		if err != nil {
 			return err
 		}

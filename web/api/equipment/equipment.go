@@ -15,9 +15,20 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
-		keyword := ctx.URLParam("keyword")
 
-		equipments, total, err := s.GetEquipmentList(store.Keyword(keyword), store.Page(page, pageSize))
+		var params = []store.OptionFN{store.Page(page, pageSize)}
+
+		keyword := ctx.URLParam("keyword")
+		if keyword != "" {
+			params = append(params, store.Keyword(keyword))
+		}
+
+		groupID := ctx.URLParamInt64Default("group", -1)
+		if groupID != -1 {
+			params = append(params, store.Group(groupID))
+		}
+
+		equipments, total, err := s.GetEquipmentList(params...)
 		if err != nil {
 			return err
 		}
@@ -127,7 +138,7 @@ func StateList(equipmentID int64, ctx iris.Context, s store.Store, cfg config.Co
 			return err
 		}
 
-		states, total, err := s.GetStateList(equipment.GetID(), store.Keyword(keyword), store.Kind(model.MeasureKind(kind)), store.Page(page, pageSize))
+		states, total, err := s.GetStateList(store.Equipment(equipment.GetID()), store.Keyword(keyword), store.Kind(model.MeasureKind(kind)), store.Page(page, pageSize))
 		if err != nil {
 			return err
 		}

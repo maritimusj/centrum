@@ -1,15 +1,22 @@
 package model
 
+import "github.com/maritimusj/centrum/resource"
+
 //设备分组
 type Group interface {
 	DBEntry
 	Profile
 
-	Parent() Group
-	Title() string
+	resource.Resource
 
-	SetTitle(title string) error
+	Parent() Group
 	SetParent(group Group) error
+
+	Title() string
+	SetTitle(title string) error
+
+	Desc() string
+	SetDesc(desc string) error
 
 	AddDevice(devices ...interface{}) error
 	RemoveDevice(devices ...interface{}) error

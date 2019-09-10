@@ -1,7 +1,11 @@
 package mysqlStore
 
 import (
+	"fmt"
+	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/resource"
+	"github.com/maritimusj/centrum/status"
 	"time"
 )
 
@@ -13,19 +17,51 @@ type Device struct {
 	options   []byte
 	createdAt time.Time
 
+	resourceUID *string
+
+	dirty *dirty.Dirty
 	store *mysqlStore
 }
 
+func NewDDevice(store *mysqlStore, id int64) *Device {
+	return &Device{
+		id:    id,
+		dirty: dirty.New(),
+		store: store,
+	}
+}
+
+func (d *Device) ResourceUID() string {
+	if d.resourceUID == nil {
+		uid := fmt.Sprintf("%d.%d", resource.Device, d.id)
+		d.resourceUID = &uid
+	}
+	return *d.resourceUID
+}
+
+func (d *Device) ResourceClass() resource.Class {
+	return resource.Device
+}
+
+func (d *Device) ResourceTitle() string {
+	return d.title
+}
+
+func (d *Device) ResourceDesc() string {
+	return d.title
+}
+
 func (d *Device) GetID() int64 {
-	panic("implement me")
+	return d.id
 }
 
 func (d *Device) Destroy() error {
-	panic("implement me")
+	return d.store.RemoveDevice(d.id)
 }
 
 func (d *Device) Enable() error {
-	panic("implement me")
+	d.enable = status.Enable
+	return nil
 }
 
 func (d *Device) Disable() error {

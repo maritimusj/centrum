@@ -6,6 +6,7 @@ import (
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/store"
 	"github.com/maritimusj/centrum/web/response"
 )
@@ -14,9 +15,16 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
-		keyword := ctx.URLParam("keyword")
 
-		roles, total, err := s.GetRoleList(store.Keyword(keyword), store.Page(page, pageSize))
+		var params = []store.OptionFN{store.Page(page, pageSize)}
+
+		keyword := ctx.URLParam("keyword")
+		if keyword != "" {
+			params = append(params, store.Keyword(keyword))
+		}
+
+		userID := ctx.URLParamInt64Default("user", 0)
+		roles, total, err := s.GetRoleList(userID, params...)
 		if err != nil {
 			return err
 		}
@@ -68,9 +76,9 @@ func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 		}
 
 		type P struct {
-			ResourceID int64 `json:"resource"`
-			Action     int   `json:"action"`
-			Effect     int   `json:"effect"`
+			ResourceUID string `json:"resource"`
+			Action      int    `json:"action"`
+			Effect      int    `json:"effect"`
 		}
 		var form struct {
 			Title   *string `json:"title"`
@@ -89,7 +97,11 @@ func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 
 		if len(form.Polices) > 0 {
 			for _, p := range form.Polices {
-				_, err = role.SetPolicy(p.ResourceID, model.Action(p.Action), model.Effect(p.Effect))
+				res, err := s.GetResource(p.ResourceUID)
+				if err != nil {
+					return err
+				}
+				_, err = role.SetPolicy(res, resource.Action(p.Action), resource.Effect(p.Effect))
 				if err != nil {
 					return err
 				}

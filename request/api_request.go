@@ -2,38 +2,39 @@ package request
 
 import (
 	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/store"
 )
 
 type Api struct {
-	resource model.Resource
-	action   model.Action
+	resource resource.Resource
+	action   resource.Action
 }
 
-func (r *Api) Resource() model.Resource {
+func (r *Api) Resource() resource.Resource {
 	return r.resource
 }
 
-func (r *Api) Action() model.Action {
+func (r *Api) Action() resource.Action {
 	return r.action
 }
 
 func NewApiRequest(store store.Store, routerName string, method string) (model.Request, error) {
-	resource, err := store.GetApiResource(routerName, method)
+	res, err := store.GetApiResource(routerName, method)
 	if err != nil {
 		return nil, err
 	}
 
-	var action model.Action
+	var action resource.Action
 	switch method {
 	case "GET":
-		action = model.View
+		action = resource.View
 	default:
-		action = model.Ctrl
+		action = resource.Ctrl
 	}
 
 	return &Api{
-		resource: resource,
+		resource: res,
 		action:   action,
 	}, nil
 }
