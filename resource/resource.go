@@ -26,8 +26,8 @@ const (
 	Api
 	Group
 	Device
-	Equipment
 	Measure
+	Equipment
 	State
 )
 

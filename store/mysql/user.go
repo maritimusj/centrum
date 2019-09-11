@@ -168,7 +168,7 @@ func (u *User) SetRoles(roles ...interface{}) error {
 }
 
 func (u *User) GetRoles() ([]model.Role, error) {
-	roles, _, err := u.store.GetRoleList(u.id)
+	roles, _, err := u.store.GetRoleList(store.User(u.id))
 	if err != nil {
 		return nil, err
 	}
@@ -180,9 +180,11 @@ func (u *User) Destroy() error {
 }
 
 func (u *User) Save() error {
-	err := SaveData(u.store.db, TbUsers, u.dirty.Data(true), "id=?", u.id)
-	if err != nil {
-		return lang.InternalError(err)
+	if u.dirty.Any() {
+		err := SaveData(u.store.db, TbUsers, u.dirty.Data(true), "id=?", u.id)
+		if err != nil {
+			return lang.InternalError(err)
+		}
 	}
 	return nil
 }

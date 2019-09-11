@@ -36,10 +36,13 @@ func (r *Role) CreatedAt() time.Time {
 }
 
 func (r *Role) Save() error {
-	err := SaveData(r.store.db, TbRoles, r.dirty.Data(true), "id=?", r.id)
-	if err != nil {
-		return lang.InternalError(err)
+	if r.dirty.Any() {
+		err := SaveData(r.store.db, TbRoles, r.dirty.Data(true), "id=?", r.id)
+		if err != nil {
+			return lang.InternalError(err)
+		}
 	}
+
 	return nil
 }
 

@@ -1,6 +1,9 @@
 package model
 
-import "github.com/maritimusj/centrum/resource"
+import (
+	"github.com/maritimusj/centrum/resource"
+	"github.com/tidwall/gjson"
+)
 
 //物理设备，网关等
 type Device interface {
@@ -13,10 +16,10 @@ type Device interface {
 	Title() string
 	SetTitle(title string) error
 
-	Option() Map
-	SetOption(option Map) error
+	GetOption(path string) gjson.Result
+	SetOption(path string, value interface{}) error
 
-	SetGroups(groups ...Group) error
+	SetGroups(groups ...interface{}) error
 	Groups() ([]Group, error)
 
 	CreateMeasure(title string, tag string, kind MeasureKind) (Measure, error)

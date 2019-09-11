@@ -18,7 +18,7 @@ type Store interface {
 	GetRole(roleID int64) (model.Role, error)
 	CreateRole(title string) (model.Role, error)
 	RemoveRole(roleID int64) error
-	GetRoleList(userID int64, options ...OptionFN) ([]model.Role, int64, error)
+	GetRoleList(options ...OptionFN) ([]model.Role, int64, error)
 
 	CreatePolicy(roleID int64, resourceUID string, action resource.Action, effect resource.Effect) (model.Policy, error)
 	GetPolicy(roleID int64) (model.Policy, error)

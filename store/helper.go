@@ -12,15 +12,15 @@ type Option struct {
 	Kind        model.MeasureKind
 	Class       resource.Class
 	ParentID    *int64
+	UserID      *int64
 	GroupID     *int64
 	DeviceID    int64
 	EquipmentID int64
-	Name string
+	Name        string
 	Keyword     string
 }
 
 type OptionFN func(*Option)
-
 
 func Page(page, pageSize int64) OptionFN {
 	return func(i *Option) {
@@ -64,6 +64,13 @@ func Parent(parentID int64) OptionFN {
 	return func(i *Option) {
 		p := parentID
 		i.ParentID = &p
+	}
+}
+
+func User(userID int64) OptionFN {
+	return func(i *Option) {
+		p := userID
+		i.UserID = &p
 	}
 }
 

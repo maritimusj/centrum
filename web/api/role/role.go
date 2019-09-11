@@ -23,8 +23,12 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 			params = append(params, store.Keyword(keyword))
 		}
 
-		userID := ctx.URLParamInt64Default("user", 0)
-		roles, total, err := s.GetRoleList(userID, params...)
+		userID := ctx.URLParamInt64Default("user", -1)
+		if userID != -1 {
+			params = append(params, store.User(userID))
+		}
+
+		roles, total, err := s.GetRoleList(params...)
 		if err != nil {
 			return err
 		}

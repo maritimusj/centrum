@@ -163,12 +163,12 @@ func (s *mysqlStore) GetResourceGroupList() []interface{} {
 			"title": lang.ResourceClassTitle(resource.Device),
 		},
 		map[string]interface{}{
-			"id":    resource.Equipment,
-			"title": lang.ResourceClassTitle(resource.Equipment),
-		},
-		map[string]interface{}{
 			"id":    resource.Measure,
 			"title": lang.ResourceClassTitle(resource.Measure),
+		},
+		map[string]interface{}{
+			"id":    resource.Equipment,
+			"title": lang.ResourceClassTitle(resource.Equipment),
 		},
 		map[string]interface{}{
 			"id":    resource.State,
@@ -468,16 +468,16 @@ func (s *mysqlStore) RemoveRole(roleID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetRoleList(userID int64, options ...store.OptionFN) ([]model.Role, int64, error) {
+func (s *mysqlStore) GetRoleList(options ...store.OptionFN) ([]model.Role, int64, error) {
 	option := parseOption(options...)
 	var (
 		fromSQL = "FROM " + TbRoles + " r "
 	)
 
 	var params []interface{}
-	if userID > 0 {
+	if option.UserID != nil {
 		fromSQL += " INNER JOIN " + TbUserRoles + " u ON r.id=u.role_id WHERE u.user_id=?"
-		params = append(params, userID)
+		params = append(params, *option.UserID)
 	} else {
 		fromSQL += " WHERE 1"
 	}

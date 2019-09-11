@@ -48,7 +48,7 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 	return response.Wrap(func() interface{} {
 		var form struct {
 			Title   string `json:"title" validate:"required"`
-			ConnStr string `json:"conn_str" validate:"required"`
+			ConnStr string `json:"params.connStr" validate:"required"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
@@ -60,7 +60,9 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 		}
 
 		device, err := s.CreateDevice(form.Title, map[string]interface{}{
-			"connStr": form.ConnStr,
+			"params": map[string]interface{}{
+				"connStr": form.ConnStr,
+			},
 		})
 		if err != nil {
 			return err
@@ -88,7 +90,7 @@ func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 		}
 		var form struct {
 			Title   *string `json:"title"`
-			ConnStr *string `json:"conn_str"`
+			ConnStr *string `json:"params.connStr"`
 		}
 		if err = ctx.ReadJSON(&form); err != nil {
 			return lang.ErrInvalidRequestData
@@ -100,9 +102,7 @@ func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 			}
 		}
 		if form.ConnStr != nil {
-			err = device.SetOption(map[string]interface{}{
-				"connStr": *form.ConnStr,
-			})
+			err = device.SetOption("params.connStr", form.ConnStr)
 			if err != nil {
 				return err
 			}
