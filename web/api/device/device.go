@@ -18,7 +18,7 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
 
-		var params = []store.OptionFN{store.Page(page, pageSize)}
+		var params = []store.OptionFN{store.Page(page, pageSize), store.User(perm.AdminUser(ctx).GetID())}
 
 		keyword := ctx.URLParam("keyword")
 		if keyword != "" {

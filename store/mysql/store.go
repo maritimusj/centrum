@@ -18,18 +18,19 @@ import (
 )
 
 const (
-	TbUsers           = "`users`"
-	TbRoles           = "`roles`"
-	TbUserRoles       = "`user_roles`"
-	TbPolicies        = "`policies`"
-	TbGroups          = "`groups`"
-	TbDevices         = "`devices`"
-	TbMeasures        = "`measures`"
-	TbDeviceGroups    = "`device_groups`"
-	TbEquipments      = "`equipments`"
-	TbStates          = "`states`"
-	TbEquipmentGroups = "`equipment_groups`"
-	TbApiResources    = "`api_resources`"
+	TbUsers            = "`users`"
+	TbRoles            = "`roles`"
+	TbUserRoles        = "`user_roles`"
+	TbPolicies         = "`policies`"
+	TbGroups           = "`groups`"
+	TbDevices          = "`devices`"
+	TbMeasures         = "`measures`"
+	TbDeviceGroups     = "`device_groups`"
+	TbEquipments       = "`equipments`"
+	TbStates           = "`states`"
+	TbEquipmentGroups  = "`equipment_groups`"
+	TbApiResources     = "`api_resources`"
+	TbDevicePoliciesVW = "`device_policies_vw`"
 )
 
 type mysqlStore struct {
@@ -997,10 +998,17 @@ func (s *mysqlStore) RemoveDevice(deviceID int64) error {
 	return nil
 }
 
+/*
+CREATE OR REPLACE VIEW device_policies_vw AS
+SELECT device.*,p.action,p.effect FROM
+(select d.*, r.id role_id FROM devices d, roles r) device
+LEFT JOIN policies p ON p.resource_class=3 AND p.resource_id=device.id AND p.role_id=device.role_id
+*/
+
 func (s *mysqlStore) GetDeviceList(options ...store.OptionFN) ([]model.Device, int64, error) {
 	option := parseOption(options...)
 	var (
-		from  = "FROM " + TbDevices + " d"
+		from  = "FROM " + TbDevicePoliciesVW + " d"
 		where = " WHERE 1"
 	)
 
@@ -1009,10 +1017,12 @@ func (s *mysqlStore) GetDeviceList(options ...store.OptionFN) ([]model.Device, i
 	if option.UserID != nil {
 		userID := *option.UserID
 		if userID > 0 {
-			var joinWay = util.If(option.DefaultEffect == resource.Allow, "LEFT", "INNER")
-			from += fmt.Sprintf(" %s JOIN %s p ON p.resource_class=%d AND p.resource_id=d.id", joinWay, TbPolicies, resource.Device)
-			where += " AND p.role_id IN (SELECT role_id FROM " + TbUserRoles + " WHERE user_id=?)"
-			params = append(params, userID)
+			if option.DefaultEffect == resource.Allow {
+				where += fmt.Sprintf(" AND d.role_id IN (SELECT role_id FROM %s WHERE user_id=?) AND ((d.action=? AND d.effect=?) OR (d.action IS NULL AND d.effect IS NULL))", TbUserRoles)
+			} else {
+				where += fmt.Sprintf(" AND d.role_id IN (SELECT role_id FROM %s WHERE user_id=?) AND d.action=? AND d.effect=?", TbUserRoles)
+			}
+			params = append(params, userID, resource.View, resource.Allow)
 		}
 	}
 
@@ -1026,10 +1036,10 @@ func (s *mysqlStore) GetDeviceList(options ...store.OptionFN) ([]model.Device, i
 		where += " AND d.title REGEXP ?"
 		params = append(params, option.Keyword)
 	}
-
+	println("SELECT DISTINCT d.id " + from + where)
 	var total int64
 	if option.GetTotal == nil || *option.GetTotal {
-		if err := s.db.QueryRow("SELECT COUNT(*) "+from+where, params...).Scan(&total); err != nil {
+		if err := s.db.QueryRow("SELECT COUNT(DISTINCT d.id) "+from+where, params...).Scan(&total); err != nil {
 			return nil, 0, lang.InternalError(err)
 		}
 
@@ -1050,8 +1060,7 @@ func (s *mysqlStore) GetDeviceList(options ...store.OptionFN) ([]model.Device, i
 		params = append(params, option.Offset)
 	}
 
-	println("SELECT d.id " + from + where)
-	rows, err := s.db.Query("SELECT d.id "+from+where, params...)
+	rows, err := s.db.Query("SELECT DISTINCT d.id "+from+where, params...)
 	if err != nil {
 		return nil, 0, lang.InternalError(err)
 	}
