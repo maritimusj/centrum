@@ -1698,9 +1698,13 @@ func (s *mysqlStore) GetApiResourceList(options ...store.OptionFN) ([]model.ApiR
 	)
 
 	var params []interface{}
+	if option.Name != "" {
+		fromSQL += " AND name REGEXP ?"
+		params = append(params, option.Name)
+	}
 
 	if option.Keyword != "" {
-		fromSQL += " AND name REGEXP ?"
+		fromSQL += " AND title REGEXP ?"
 		params = append(params, option.Keyword)
 	}
 

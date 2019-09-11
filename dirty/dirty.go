@@ -75,5 +75,6 @@ func (dirty *Dirty) reset() {
 func (dirty *Dirty) Reset() {
 	dirty.Lock()
 	defer dirty.Unlock()
+
 	dirty.reset()
 }

@@ -15,17 +15,12 @@ type Option struct {
 	GroupID     *int64
 	DeviceID    int64
 	EquipmentID int64
+	Name string
 	Keyword     string
-	db          DB
 }
 
 type OptionFN func(*Option)
 
-func WithDB(db DB) OptionFN {
-	return func(i *Option) {
-		i.db = db
-	}
-}
 
 func Page(page, pageSize int64) OptionFN {
 	return func(i *Option) {
@@ -81,6 +76,12 @@ func Device(deviceID int64) OptionFN {
 func Equipment(equipmentID int64) OptionFN {
 	return func(i *Option) {
 		i.EquipmentID = equipmentID
+	}
+}
+
+func Name(name string) OptionFN {
+	return func(i *Option) {
+		i.Name = name
 	}
 }
 

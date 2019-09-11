@@ -21,25 +21,37 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 	return response.Wrap(func() interface{} {
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
+		keyword := ctx.URLParam("keyword")
 
 		var params = []store.OptionFN{
 			store.Page(page, pageSize),
 		}
 
+		if keyword != "" {
+			params = append(params, store.Keyword(keyword))
+		}
+
 		class := resource.Class(classID)
-		sub := ctx.URLParamInt64Default("sub", -1)
-		if sub != -1 {
-			switch class {
-			case resource.Group:
-				params = append(params, store.Parent(sub))
-			case resource.Device:
-				params = append(params, store.Group(sub))
-			case resource.Measure:
-				params = append(params, store.Device(sub))
-			case resource.Equipment:
-				params = append(params, store.Group(sub))
-			case resource.State:
-				params = append(params, store.Equipment(sub))
+		if class == resource.Api {
+			sub := ctx.URLParam("sub")
+			if sub != "" {
+				params = append(params, store.Name(sub))
+			}
+		} else {
+			sub := ctx.URLParamInt64Default("sub", -1)
+			if sub != -1 {
+				switch class {
+				case resource.Group:
+					params = append(params, store.Parent(sub))
+				case resource.Device:
+					params = append(params, store.Group(sub))
+				case resource.Measure:
+					params = append(params, store.Device(sub))
+				case resource.Equipment:
+					params = append(params, store.Group(sub))
+				case resource.State:
+					params = append(params, store.Equipment(sub))
+				}
 			}
 		}
 
