@@ -109,17 +109,19 @@ func (r *Role) GetPolicy(res resource.Resource) (map[resource.Action]model.Polic
 	return result, nil
 }
 
-func (r *Role) IsAllowed(res resource.Resource, action resource.Action) error {
+func (r *Role) IsAllowed(res resource.Resource, action resource.Action) (bool, error) {
 	pm, err := r.GetPolicy(res)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if v, ok := pm[action]; ok {
 		if v.Effect() == resource.Allow {
-			return nil
+			return true, nil
 		}
+		return false, lang.Error(lang.ErrNoPermission)
 	}
-	return lang.Error(lang.ErrNoPermission)
+
+	return false, lang.Error(lang.ErrPolicyNotFound)
 }
 
 func (r *Role) Simple() model.Map {

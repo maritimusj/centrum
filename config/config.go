@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/maritimusj/centrum/resource"
 	"time"
 )
 
@@ -10,10 +11,16 @@ type Config interface {
 	JwtTokenKey() []byte
 	MaxTokenExpiration() time.Duration
 	DefaultUserName() string
+
+	DefaultEffect() resource.Effect
 }
 
 type config struct {
 	jwtTokenKey []byte
+}
+
+func (c *config) DefaultEffect() resource.Effect {
+	return resource.Allow
 }
 
 func (c *config) DefaultUserName() string {

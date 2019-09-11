@@ -57,7 +57,7 @@ func parseOption(options ...store.OptionFN) *store.Option {
 	return &option
 }
 
-func (s *mysqlStore) TransactionDo(fn func(db store.DB) error) error {
+func (s *mysqlStore) TransactionDo(fn func(db store.DB) interface{}) interface{} {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return lang.InternalError(err)
@@ -66,15 +66,19 @@ func (s *mysqlStore) TransactionDo(fn func(db store.DB) error) error {
 		_ = tx.Rollback()
 	}()
 
-	err = fn(tx)
-	if err != nil {
-		return err
+	res := fn(tx)
+	if res != nil {
+		if err, ok := res.(error); ok {
+			return err
+		}
 	}
+
 	err = tx.Commit()
 	if err != nil {
 		return lang.InternalError(err)
 	}
-	return nil
+
+	return res
 }
 
 func (s *mysqlStore) Synchronized(name string, fn func() interface{}) <-chan interface{} {
@@ -173,9 +177,9 @@ func (s *mysqlStore) GetResourceGroupList() []interface{} {
 	}
 }
 
-func (s *mysqlStore) getUser(id int64) (*User, error) {
+func (s *mysqlStore) getUser(db DB, id int64) (*User, error) {
 	var user = NewUser(s, id)
-	err := LoadData(s.db, TbUsers, map[string]interface{}{
+	err := LoadData(db, TbUsers, map[string]interface{}{
 		"enable":     &user.enable,
 		"name":       &user.name,
 		"title":      &user.title,
@@ -219,7 +223,7 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 			return user
 		}
 
-		user, err := s.getUser(userID)
+		user, err := s.getUser(s.db, userID)
 		if err != nil {
 			return err
 		}
@@ -239,35 +243,50 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 	return result.(model.User), nil
 }
 
-func (s *mysqlStore) CreateUser(name string, password []byte) (model.User, error) {
+func (s *mysqlStore) CreateUser(name string, password []byte, role model.Role) (model.User, error) {
 	result := <-s.Synchronized(TbUsers, func() interface{} {
-		passwordData, err := util.HashPassword(password)
-		if err != nil {
-			return lang.InternalError(err)
-		}
+		return s.TransactionDo(func(db store.DB) interface{} {
+			passwordData, err := util.HashPassword(password)
+			if err != nil {
+				return lang.InternalError(err)
+			}
+			userID, err := CreateData(db, TbUsers, map[string]interface{}{
+				"enable":     status.Enable,
+				"name":       name,
+				"password":   passwordData,
+				"title":      name,
+				"mobile":     "",
+				"email":      "",
+				"created_at": time.Now(),
+			})
 
-		userID, err := CreateData(s.db, TbUsers, map[string]interface{}{
-			"enable":     status.Enable,
-			"name":       name,
-			"password":   passwordData,
-			"title":      name,
-			"mobile":     "",
-			"email":      "",
-			"created_at": time.Now(),
+			if err != nil {
+				return lang.InternalError(err)
+			}
+
+			user, err := s.getUser(db, userID)
+			if err != nil {
+				return err
+			}
+
+			if role == nil {
+				role, err = s.createRole(db, name)
+				if err != nil {
+					return err
+				}
+			}
+
+			err = user.SetRoles(role)
+			if err != nil {
+				return err
+			}
+
+			err = s.cache.Save(user)
+			if err != nil {
+				return err
+			}
+			return user
 		})
-		if err != nil {
-			return lang.InternalError(err)
-		}
-
-		user, err := s.getUser(userID)
-		if err != nil {
-			return err
-		}
-		err = s.cache.Save(user)
-		if err != nil {
-			return err
-		}
-		return user
 	})
 
 	if err, ok := result.(error); ok {
@@ -401,7 +420,7 @@ func (s *mysqlStore) GetRole(roleID int64) (model.Role, error) {
 	return result.(model.Role), nil
 }
 
-func (s *mysqlStore) CreateRole(title string) (model.Role, error) {
+func (s *mysqlStore) createRole(db DB, title string) (model.Role, error) {
 	result := <-s.Synchronized(TbRoles, func() interface{} {
 		roleID, err := CreateData(s.db, TbRoles, map[string]interface{}{
 			"enable":     status.Enable,
@@ -429,6 +448,9 @@ func (s *mysqlStore) CreateRole(title string) (model.Role, error) {
 
 	return result.(model.Role), nil
 }
+func (s *mysqlStore) CreateRole(title string) (model.Role, error) {
+	return s.createRole(s.db, title)
+}
 
 func (s *mysqlStore) RemoveRole(roleID int64) error {
 	result := <-s.Synchronized(TbRoles, func() interface{} {
@@ -454,7 +476,7 @@ func (s *mysqlStore) GetRoleList(userID int64, options ...store.OptionFN) ([]mod
 
 	var params []interface{}
 	if userID > 0 {
-		fromSQL += " INNER JOIN " + TbUsers + " u ON r.id=u.role_id WHERE u.user_id=?"
+		fromSQL += " INNER JOIN " + TbUserRoles + " u ON r.id=u.role_id WHERE u.user_id=?"
 		params = append(params, userID)
 	} else {
 		fromSQL += " WHERE 1"
@@ -1546,7 +1568,14 @@ func (s *mysqlStore) GetResourceList(class resource.Class, options ...store.Opti
 	var result []resource.Resource
 	switch class {
 	case resource.Api:
-		return s.GetApiResourceList(options...)
+		res, total, err := s.GetApiResourceList(options...)
+		if err != nil {
+			return nil, 0, err
+		}
+		for _, r := range res {
+			result = append(result, r)
+		}
+		return result, total, nil
 	case resource.Group:
 		groups, total, err := s.GetGroupList(options...)
 		if err != nil {
@@ -1601,9 +1630,155 @@ func (s *mysqlStore) GetResource(resourceUID string) (resource.Resource, error) 
 	panic("implement me")
 }
 
-func (s *mysqlStore) GetApiResourceList(options ...store.OptionFN) ([]resource.Resource, int64, error) {
-	panic("implement me")
+func (s *mysqlStore) loadApiResource(resID int64) (model.ApiResource, error) {
+	var apiRes = NewApiResource(s, resID)
+	err := LoadData(s.db, TbApiResources, map[string]interface{}{
+		"`name`":  &apiRes.name,
+		"`title`": &apiRes.title,
+		"`desc`":  &apiRes.desc,
+	}, "id=?", resID)
+	if err != nil {
+		return nil, err
+	}
+	return apiRes, nil
 }
-func (s *mysqlStore) GetApiResource(routerName string, httpMethod string) (resource.Resource, error) {
-	panic("implement me")
+
+func (s *mysqlStore) GetApiResource(res interface{}) (model.ApiResource, error) {
+	result := <-s.Synchronized(TbApiResources, func() interface{} {
+		var resID int64
+		switch v := res.(type) {
+		case int64:
+			resID = v
+		case string:
+			err := LoadData(s.db, TbApiResources, map[string]interface{}{
+				"id": &resID,
+			}, "name=?", v)
+			if err != nil {
+				if err != sql.ErrNoRows {
+					return lang.InternalError(err)
+				}
+				return lang.Error(lang.ErrApiResourceNotFound)
+			}
+		default:
+			panic(errors.New("GetApiResource: unknown api resource"))
+		}
+
+		if res, err := s.cache.LoadApiResource(resID); err != nil {
+			if err != lang.Error(lang.ErrCacheNotFound) {
+				return err
+			}
+		} else {
+			return res
+		}
+
+		res, err := s.loadApiResource(resID)
+		if err != nil {
+			return err
+		}
+		err = s.cache.Save(res)
+		if err != nil {
+			return err
+		}
+
+		return res
+	})
+
+	if err, ok := result.(error); ok {
+		return nil, err
+	}
+
+	return result.(model.ApiResource), nil
+}
+
+func (s *mysqlStore) GetApiResourceList(options ...store.OptionFN) ([]model.ApiResource, int64, error) {
+	option := parseOption(options...)
+
+	var (
+		fromSQL = "FROM " + TbApiResources + " WHERE 1"
+	)
+
+	var params []interface{}
+
+	if option.Keyword != "" {
+		fromSQL += " AND name REGEXP ?"
+		params = append(params, option.Keyword)
+	}
+
+	var total int64
+	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
+		return nil, 0, lang.InternalError(err)
+	}
+
+	if total == 0 {
+		return []model.ApiResource{}, 0, nil
+	}
+
+	fromSQL += " ORDER BY id ASC"
+
+	if option.Limit > 0 {
+		fromSQL += " LIMIT ?"
+		params = append(params, option.Limit)
+	}
+
+	if option.Offset > 0 {
+		fromSQL += " OFFSET ?"
+		params = append(params, option.Offset)
+	}
+
+	rows, err := s.db.Query("SELECT id "+fromSQL, params...)
+	if err != nil {
+		return nil, 0, lang.InternalError(err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var result []model.ApiResource
+	var stateID int64
+
+	for rows.Next() {
+		err = rows.Scan(&stateID)
+		if err != nil {
+			if err != sql.ErrNoRows {
+				return nil, 0, lang.InternalError(err)
+			}
+			return []model.ApiResource{}, total, nil
+		}
+
+		res, err := s.GetApiResource(stateID)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		result = append(result, res)
+	}
+
+	return result, total, nil
+}
+
+func (s *mysqlStore) InitApiResource() error {
+	result := <-s.Synchronized(TbApiResources, func() interface{} {
+		return s.TransactionDo(func(db store.DB) interface{} {
+			err := RemoveData(db, TbApiResources, "1")
+			if err != nil {
+				return err
+			}
+			for _, entry := range lang.ApiResourcesMap {
+				_, err := CreateData(db, TbApiResources, map[string]interface{}{
+					"`name`":  entry[0],
+					"`title`": entry[1],
+					"`desc`":  entry[2],
+				})
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	})
+
+	if result != nil {
+		return result.(error)
+	}
+	return nil
 }

@@ -4,6 +4,9 @@ package resource
 type Action int
 
 const (
+	Invoke Action = 0
+)
+const (
 	View Action = iota
 	Ctrl
 )

@@ -87,6 +87,7 @@ func CreateData(db DB, tbName string, data map[string]interface{}) (int64, error
 
 		result, err := db.Exec(SQL.String(), values...)
 		log.Printf("createData: %s => %s\r\n", SQL.String(), util.If(err != nil, err, "Ok"))
+
 		if err != nil {
 			return 0, err
 		}

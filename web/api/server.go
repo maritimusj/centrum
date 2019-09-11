@@ -7,8 +7,10 @@ import (
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/web/api/web"
+	"github.com/maritimusj/centrum/web/perm"
 	"gopkg.in/go-playground/validator.v9"
 
+	ResourceDef "github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/web/api/device"
 	"github.com/maritimusj/centrum/web/api/equipment"
 	"github.com/maritimusj/centrum/web/api/group"
@@ -37,7 +39,7 @@ func (server *server) Start(ctx context.Context, cfg config.Config) error {
 	server.app.Post("/v1/web/login/", hero.Handler(web.Login))
 	server.app.PartyFunc("/v1/web", func(p router.Party) {
 		web.RequireToken(p, cfg)
-		//p.Use(hero.Handler(perm.Check))
+		p.Use(hero.Handler(perm.Check))
 		//资源
 		p.PartyFunc("/resource", func(p router.Party) {
 			p.Get("/", hero.Handler(resource.GroupList))
@@ -46,20 +48,20 @@ func (server *server) Start(ctx context.Context, cfg config.Config) error {
 
 		//角色
 		p.PartyFunc("/role", func(p router.Party) {
-			p.Get("/", hero.Handler(role.List))
-			p.Post("/", hero.Handler(role.Create))
-			p.Get("/{id:int64}", hero.Handler(role.Detail))
-			p.Put("/{id:int64}", hero.Handler(role.Update))
-			p.Delete("/{id:int64}", hero.Handler(role.Delete))
+			p.Get("/", hero.Handler(role.List)).Name = ResourceDef.RoleList
+			p.Post("/", hero.Handler(role.Create)).Name = ResourceDef.RoleCreate
+			p.Get("/{id:int64}", hero.Handler(role.Detail)).Name = ResourceDef.RoleDetail
+			p.Put("/{id:int64}", hero.Handler(role.Update)).Name = ResourceDef.RoleUpdate
+			p.Delete("/{id:int64}", hero.Handler(role.Delete)).Name = ResourceDef.RoleDelete
 		})
 
 		//用户
 		p.PartyFunc("/user", func(p router.Party) {
-			p.Get("/", hero.Handler(user.List))
-			p.Post("/", hero.Handler(user.Create))
-			p.Get("/{id:int64}", hero.Handler(user.Detail))
-			p.Put("/{id:int64}", hero.Handler(user.Update))
-			p.Delete("/{id:int64}", hero.Handler(user.Delete))
+			p.Get("/", hero.Handler(user.List)).Name = ResourceDef.UserList
+			p.Post("/", hero.Handler(user.Create)).Name = ResourceDef.UserCreate
+			p.Get("/{id:int64}", hero.Handler(user.Detail)).Name = ResourceDef.UserDetail
+			p.Put("/{id:int64}", hero.Handler(user.Update)).Name = ResourceDef.UserUpdate
+			p.Delete("/{id:int64}", hero.Handler(user.Delete)).Name = ResourceDef.UserDelete
 		})
 
 		//设备分组

@@ -25,12 +25,20 @@ func main() {
 		log.Fatal(err)
 	}
 
-	_, err = s.GetUser("admin")
+	//初始化api资源
+	err = s.InitApiResource()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//创建默认用户
+	defaultUserName := cfg.DefaultUserName()
+	_, err = s.GetUser(defaultUserName)
 	if err != nil {
 		if err != lang.Error(lang.ErrUserNotFound) {
 			log.Fatal(err)
 		}
-		_, err := s.CreateUser("admin", []byte("admin"))
+		_, err := s.CreateUser(defaultUserName, []byte(defaultUserName), nil)
 		if err != nil {
 			log.Fatal(err)
 		}

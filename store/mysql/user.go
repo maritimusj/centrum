@@ -130,7 +130,7 @@ func (u *User) Update(profile model.Map) error {
 }
 
 func (u *User) SetRoles(roles ...interface{}) error {
-	return u.store.TransactionDo(func(db store.DB) error {
+	err := u.store.TransactionDo(func(db store.DB) interface{} {
 		err := RemoveData(db, TbUserRoles, "user_id=?", u.id)
 		if err != nil {
 			return err
@@ -161,6 +161,10 @@ func (u *User) SetRoles(roles ...interface{}) error {
 		}
 		return nil
 	})
+	if err != nil {
+		return err.(error)
+	}
+	return nil
 }
 
 func (u *User) GetRoles() ([]model.Role, error) {
@@ -183,19 +187,28 @@ func (u *User) Save() error {
 	return nil
 }
 
-func (u *User) IsAllowed(resource resource.Resource, action resource.Action) error {
+func (u *User) IsAllowed(res resource.Resource, action resource.Action) (bool, error) {
 	roles, err := u.GetRoles()
 	if err != nil {
-		return err
+		return false, err
 	}
 
+	var denied bool
 	for _, role := range roles {
-		if err := role.IsAllowed(resource, action); err == nil {
-			return nil
+		if allowed, err := role.IsAllowed(res, action); allowed {
+			return allowed, err
+		} else {
+			if err == lang.Error(lang.ErrNoPermission) {
+				denied = true
+			}
 		}
 	}
 
-	return lang.Error(lang.ErrNoPermission)
+	if denied {
+		return false, lang.Error(lang.ErrNoPermission)
+	}
+
+	return false, lang.Error(lang.ErrPolicyNotFound)
 }
 
 func (u *User) Simple() model.Map {

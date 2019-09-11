@@ -16,9 +16,16 @@ type Option struct {
 	DeviceID    int64
 	EquipmentID int64
 	Keyword     string
+	db          DB
 }
 
 type OptionFN func(*Option)
+
+func WithDB(db DB) OptionFN {
+	return func(i *Option) {
+		i.db = db
+	}
+}
 
 func Page(page, pageSize int64) OptionFN {
 	return func(i *Option) {

@@ -19,18 +19,10 @@ func (r *Api) Action() resource.Action {
 	return r.action
 }
 
-func NewApiRequest(store store.Store, routerName string, method string) (model.Request, error) {
-	res, err := store.GetApiResource(routerName, method)
+func NewApiRequest(store store.Store, routerName string) (model.Request, error) {
+	res, err := store.GetApiResource(routerName)
 	if err != nil {
 		return nil, err
-	}
-
-	var action resource.Action
-	switch method {
-	case "GET":
-		action = resource.View
-	default:
-		action = resource.Ctrl
 	}
 
 	return &Api{

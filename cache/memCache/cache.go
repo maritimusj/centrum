@@ -10,14 +10,15 @@ import (
 )
 
 const (
-	PrefixUser      = "1."
-	PrefixRole      = "2."
-	prefixPolicy    = "3."
-	prefixGroup     = "4."
-	prefixDevice    = "5."
-	prefixMeasure   = "6."
-	prefixEquipment = "7."
-	prefixState     = "8."
+	PrefixUser        = "1."
+	PrefixRole        = "2."
+	prefixPolicy      = "3."
+	prefixGroup       = "4."
+	prefixDevice      = "5."
+	prefixMeasure     = "6."
+	prefixEquipment   = "7."
+	prefixState       = "8."
+	prefixApiResource = "9."
 )
 
 type cache struct {
@@ -59,6 +60,9 @@ func getKey(obj interface{}) string {
 		id = v.GetID()
 	case model.State:
 		pref = prefixState
+		id = v.GetID()
+	case model.ApiResource:
+		pref = prefixApiResource
 		id = v.GetID()
 	default:
 		panic(errors.New("cache save: unknown obj"))
@@ -141,6 +145,15 @@ func (c *cache) LoadEquipment(id int64) (model.Equipment, error) {
 func (c *cache) LoadState(id int64) (model.State, error) {
 	if v, ok := c.client.Get(prefixState + strconv.FormatInt(id, 10)); ok {
 		if u, ok := v.(model.State); ok {
+			return u, nil
+		}
+	}
+	return nil, lang.Error(lang.ErrCacheNotFound)
+}
+
+func (c *cache) LoadApiResource(id int64) (model.ApiResource, error) {
+	if v, ok := c.client.Get(prefixApiResource + strconv.FormatInt(id, 10)); ok {
+		if u, ok := v.(model.ApiResource); ok {
 			return u, nil
 		}
 	}

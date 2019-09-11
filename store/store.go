@@ -11,7 +11,7 @@ type Store interface {
 	Close()
 
 	GetUser(user interface{}) (model.User, error)
-	CreateUser(name string, password []byte) (model.User, error)
+	CreateUser(name string, password []byte, role model.Role) (model.User, error)
 	RemoveUser(userID int64) error
 	GetUserList(options ...OptionFN) ([]model.User, int64, error)
 
@@ -54,6 +54,7 @@ type Store interface {
 	GetResourceList(class resource.Class, options ...OptionFN) ([]resource.Resource, int64, error)
 	GetResource(resourceUID string) (resource.Resource, error)
 
-	GetApiResourceList(options ...OptionFN) ([]resource.Resource, int64, error)
-	GetApiResource(routerName string, method string) (resource.Resource, error)
+	GetApiResourceList(options ...OptionFN) ([]model.ApiResource, int64, error)
+	GetApiResource(res interface{}) (model.ApiResource, error)
+	InitApiResource() error
 }

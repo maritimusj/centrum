@@ -40,6 +40,7 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 		var form struct {
 			Username string `json:"username" validate:"required"`
 			Password string `json:"password" validate:"required"`
+			RoleID   *int64 `json:"role"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
@@ -54,7 +55,16 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 			return lang.ErrUserExists
 		}
 
-		user, err := s.CreateUser(form.Username, []byte(form.Password))
+		var role model.Role
+		var err error
+		if form.RoleID != nil {
+			role, err = s.GetRole(*form.RoleID)
+			if err != nil {
+				return err
+			}
+		}
+
+		user, err := s.CreateUser(form.Username, []byte(form.Password), role)
 		if err != nil {
 			return err
 		}
