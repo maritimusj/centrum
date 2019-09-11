@@ -1,7 +1,6 @@
 package mysqlStore
 
 import (
-	"fmt"
 	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
@@ -17,8 +16,6 @@ type Measure struct {
 	title     string
 	tag       string
 	createdAt time.Time
-
-	resourceUID *string
 
 	dirty *dirty.Dirty
 	store *mysqlStore
@@ -36,12 +33,8 @@ func (m *Measure) ResourceClass() resource.Class {
 	return resource.Measure
 }
 
-func (m *Measure) ResourceUID() string {
-	if m.resourceUID == nil {
-		uid := fmt.Sprintf("%d.%d", resource.Measure, m.id)
-		m.resourceUID = &uid
-	}
-	return *m.resourceUID
+func (m *Measure) ResourceID() int64 {
+	return m.id
 }
 
 func (m *Measure) ResourceTitle() string {

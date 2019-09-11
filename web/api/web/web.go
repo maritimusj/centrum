@@ -7,6 +7,7 @@ import (
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/store"
+	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
 	"net/http"
 	"time"
@@ -29,18 +30,18 @@ func RequireToken(p iris.Party, cfg config.Config) {
 	p.Use(hero.Handler(CheckUser))
 }
 
-func CheckUser(c iris.Context, store store.Store) {
+func CheckUser(c iris.Context, store store.Store, cfg config.Config) {
 	data := c.Values().Get("jwt").(*jwt.Token).Claims.(jwt.MapClaims)
 	user, err := store.GetUser(data["sub"].(float64))
 	if err != nil {
 		c.StatusCode(http.StatusForbidden)
 	} else {
-		if user.IsEnabled() {
-			c.Values().Set("__admin__", user)
-			c.Next()
-		} else {
-			c.StatusCode(http.StatusForbidden)
+		c.Values().Set(perm.DefaultEffect, cfg.DefaultEffect())
+		c.Values().Set(perm.AdminUserKey, user)
+		if user.Name() == cfg.DefaultUserName() {
+			c.Values().Set(perm.DefaultAdminUserKey, true)
 		}
+		c.Next()
 	}
 }
 

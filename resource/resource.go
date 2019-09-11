@@ -32,8 +32,8 @@ const (
 )
 
 type Resource interface {
-	ResourceUID() string
 	ResourceClass() Class
+	ResourceID() int64
 	ResourceTitle() string
 	ResourceDesc() string
 }

@@ -20,10 +20,11 @@ type Store interface {
 	RemoveRole(roleID int64) error
 	GetRoleList(options ...OptionFN) ([]model.Role, int64, error)
 
-	CreatePolicy(roleID int64, resourceUID string, action resource.Action, effect resource.Effect) (model.Policy, error)
+	//CreatePolicy(roleID int64, res resource.Resource, action resource.Action, effect resource.Effect) (model.Policy, error)
 	GetPolicy(roleID int64) (model.Policy, error)
-	CreatePolicyIsNotExists(roleID int64, resourceUID string, action resource.Action) (model.Policy, error)
+	CreatePolicyIsNotExists(roleID int64, res resource.Resource, action resource.Action, defaultEffect resource.Effect) (model.Policy, error)
 	RemovePolicy(policyID int64) error
+	GetPolicyList(res resource.Resource, options ...OptionFN) ([]model.Policy, int64, error)
 
 	GetGroup(groupID int64) (model.Group, error)
 	CreateGroup(title string, parentID int64) (model.Group, error)
@@ -52,7 +53,7 @@ type Store interface {
 
 	GetResourceGroupList() []interface{}
 	GetResourceList(class resource.Class, options ...OptionFN) ([]resource.Resource, int64, error)
-	GetResource(resourceUID string) (resource.Resource, error)
+	GetResource(class resource.Class, resourceID int64) (resource.Resource, error)
 
 	GetApiResourceList(options ...OptionFN) ([]model.ApiResource, int64, error)
 	GetApiResource(res interface{}) (model.ApiResource, error)

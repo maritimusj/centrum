@@ -1,7 +1,6 @@
 package mysqlStore
 
 import (
-	"fmt"
 	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
@@ -14,8 +13,6 @@ type Group struct {
 	title     string
 	desc      string
 	createdAt time.Time
-
-	resourceUID *string
 
 	dirty *dirty.Dirty
 	store *mysqlStore
@@ -33,12 +30,8 @@ func (g *Group) ResourceClass() resource.Class {
 	return resource.Group
 }
 
-func (g *Group) ResourceUID() string {
-	if g.resourceUID == nil {
-		uid := fmt.Sprintf("%d.%d", resource.Group, g.id)
-		g.resourceUID = &uid
-	}
-	return *g.resourceUID
+func (g *Group) ResourceID() int64 {
+	return g.id
 }
 
 func (g *Group) ResourceTitle() string {

@@ -80,9 +80,10 @@ func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 		}
 
 		type P struct {
-			ResourceUID string `json:"resource"`
-			Action      int    `json:"action"`
-			Effect      int    `json:"effect"`
+			ResourceClass int   `json:"class"`
+			ResourceID    int64 `json:"id"`
+			Action        int   `json:"action"`
+			Effect        int   `json:"effect"`
 		}
 		var form struct {
 			Title   *string `json:"title"`
@@ -101,7 +102,7 @@ func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 
 		if len(form.Polices) > 0 {
 			for _, p := range form.Polices {
-				res, err := s.GetResource(p.ResourceUID)
+				res, err := s.GetResource(resource.Class(p.ResourceClass), p.ResourceID)
 				if err != nil {
 					return err
 				}

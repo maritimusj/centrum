@@ -15,23 +15,28 @@ import (
 func Check(ctx iris.Context, store store.Store, cfg config.Config) hero.Result {
 	result := MustAdminOk(ctx, func(admin model.User) interface{} {
 		//总是允许系统默认用户
-		if admin.Name() == cfg.DefaultUserName() {
+		if IsDefaultAdminUser(ctx) {
+			println("默认用户，通过！")
 			return nil
 		}
 
 		router := ctx.GetCurrentRoute()
 		res, err := store.GetApiResource(router.Name())
 		if err != nil {
+			if err == lang.Error(lang.ErrApiResourceNotFound) && cfg.DefaultEffect() == resource.Allow {
+				log.Printf("没找到API资源，user: %s, router: %s 默认通过！\r\n", admin.Name(), router.Name())
+				return nil
+			}
 			return err
 		}
 
-		allowed, err := admin.IsAllowed(res, resource.Invoke)
+		allowed, err := admin.IsAllow(res, resource.Invoke)
 		if allowed {
 			return nil
 		}
 
-		if cfg.DefaultEffect() == resource.Allow && err == lang.Error(lang.ErrPolicyNotFound) {
-			log.Printf("user: %s, router: %s allowed by default policy\r\n", admin.Name(), router.Name())
+		if err == lang.Error(lang.ErrPolicyNotFound) && cfg.DefaultEffect() == resource.Allow {
+			log.Printf("没找到策略，user: %s, router: %s 默认通过！\r\n", admin.Name(), router.Name())
 			return nil
 		}
 		return lang.Error(lang.ErrNoPermission)

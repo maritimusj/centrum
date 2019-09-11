@@ -2,7 +2,6 @@ package mysqlStore
 
 import (
 	"errors"
-	"fmt"
 	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
@@ -22,8 +21,6 @@ type Device struct {
 	options   []byte
 	createdAt time.Time
 
-	resourceUID *string
-
 	dirty *dirty.Dirty
 	store *mysqlStore
 }
@@ -36,12 +33,8 @@ func NewDDevice(store *mysqlStore, id int64) *Device {
 	}
 }
 
-func (d *Device) ResourceUID() string {
-	if d.resourceUID == nil {
-		uid := fmt.Sprintf("%d.%d", resource.Device, d.id)
-		d.resourceUID = &uid
-	}
-	return *d.resourceUID
+func (d *Device) ResourceID() int64 {
+	return d.id
 }
 
 func (d *Device) ResourceClass() resource.Class {

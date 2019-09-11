@@ -65,7 +65,7 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 			result = append(result, model.Map{
 				"class":       classID,
 				"class_title": lang.ResourceClassTitle(class),
-				"uid":         res.ResourceUID(),
+				"uid":         res.ResourceID(),
 				"title":       res.ResourceTitle(),
 				"desc":        res.ResourceDesc(),
 			})

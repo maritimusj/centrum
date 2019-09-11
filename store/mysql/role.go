@@ -89,19 +89,16 @@ func (r *Role) SetTitle(title string) error {
 }
 
 func (r *Role) SetPolicy(res resource.Resource, action resource.Action, effect resource.Effect) (model.Policy, error) {
-	policy, err := r.store.CreatePolicyIsNotExists(r.id, res.ResourceUID(), action)
+	policy, err := r.store.CreatePolicyIsNotExists(r.id, res, action, effect)
 	if err != nil {
 		return nil, err
 	}
-	err = policy.SetEffect(effect)
-	if err != nil {
-		return nil, err
-	}
+
 	return policy, nil
 }
 
 func (r *Role) GetPolicy(res resource.Resource) (map[resource.Action]model.Policy, error) {
-	policies, _, err := r.store.GetPolicyList(r.id, res.ResourceUID())
+	policies, _, err := r.store.GetPolicyList(res)
 	if err != nil {
 		return nil, err
 	}
@@ -112,11 +109,12 @@ func (r *Role) GetPolicy(res resource.Resource) (map[resource.Action]model.Polic
 	return result, nil
 }
 
-func (r *Role) IsAllowed(res resource.Resource, action resource.Action) (bool, error) {
+func (r *Role) IsAllow(res resource.Resource, action resource.Action) (bool, error) {
 	pm, err := r.GetPolicy(res)
 	if err != nil {
 		return false, err
 	}
+
 	if v, ok := pm[action]; ok {
 		if v.Effect() == resource.Allow {
 			return true, nil

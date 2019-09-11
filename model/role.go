@@ -16,5 +16,5 @@ type Role interface {
 	//对于每个资源，都应该返回一组Policy，表示对该资源的访问权限
 	GetPolicy(res resource.Resource) (map[resource.Action]Policy, error)
 
-	IsAllowed(res resource.Resource, action resource.Action) (bool, error)
+	IsAllow(res resource.Resource, action resource.Action) (bool, error)
 }

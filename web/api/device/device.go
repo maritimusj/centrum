@@ -6,7 +6,9 @@ import (
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/store"
+	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
 	"gopkg.in/go-playground/validator.v9"
 )
@@ -72,12 +74,17 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 	})
 }
 
-func Detail(deviceID int64, s store.Store) hero.Result {
+func Detail(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 	return response.Wrap(func() interface{} {
 		device, err := s.GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
+
+		if perm.Deny(ctx, device, resource.View) {
+			return lang.ErrNoPermission
+		}
+
 		return device.Detail()
 	})
 }
@@ -88,6 +95,11 @@ func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 		if err != nil {
 			return err
 		}
+
+		if perm.Deny(ctx, device, resource.Ctrl) {
+			return lang.ErrNoPermission
+		}
+
 		var form struct {
 			Title   *string `json:"title"`
 			ConnStr *string `json:"params.connStr"`
@@ -95,6 +107,7 @@ func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 		if err = ctx.ReadJSON(&form); err != nil {
 			return lang.ErrInvalidRequestData
 		}
+
 		if form.Title != nil {
 			err = device.SetTitle(*form.Title)
 			if err != nil {
@@ -115,12 +128,17 @@ func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Delete(deviceID int64, s store.Store) hero.Result {
+func Delete(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 	return response.Wrap(func() interface{} {
 		device, err := s.GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
+
+		if perm.Deny(ctx, device, resource.Ctrl) {
+			return lang.ErrNoPermission
+		}
+
 		err = device.Destroy()
 		if err != nil {
 			return err

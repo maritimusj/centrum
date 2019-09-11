@@ -7,17 +7,20 @@ import (
 )
 
 type Option struct {
-	Limit       int64
-	Offset      int64
-	Kind        model.MeasureKind
-	Class       resource.Class
-	ParentID    *int64
-	UserID      *int64
-	GroupID     *int64
-	DeviceID    int64
-	EquipmentID int64
-	Name        string
-	Keyword     string
+	Limit         int64
+	Offset        int64
+	Kind          model.MeasureKind
+	Class         resource.Class
+	ParentID      *int64
+	RoleID        *int64
+	UserID        *int64
+	GroupID       *int64
+	DeviceID      int64
+	EquipmentID   int64
+	Name          string
+	Keyword       string
+	GetTotal      *bool
+	DefaultEffect resource.Effect
 }
 
 type OptionFN func(*Option)
@@ -38,6 +41,13 @@ func Limit(limit int64) OptionFN {
 func Offset(offset int64) OptionFN {
 	return func(i *Option) {
 		i.Offset = offset
+	}
+}
+
+func GetTotal(get bool) OptionFN {
+	return func(i *Option) {
+		var p = get
+		i.GetTotal = &p
 	}
 }
 
@@ -67,10 +77,22 @@ func Parent(parentID int64) OptionFN {
 	}
 }
 
+func Role(roleID int64) OptionFN {
+	return func(i *Option) {
+		p := roleID
+		i.RoleID = &p
+	}
+}
 func User(userID int64) OptionFN {
 	return func(i *Option) {
 		p := userID
 		i.UserID = &p
+	}
+}
+
+func DefaultEffect(effect resource.Effect) OptionFN {
+	return func(i *Option) {
+		i.DefaultEffect = effect
 	}
 }
 

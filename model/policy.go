@@ -5,7 +5,6 @@ import "github.com/maritimusj/centrum/resource"
 //策略
 type Policy interface {
 	DBEntry
-	EnableEntry
 	Profile
 
 	Role() Role

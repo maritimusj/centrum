@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/maritimusj/centrum/cache"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
@@ -488,12 +489,14 @@ func (s *mysqlStore) GetRoleList(options ...store.OptionFN) ([]model.Role, int64
 	}
 
 	var total int64
-	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
-		return nil, 0, lang.InternalError(err)
-	}
+	if option.GetTotal == nil || *option.GetTotal {
+		if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
+			return nil, 0, lang.InternalError(err)
+		}
 
-	if total == 0 {
-		return []model.Role{}, 0, nil
+		if total == 0 {
+			return []model.Role{}, 0, nil
+		}
 	}
 
 	fromSQL += " ORDER BY r.id ASC"
@@ -541,12 +544,12 @@ func (s *mysqlStore) GetRoleList(options ...store.OptionFN) ([]model.Role, int64
 func (s *mysqlStore) loadPolicy(id int64) (model.Policy, error) {
 	var policy = NewPolicy(s, id)
 	err := LoadData(s.db, TbPolicies, map[string]interface{}{
-		"enable":     &policy.enable,
-		"role_id":    &policy.roleID,
-		"resource":   &policy.resourceUID,
-		"action":     &policy.action,
-		"effect":     &policy.effect,
-		"created_at": &policy.createdAt,
+		"role_id":        &policy.roleID,
+		"resource_class": &policy.resourceClass,
+		"resource_id":    &policy.resourceID,
+		"action":         &policy.action,
+		"effect":         &policy.effect,
+		"created_at":     &policy.createdAt,
 	}, "id=?", id)
 
 	if err != nil {
@@ -586,23 +589,24 @@ func (s *mysqlStore) GetPolicy(policyID int64) (model.Policy, error) {
 	return result.(model.Policy), nil
 }
 
-func (s *mysqlStore) CreatePolicyIsNotExists(roleID int64, resourceUID string, action resource.Action) (model.Policy, error) {
+func (s *mysqlStore) CreatePolicyIsNotExists(roleID int64, res resource.Resource, action resource.Action, defaultEffect resource.Effect) (model.Policy, error) {
 	result := <-s.Synchronized(TbPolicies, func() interface{} {
 		var policyID int64
 		err := LoadData(s.db, TbPolicies, map[string]interface{}{
 			"id": &policyID,
-		}, "role_id=? AND resource=? AND action=?", roleID, resourceUID, action)
+		}, "role_id=? AND resource_class=? AND resource_id=? AND action=?", roleID, res.ResourceClass(), res.ResourceID(), action)
 
 		if err != nil {
 			if err != sql.ErrNoRows {
 				return lang.InternalError(err)
 			}
 			policyID, err = CreateData(s.db, TbPolicies, map[string]interface{}{
-				"role_id":    roleID,
-				"resource":   resourceUID,
-				"action":     action,
-				"effect":     resource.Deny,
-				"created_at": time.Now(),
+				"role_id":        roleID,
+				"resource_class": res.ResourceClass(),
+				"resource_id":    res.ResourceID(),
+				"action":         action,
+				"effect":         defaultEffect,
+				"created_at":     time.Now(),
 			})
 			if err != nil {
 				return lang.InternalError(err)
@@ -622,15 +626,16 @@ func (s *mysqlStore) CreatePolicyIsNotExists(roleID int64, resourceUID string, a
 	return result.(model.Policy), nil
 }
 
-func (s *mysqlStore) CreatePolicy(roleID int64, resourceUID string, action resource.Action, effect resource.Effect) (model.Policy, error) {
+func (s *mysqlStore) CreatePolicy(roleID int64, res resource.Resource, action resource.Action, effect resource.Effect) (model.Policy, error) {
 	result := <-s.Synchronized(TbPolicies, func() interface{} {
 		policyID, err := CreateData(s.db, TbPolicies, map[string]interface{}{
-			"enable":     status.Enable,
-			"role_id":    roleID,
-			"resource":   resourceUID,
-			"action":     action,
-			"effect":     effect,
-			"created_at": time.Now(),
+			"enable":         status.Enable,
+			"role_id":        roleID,
+			"resource_class": res.ResourceClass(),
+			"resource_id":    res.ResourceID(),
+			"action":         action,
+			"effect":         effect,
+			"created_at":     time.Now(),
 		})
 
 		if err != nil {
@@ -670,7 +675,7 @@ func (s *mysqlStore) RemovePolicy(policyID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetPolicyList(roleID int64, resourceUID string, options ...store.OptionFN) ([]model.Policy, int64, error) {
+func (s *mysqlStore) GetPolicyList(res resource.Resource, options ...store.OptionFN) ([]model.Policy, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -678,14 +683,14 @@ func (s *mysqlStore) GetPolicyList(roleID int64, resourceUID string, options ...
 	)
 
 	var params []interface{}
-	if roleID > 0 {
+	if option.RoleID != nil {
 		fromSQL += " AND role_id=?"
-		params = append(params, roleID)
+		params = append(params, *option.RoleID)
 	}
 
-	if resourceUID != "" {
-		fromSQL += " AND resource=?"
-		params = append(params, resourceUID)
+	if res != nil {
+		fromSQL += " AND (resource_class=? AND resource_id=?)"
+		params = append(params, res.ResourceClass(), res.ResourceID())
 	}
 
 	var total int64
@@ -995,43 +1000,58 @@ func (s *mysqlStore) RemoveDevice(deviceID int64) error {
 func (s *mysqlStore) GetDeviceList(options ...store.OptionFN) ([]model.Device, int64, error) {
 	option := parseOption(options...)
 	var (
-		fromSQL = "FROM " + TbDevices + " d"
+		from  = "FROM " + TbDevices + " d"
+		where = " WHERE 1"
 	)
 
 	var params []interface{}
 
+	if option.UserID != nil {
+		userID := *option.UserID
+		if userID > 0 {
+			var joinWay = util.If(option.DefaultEffect == resource.Allow, "LEFT", "INNER")
+			from += fmt.Sprintf(" %s JOIN %s p ON p.resource_class=%d AND p.resource_id=d.id", joinWay, TbPolicies, resource.Device)
+			where += " AND p.role_id IN (SELECT role_id FROM " + TbUserRoles + " WHERE user_id=?)"
+			params = append(params, userID)
+		}
+	}
+
 	if option.GroupID != nil {
-		fromSQL += " INNER JOIN " + TbDeviceGroups + " g ON d.id=g.device_id WHERE g.group_id=?"
+		from += " INNER JOIN " + TbDeviceGroups + " g ON d.id=g.device_id"
+		where += " AND g.group_id=?"
 		params = append(params, *option.GroupID)
 	}
 
 	if option.Keyword != "" {
-		fromSQL += " AND d.title REGEXP ?"
+		where += " AND d.title REGEXP ?"
 		params = append(params, option.Keyword)
 	}
 
 	var total int64
-	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
-		return nil, 0, lang.InternalError(err)
+	if option.GetTotal == nil || *option.GetTotal {
+		if err := s.db.QueryRow("SELECT COUNT(*) "+from+where, params...).Scan(&total); err != nil {
+			return nil, 0, lang.InternalError(err)
+		}
+
+		if total == 0 {
+			return []model.Device{}, 0, nil
+		}
 	}
 
-	if total == 0 {
-		return []model.Device{}, 0, nil
-	}
-
-	fromSQL += " ORDER BY d.id ASC"
+	where += " ORDER BY d.id ASC"
 
 	if option.Limit > 0 {
-		fromSQL += " LIMIT ?"
+		where += " LIMIT ?"
 		params = append(params, option.Limit)
 	}
 
 	if option.Offset > 0 {
-		fromSQL += " OFFSET ?"
+		where += " OFFSET ?"
 		params = append(params, option.Offset)
 	}
 
-	rows, err := s.db.Query("SELECT d.id "+fromSQL, params...)
+	println("SELECT d.id " + from + where)
+	rows, err := s.db.Query("SELECT d.id "+from+where, params...)
 	if err != nil {
 		return nil, 0, lang.InternalError(err)
 	}
@@ -1626,8 +1646,47 @@ func (s *mysqlStore) GetResourceList(class resource.Class, options ...store.Opti
 	}
 }
 
-func (s *mysqlStore) GetResource(resourceUID string) (resource.Resource, error) {
-	panic("implement me")
+func (s *mysqlStore) GetResource(class resource.Class, resourceID int64) (resource.Resource, error) {
+	switch class {
+	case resource.Api:
+		res, err := s.GetApiResource(resourceID)
+		if err != nil {
+			return nil, err
+		}
+		return res, nil
+	case resource.Group:
+		res, err := s.GetGroup(resourceID)
+		if err != nil {
+			return nil, err
+		}
+		return res, nil
+	case resource.Device:
+		res, err := s.GetDevice(resourceID)
+		if err != nil {
+			return nil, err
+		}
+		return res, nil
+	case resource.Measure:
+		res, err := s.GetMeasure(resourceID)
+		if err != nil {
+			return nil, err
+		}
+		return res, nil
+	case resource.Equipment:
+		res, err := s.GetEquipment(resourceID)
+		if err != nil {
+			return nil, err
+		}
+		return res, nil
+	case resource.State:
+		res, err := s.GetState(resourceID)
+		if err != nil {
+			return nil, err
+		}
+		return res, nil
+	default:
+		panic(errors.New("GetResource: unknown resource class"))
+	}
 }
 
 func (s *mysqlStore) loadApiResource(resID int64) (model.ApiResource, error) {

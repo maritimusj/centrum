@@ -2,19 +2,20 @@ package mysqlStore
 
 import (
 	"github.com/maritimusj/centrum/dirty"
+	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
 	"time"
 )
 
 type Policy struct {
-	id          int64
-	enable      int8
-	roleID      int64
-	resourceUID string
-	action      resource.Action
-	effect      resource.Effect
-	createdAt   time.Time
+	id            int64
+	roleID        int64
+	resourceClass resource.Class
+	resourceID    int64
+	action        resource.Action
+	effect        resource.Effect
+	createdAt     time.Time
 
 	dirty *dirty.Dirty
 	store *mysqlStore
@@ -41,31 +42,44 @@ func NewPolicy(s *mysqlStore, id int64) *Policy {
 }
 
 func (p *Policy) GetID() int64 {
-	panic("implement me")
+	return p.id
 }
 
 func (p *Policy) CreatedAt() time.Time {
-	panic("implement me")
+	return p.createdAt
 }
 
 func (p *Policy) Destroy() error {
-	panic("implement me")
+	return p.store.RemovePolicy(p.id)
 }
 
 func (p *Policy) Save() error {
-	panic("implement me")
+	if p.dirty.Any() {
+		err := SaveData(p.store.db, TbPolicies, p.dirty.Data(true), "id=?", p.id)
+		if err != nil {
+			return lang.InternalError(err)
+		}
+	}
+
+	return nil
 }
 
-func (p *Policy) Enable() error {
-	panic("implement me")
+func (p *Policy) Role() model.Role {
+	role, _ := p.store.GetRole(p.roleID)
+	return role
 }
 
-func (p *Policy) Disable() error {
-	panic("implement me")
+func (p *Policy) Resource() resource.Resource {
+	res, _ := p.store.GetResource(p.resourceClass, p.resourceID)
+	return res
 }
 
-func (p *Policy) IsEnabled() bool {
-	panic("implement me")
+func (p *Policy) Action() resource.Action {
+	return p.action
+}
+
+func (p *Policy) Effect() resource.Effect {
+	return p.effect
 }
 
 func (p *Policy) Simple() model.Map {
@@ -77,25 +91,5 @@ func (p *Policy) Brief() model.Map {
 }
 
 func (p *Policy) Detail() model.Map {
-	panic("implement me")
-}
-
-func (p *Policy) Role() model.Role {
-	panic("implement me")
-}
-
-func (p *Policy) Resource() resource.Resource {
-	panic("implement me")
-}
-
-func (p *Policy) ResourceUID() string {
-	panic("implement me")
-}
-
-func (p *Policy) Action() resource.Action {
-	panic("implement me")
-}
-
-func (p *Policy) Effect() resource.Effect {
 	panic("implement me")
 }

@@ -189,7 +189,7 @@ func (u *User) Save() error {
 	return nil
 }
 
-func (u *User) IsAllowed(res resource.Resource, action resource.Action) (bool, error) {
+func (u *User) IsAllow(res resource.Resource, action resource.Action) (bool, error) {
 	roles, err := u.GetRoles()
 	if err != nil {
 		return false, err
@@ -197,7 +197,7 @@ func (u *User) IsAllowed(res resource.Resource, action resource.Action) (bool, e
 
 	var denied bool
 	for _, role := range roles {
-		if allowed, err := role.IsAllowed(res, action); allowed {
+		if allowed, err := role.IsAllow(res, action); allowed {
 			return allowed, err
 		} else {
 			if err == lang.Error(lang.ErrNoPermission) {

@@ -1,7 +1,6 @@
 package mysqlStore
 
 import (
-	"fmt"
 	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
@@ -14,8 +13,6 @@ type Equipment struct {
 	title     string
 	desc      string
 	createdAt time.Time
-
-	resourceUID *string
 
 	dirty *dirty.Dirty
 	store *mysqlStore
@@ -33,12 +30,8 @@ func (e *Equipment) ResourceClass() resource.Class {
 	return resource.Equipment
 }
 
-func (e *Equipment) ResourceUID() string {
-	if e.resourceUID == nil {
-		uid := fmt.Sprintf("%d.%d", resource.Equipment, e.id)
-		e.resourceUID = &uid
-	}
-	return *e.resourceUID
+func (e *Equipment) ResourceID() int64 {
+	return e.id
 }
 
 func (e *Equipment) ResourceTitle() string {

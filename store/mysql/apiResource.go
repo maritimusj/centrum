@@ -32,8 +32,8 @@ func (res *ApiResource) Desc() string {
 	return res.desc
 }
 
-func (res *ApiResource) ResourceUID() string {
-	return res.name
+func (res *ApiResource) ResourceID() int64 {
+	return res.id
 }
 
 func (res *ApiResource) ResourceClass() resource.Class {
