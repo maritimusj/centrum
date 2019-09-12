@@ -62,24 +62,22 @@ func (e *Equipment) Destroy() error {
 	return e.store.RemoveEquipment(e.id)
 }
 
-func (e *Equipment) Enable() error {
+func (e *Equipment) Enable() {
 	if e.enable != status.Enable {
 		e.enable = status.Enable
 		e.dirty.Set("enable", func() interface{} {
 			return e.enable
 		})
 	}
-	return e.Save()
 }
 
-func (e *Equipment) Disable() error {
+func (e *Equipment) Disable() {
 	if e.enable != status.Disable {
 		e.enable = status.Disable
 		e.dirty.Set("enable", func() interface{} {
 			return e.enable
 		})
 	}
-	return e.Save()
 }
 
 func (e *Equipment) IsEnabled() bool {
@@ -90,28 +88,26 @@ func (e *Equipment) Title() string {
 	return e.title
 }
 
-func (e *Equipment) SetTitle(title string) error {
+func (e *Equipment) SetTitle(title string) {
 	if e.title != title {
 		e.title = title
 		e.dirty.Set("title", func() interface{} {
 			return e.title
 		})
 	}
-	return e.Save()
 }
 
 func (e *Equipment) Desc() string {
 	return e.desc
 }
 
-func (e *Equipment) SetDesc(desc string) error {
+func (e *Equipment) SetDesc(desc string) {
 	if e.desc != desc {
 		e.desc = desc
 		e.dirty.Set("desc", func() interface{} {
 			return e.desc
 		})
 	}
-	return e.Save()
 }
 
 func (e *Equipment) SetGroups(groups ...interface{}) error {

@@ -15,10 +15,10 @@ type User interface {
 	Mobile() string
 	Email() string
 
-	ResetPassword(password string) error
+	ResetPassword(password string)
 	CheckPassword(password string) bool
 
-	Update(profile Map) error
+	Update(profile Map)
 
 	SetRoles(roles ...interface{}) error
 	GetRoles() ([]Role, error)

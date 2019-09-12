@@ -117,10 +117,7 @@ func Update(userID int64, ctx iris.Context, s store.Store, cfg config.Config) he
 		}
 
 		if form.Password != nil {
-			err = user.ResetPassword(*form.Password)
-			if err != nil {
-				return err
-			}
+			user.ResetPassword(*form.Password)
 		}
 		var data = model.Map{}
 		if form.Enable != nil {
@@ -139,10 +136,7 @@ func Update(userID int64, ctx iris.Context, s store.Store, cfg config.Config) he
 			data["email"] = *form.Email
 		}
 		if len(data) > 0 {
-			err = user.Update(data)
-			if err != nil {
-				return err
-			}
+			user.Update(data)
 		}
 		err = user.Save()
 		if err != nil {

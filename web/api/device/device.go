@@ -110,11 +110,9 @@ func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 		}
 
 		if form.Title != nil {
-			err = device.SetTitle(*form.Title)
-			if err != nil {
-				return err
-			}
+			device.SetTitle(*form.Title)
 		}
+
 		if form.ConnStr != nil {
 			err = device.SetOption("params.connStr", form.ConnStr)
 			if err != nil {

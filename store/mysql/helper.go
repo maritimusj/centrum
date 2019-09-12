@@ -37,9 +37,9 @@ func LoadData(db DB, tbName string, data map[string]interface{}, cond string, pa
 		for k, v := range data {
 			if strings.HasSuffix(k, "?") {
 				name := strings.TrimSuffix(k, "?")
-				names = append(names, fmt.Sprintf("IFNULL(%s,0) %s", name, name))
+				names = append(names, fmt.Sprintf("IFNULL(`%s`,0) `%s`", name, name))
 			} else {
-				names = append(names, k)
+				names = append(names, "`"+k+"`")
 			}
 
 			values = append(values, v)
@@ -71,7 +71,7 @@ func CreateData(db DB, tbName string, data map[string]interface{}) (int64, error
 		var placeHolders = make([]string, 0, len(data))
 
 		for k, v := range data {
-			params = append(params, k)
+			params = append(params, "`"+k+"`")
 			values = append(values, v)
 			placeHolders = append(placeHolders, "?")
 		}
@@ -109,7 +109,7 @@ func SaveData(db DB, tbName string, data map[string]interface{}, cond string, pa
 		var placeHolders = make([]string, 0, len(data))
 
 		for k, v := range data {
-			placeHolders = append(placeHolders, k+"=?")
+			placeHolders = append(placeHolders, "`"+k+"`=?")
 			values = append(values, v)
 		}
 

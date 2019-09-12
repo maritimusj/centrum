@@ -21,14 +21,13 @@ type Store interface {
 	RemoveRole(roleID int64) error
 	GetRoleList(options ...helper.OptionFN) ([]model.Role, int64, error)
 
-	//CreatePolicy(roleID int64, res resource.Resource, action resource.Action, effect resource.Effect) (model.Policy, error)
 	GetPolicy(roleID int64) (model.Policy, error)
 	CreatePolicyIsNotExists(roleID int64, res resource.Resource, action resource.Action, defaultEffect resource.Effect) (model.Policy, error)
 	RemovePolicy(policyID int64) error
 	GetPolicyList(res resource.Resource, options ...helper.OptionFN) ([]model.Policy, int64, error)
 
 	GetGroup(groupID int64) (model.Group, error)
-	CreateGroup(title string, parentID int64) (model.Group, error)
+	CreateGroup(title, desc string, parentID int64) (model.Group, error)
 	RemoveGroup(groupID int64) error
 	GetGroupList(options ...helper.OptionFN) ([]model.Group, int64, error)
 

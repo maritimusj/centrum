@@ -9,7 +9,7 @@ type Role interface {
 	Profile
 
 	Title() string
-	SetTitle(title string) error
+	SetTitle(title string)
 
 	SetPolicy(res resource.Resource, action resource.Action, effect resource.Effect) (Policy, error)
 

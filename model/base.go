@@ -11,8 +11,8 @@ type DBEntry interface {
 }
 
 type EnableEntry interface {
-	Enable() error
-	Disable() error
+	Enable()
+	Disable()
 	IsEnabled() bool
 }
 

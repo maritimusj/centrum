@@ -105,16 +105,10 @@ func Update(equipmentID int64, ctx iris.Context, s store.Store) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 		if form.Title != nil {
-			err = equipment.SetTitle(*form.Title)
-			if err != nil {
-				return err
-			}
+			equipment.SetTitle(*form.Title)
 		}
 		if form.Desc != nil {
-			err = equipment.SetDesc(*form.Desc)
-			if err != nil {
-				return err
-			}
+			equipment.SetDesc(*form.Desc)
 		}
 
 		err = equipment.Save()
@@ -245,22 +239,15 @@ func UpdateState(stateID int64, ctx iris.Context, s store.Store) hero.Result {
 		}
 
 		if form.Title != nil {
-			err = state.SetTitle(*form.Title)
-			if err != nil {
-				return err
-			}
+			state.SetTitle(*form.Title)
 		}
+
 		if form.MeasureID != nil {
-			err = state.SetMeasure(*form.MeasureID)
-			if err != nil {
-				return err
-			}
+			state.SetMeasure(*form.MeasureID)
 		}
+
 		if form.TransformScript != nil {
-			err = state.SetScript(*form.TransformScript)
-			if err != nil {
-				return err
-			}
+			state.SetScript(*form.TransformScript)
 		}
 
 		err = state.Save()

@@ -95,10 +95,7 @@ func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 		}
 
 		if form.Title != nil && *form.Title != "" {
-			err = role.SetTitle(*form.Title)
-			if err != nil {
-				return err
-			}
+			role.SetTitle(*form.Title)
 		}
 
 		if len(form.Polices) > 0 {

@@ -71,24 +71,22 @@ func (s *State) Destroy() error {
 	return s.store.RemoveState(s.id)
 }
 
-func (s *State) Enable() error {
+func (s *State) Enable() {
 	if s.enable != status.Enable {
 		s.enable = status.Enable
 		s.dirty.Set("enable", func() interface{} {
 			return s.enable
 		})
 	}
-	return s.Save()
 }
 
-func (s *State) Disable() error {
+func (s *State) Disable() {
 	if s.enable != status.Disable {
 		s.enable = status.Disable
 		s.dirty.Set("enable", func() interface{} {
 			return s.enable
 		})
 	}
-	return s.Save()
 }
 
 func (s *State) IsEnabled() bool {
@@ -99,42 +97,39 @@ func (s *State) Title() string {
 	return s.title
 }
 
-func (s *State) SetTitle(title string) error {
+func (s *State) SetTitle(title string) {
 	if s.title != title {
 		s.title = title
 		s.dirty.Set("title", func() interface{} {
 			return s.title
 		})
 	}
-	return s.Save()
 }
 
 func (s *State) Desc() string {
 	return s.desc
 }
 
-func (s *State) SetDesc(desc string) error {
+func (s *State) SetDesc(desc string) {
 	if s.desc != desc {
 		s.desc = desc
 		s.dirty.Set("desc", func() interface{} {
 			return s.desc
 		})
 	}
-	return s.Save()
 }
 
 func (s *State) Script() string {
 	return s.script
 }
 
-func (s *State) SetScript(script string) error {
+func (s *State) SetScript(script string) {
 	if s.script != script {
 		s.script = script
 		s.dirty.Set("script", func() interface{} {
 			return s.script
 		})
 	}
-	return s.Save()
 }
 
 func (s *State) Measure() model.Measure {
@@ -157,7 +152,7 @@ func (s *State) Equipment() model.Equipment {
 	return nil
 }
 
-func (s *State) SetMeasure(measure interface{}) error {
+func (s *State) SetMeasure(measure interface{}) {
 	var measureID int64
 	switch v := measure.(type) {
 	case int64:
@@ -168,19 +163,12 @@ func (s *State) SetMeasure(measure interface{}) error {
 		panic(errors.New("state SetMeasure: unknown measure"))
 	}
 
-	if measureID == s.measureID {
-		return nil
+	if measureID != s.measureID {
+		s.measureID = measureID
+		s.dirty.Set("measure_id", func() interface{} {
+			return s.measureID
+		})
 	}
-
-	measure, err := s.store.GetMeasure(measureID)
-	if err != nil {
-		return err
-	}
-	s.measureID = measureID
-	s.dirty.Set("measure_id", func() interface{} {
-		return s.measureID
-	})
-	return s.Save()
 }
 
 func (s *State) Simple() model.Map {

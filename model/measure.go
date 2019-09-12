@@ -23,7 +23,7 @@ type Measure interface {
 	Device() Device
 
 	Title() string
-	SetTitle(title string) error
+	SetTitle(title string)
 
 	Tag() string
 	Kind() MeasureKind

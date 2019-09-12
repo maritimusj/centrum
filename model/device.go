@@ -15,7 +15,7 @@ type Device interface {
 	resource.Resource
 
 	Title() string
-	SetTitle(title string) error
+	SetTitle(title string)
 
 	GetOption(path string) gjson.Result
 	SetOption(path string, value interface{}) error

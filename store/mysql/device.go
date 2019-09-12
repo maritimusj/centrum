@@ -53,24 +53,22 @@ func (d *Device) GetID() int64 {
 	return d.id
 }
 
-func (d *Device) Enable() error {
+func (d *Device) Enable() {
 	if d.enable != status.Enable {
 		d.enable = status.Enable
 		d.dirty.Set("enable", func() interface{} {
 			return d.enable
 		})
 	}
-	return d.Save()
 }
 
-func (d *Device) Disable() error {
+func (d *Device) Disable() {
 	if d.enable != status.Disable {
 		d.enable = status.Disable
 		d.dirty.Set("enable", func() interface{} {
 			return d.enable
 		})
 	}
-	return d.Save()
 }
 
 func (d *Device) IsEnabled() bool {
@@ -81,14 +79,13 @@ func (d *Device) Title() string {
 	return d.title
 }
 
-func (d *Device) SetTitle(title string) error {
+func (d *Device) SetTitle(title string) {
 	if d.title != title {
 		d.title = title
 		d.dirty.Set("title", func() interface{} {
 			return d.title
 		})
 	}
-	return d.Save()
 }
 
 func (d *Device) GetOption(key string) gjson.Result {

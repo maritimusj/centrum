@@ -51,24 +51,22 @@ func (m *Measure) GetID() int64 {
 	return m.id
 }
 
-func (m *Measure) Enable() error {
+func (m *Measure) Enable() {
 	if m.enable != status.Enable {
 		m.enable = status.Enable
 		m.dirty.Set("enable", func() interface{} {
 			return m.enable
 		})
 	}
-	return m.Save()
 }
 
-func (m *Measure) Disable() error {
+func (m *Measure) Disable() {
 	if m.enable != status.Disable {
 		m.enable = status.Disable
 		m.dirty.Set("enable", func() interface{} {
 			return m.enable
 		})
 	}
-	return m.Save()
 }
 
 func (m *Measure) IsEnabled() bool {
@@ -87,14 +85,13 @@ func (m *Measure) Title() string {
 	return m.title
 }
 
-func (m *Measure) SetTitle(title string) error {
+func (m *Measure) SetTitle(title string) {
 	if m.title != title {
 		m.title = title
 		m.dirty.Set("title", func() interface{} {
 			return m.title
 		})
 	}
-	return m.Save()
 }
 
 func (m *Measure) Tag() string {

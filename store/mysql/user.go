@@ -39,24 +39,22 @@ func (u *User) GetID() int64 {
 	return u.id
 }
 
-func (u *User) Enable() error {
+func (u *User) Enable() {
 	if u.enable != status.Enable {
 		u.enable = status.Enable
 		u.dirty.Set("enable", func() interface{} {
 			return u.enable
 		})
 	}
-	return u.Save()
 }
 
-func (u *User) Disable() error {
+func (u *User) Disable() {
 	if u.enable != status.Disable {
 		u.enable = status.Disable
 		u.dirty.Set("enable", func() interface{} {
 			return u.enable
 		})
 	}
-	return u.Save()
 }
 
 func (u *User) IsEnabled() bool {
@@ -83,23 +81,21 @@ func (u *User) CreatedAt() time.Time {
 	return u.createdAt
 }
 
-func (u *User) ResetPassword(password string) error {
-	data, err := util.HashPassword([]byte(password))
-	if err != nil {
-		return err
-	}
+func (u *User) ResetPassword(password string) {
+	data, _ := util.HashPassword([]byte(password))
+
 	u.password = data
 	u.dirty.Set("password", func() interface{} {
 		return u.password
 	})
-	return u.Save()
+
 }
 
 func (u *User) CheckPassword(password string) bool {
 	return util.ComparePassword(u.password, []byte(password))
 }
 
-func (u *User) Update(profile model.Map) error {
+func (u *User) Update(profile model.Map) {
 	if enable, ok := profile["enable"].(int8); ok && enable != u.enable {
 		u.enable = enable
 		u.dirty.Set("enable", func() interface{} {
@@ -126,7 +122,6 @@ func (u *User) Update(profile model.Map) error {
 			return u.email
 		})
 	}
-	return u.Save()
 }
 
 func (u *User) SetRoles(roles ...interface{}) error {

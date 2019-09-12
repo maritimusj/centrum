@@ -9,7 +9,7 @@ type Policy interface {
 
 	Role() Role
 
-	SetEffect(effect resource.Effect) error
+	SetEffect(effect resource.Effect)
 
 	Resource() resource.Resource
 	Action() resource.Action

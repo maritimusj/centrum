@@ -13,13 +13,13 @@ type Group interface {
 	resource.Resource
 
 	Parent() Group
-	SetParent(group Group) error
+	SetParent(group interface{})
 
 	Title() string
-	SetTitle(title string) error
+	SetTitle(title string)
 
 	Desc() string
-	SetDesc(desc string) error
+	SetDesc(desc string)
 
 	GetDeviceList(options ...helper.OptionFN) ([]Device, int64, error)
 	AddDevice(devices ...interface{}) error

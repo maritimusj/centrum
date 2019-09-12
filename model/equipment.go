@@ -14,10 +14,10 @@ type Equipment interface {
 	resource.Resource
 
 	Title() string
-	SetTitle(title string) error
+	SetTitle(title string)
 
 	Desc() string
-	SetDesc(string) error
+	SetDesc(string)
 
 	SetGroups(groups ...interface{}) error
 	Groups() ([]Group, error)

@@ -66,14 +66,13 @@ func (p *Policy) Action() resource.Action {
 	return p.action
 }
 
-func (p *Policy) SetEffect(effect resource.Effect) error {
+func (p *Policy) SetEffect(effect resource.Effect) {
 	if p.effect != effect {
 		p.effect = effect
 		p.dirty.Set("effect", func() interface{} {
 			return p.effect
 		})
 	}
-	return p.Save()
 }
 
 func (p *Policy) Effect() resource.Effect {

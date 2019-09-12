@@ -13,14 +13,14 @@ type State interface {
 	Measure() Measure
 	Equipment() Equipment
 
-	SetMeasure(measure interface{}) error
+	SetMeasure(measure interface{})
 
 	Title() string
-	SetTitle(string) error
+	SetTitle(string)
 
 	Desc() string
-	SetDesc(string) error
+	SetDesc(string)
 
 	Script() string
-	SetScript(string) error
+	SetScript(string)
 }

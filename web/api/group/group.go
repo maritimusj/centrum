@@ -48,6 +48,7 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 	return response.Wrap(func() interface{} {
 		var form struct {
 			Title         string `json:"title" validate:"required"`
+			Desc          string `json:"desc"`
 			ParentGroupID int64  `json:"parent" validate:"min=0"`
 		}
 
@@ -66,7 +67,7 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 			}
 		}
 
-		group, err := s.CreateGroup(form.Title, form.ParentGroupID)
+		group, err := s.CreateGroup(form.Title, form.Desc, form.ParentGroupID)
 		if err != nil {
 			return err
 		}
@@ -102,9 +103,11 @@ func Update(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 		}
 
 		var form struct {
-			Title      *string `json:"title"`
-			Devices    []int64 `json:"devices"`
-			Equipments []int64 `json:"equipments"`
+			ParentGroupID *int64  `json:"parent"`
+			Title         *string `json:"title"`
+			Desc          *string `json:"desc"`
+			Devices       []int64 `json:"devices"`
+			Equipments    []int64 `json:"equipments"`
 		}
 
 		err = ctx.ReadJSON(&form)
@@ -112,11 +115,16 @@ func Update(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
+		if form.ParentGroupID != nil {
+			group.SetParent(*form.ParentGroupID)
+		}
+
 		if form.Title != nil && *form.Title != "" {
-			err = group.SetTitle(*form.Title)
-			if err != nil {
-				return err
-			}
+			group.SetTitle(*form.Title)
+		}
+
+		if form.Desc != nil {
+			group.SetDesc(*form.Desc)
 		}
 
 		if len(form.Devices) > 0 {
@@ -158,7 +166,6 @@ func Update(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 				return err
 			}
 		}
-
 		err = group.Save()
 		if err != nil {
 			return err

@@ -750,6 +750,7 @@ func (s *mysqlStore) loadGroup(id int64) (model.Group, error) {
 	err := LoadData(s.db, TbGroups, map[string]interface{}{
 		"parent_id":  &group.parentID,
 		"title":      &group.title,
+		"desc?":      &group.desc,
 		"created_at": &group.createdAt,
 	}, "id=?", id)
 
@@ -789,12 +790,12 @@ func (s *mysqlStore) GetGroup(groupID int64) (model.Group, error) {
 	return result.(model.Group), nil
 }
 
-func (s *mysqlStore) CreateGroup(title string, parentID int64) (model.Group, error) {
+func (s *mysqlStore) CreateGroup(title string, desc string, parentID int64) (model.Group, error) {
 	result := <-s.Synchronized(TbGroups, func() interface{} {
 		data := map[string]interface{}{
-			"enable":     status.Enable,
 			"parent_id":  parentID,
 			"title":      title,
+			"desc":       desc,
 			"created_at": time.Now(),
 		}
 
@@ -1702,9 +1703,9 @@ func (s *mysqlStore) GetResource(class resource.Class, resourceID int64) (resour
 func (s *mysqlStore) loadApiResource(resID int64) (model.ApiResource, error) {
 	var apiRes = NewApiResource(s, resID)
 	err := LoadData(s.db, TbApiResources, map[string]interface{}{
-		"`name`":  &apiRes.name,
-		"`title`": &apiRes.title,
-		"`desc`":  &apiRes.desc,
+		"name":  &apiRes.name,
+		"title": &apiRes.title,
+		"desc":  &apiRes.desc,
 	}, "id=?", resID)
 	if err != nil {
 		return nil, err
@@ -1838,9 +1839,9 @@ func (s *mysqlStore) InitApiResource() error {
 			}
 			for _, entry := range lang.ApiResourcesMap {
 				_, err := CreateData(db, TbApiResources, map[string]interface{}{
-					"`name`":  entry[0],
-					"`title`": entry[1],
-					"`desc`":  entry[2],
+					"name":  entry[0],
+					"title": entry[1],
+					"desc":  entry[2],
 				})
 				if err != nil {
 					return err

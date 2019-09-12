@@ -38,8 +38,8 @@ func IsValidClass(class interface{}) bool {
 	if v.IsValid() {
 		switch v.Kind() {
 		case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			val := v.Int()
-			return val > 0 && Class(val) <= State
+			val := Class(v.Int())
+			return val > Default && val <= State
 		}
 	}
 	return false

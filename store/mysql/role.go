@@ -50,24 +50,22 @@ func (r *Role) Destroy() error {
 	return r.store.RemoveRole(r.id)
 }
 
-func (r *Role) Enable() error {
+func (r *Role) Enable() {
 	if r.enable != status.Enable {
 		r.enable = status.Enable
 		r.dirty.Set("enable", func() interface{} {
 			return r.enable
 		})
 	}
-	return r.Save()
 }
 
-func (r *Role) Disable() error {
+func (r *Role) Disable() {
 	if r.enable != status.Disable {
 		r.enable = status.Disable
 		r.dirty.Set("enable", func() interface{} {
 			return r.enable
 		})
 	}
-	return r.Save()
 }
 
 func (r *Role) IsEnabled() bool {
@@ -78,14 +76,13 @@ func (r *Role) Title() string {
 	return r.title
 }
 
-func (r *Role) SetTitle(title string) error {
+func (r *Role) SetTitle(title string) {
 	if r.title != title {
 		r.title = title
 		r.dirty.Set("title", func() interface{} {
 			return r.title
 		})
 	}
-	return r.Save()
 }
 
 func (r *Role) SetPolicy(res resource.Resource, action resource.Action, effect resource.Effect) (model.Policy, error) {

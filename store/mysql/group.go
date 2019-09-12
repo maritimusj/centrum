@@ -82,42 +82,45 @@ func (g *Group) Title() string {
 	return g.title
 }
 
-func (g *Group) SetTitle(title string) error {
+func (g *Group) SetTitle(title string) {
 	if g.title != title {
 		g.title = title
 		g.dirty.Set("title", func() interface{} {
 			return g.title
 		})
 	}
-	return g.Save()
 }
 
 func (g *Group) Desc() string {
 	return g.desc
 }
 
-func (g *Group) SetDesc(desc string) error {
+func (g *Group) SetDesc(desc string) {
 	if g.desc != desc {
 		g.desc = desc
 		g.dirty.Set("desc", func() interface{} {
 			return g.desc
 		})
 	}
-	return g.Save()
 }
 
-func (g *Group) SetParent(parent model.Group) error {
+func (g *Group) SetParent(parent interface{}) {
 	var parentID int64
-	if parent != nil {
-		parentID = parent.GetID()
+	switch v := parent.(type) {
+	case int64:
+		parentID = v
+	case model.Group:
+		parentID = v.GetID()
+	default:
+		panic(errors.New("group SetParent: unknown group"))
 	}
+
 	if g.parentID != parentID {
 		g.parentID = parentID
 		g.dirty.Set("parent_id", func() interface{} {
 			return g.parentID
 		})
 	}
-	return g.Save()
 }
 
 func (g *Group) AddDevice(devices ...interface{}) error {
