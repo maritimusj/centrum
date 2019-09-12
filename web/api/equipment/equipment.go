@@ -6,7 +6,9 @@ import (
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/store"
+	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
 	"gopkg.in/go-playground/validator.v9"
 )
@@ -68,12 +70,17 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 	})
 }
 
-func Detail(deviceID int64, s store.Store) hero.Result {
+func Detail(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 	return response.Wrap(func() interface{} {
 		equipment, err := s.GetEquipment(deviceID)
 		if err != nil {
 			return err
 		}
+
+		if perm.Deny(ctx, equipment, resource.View) {
+			return lang.ErrNoPermission
+		}
+
 		return equipment.Detail()
 	})
 }
@@ -84,6 +91,11 @@ func Update(equipmentID int64, ctx iris.Context, s store.Store) hero.Result {
 		if err != nil {
 			return err
 		}
+
+		if perm.Deny(ctx, equipment, resource.Ctrl) {
+			return lang.ErrNoPermission
+		}
+
 		var form struct {
 			Title *string `json:"title"`
 			Desc  *string `json:"desc"`
@@ -112,13 +124,18 @@ func Update(equipmentID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Delete(deviceID int64, s store.Store) hero.Result {
+func Delete(equipmentID int64, ctx iris.Context, s store.Store) hero.Result {
 	return response.Wrap(func() interface{} {
-		device, err := s.GetDevice(deviceID)
+		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
-		err = device.Destroy()
+
+		if perm.Deny(ctx, equipment, resource.Ctrl) {
+			return lang.ErrNoPermission
+		}
+
+		err = equipment.Destroy()
 		if err != nil {
 			return err
 		}
@@ -136,6 +153,10 @@ func StateList(equipmentID int64, ctx iris.Context, s store.Store, cfg config.Co
 		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
+		}
+
+		if perm.Deny(ctx, equipment, resource.View) {
+			return lang.ErrNoPermission
 		}
 
 		states, total, err := s.GetStateList(store.Equipment(equipment.GetID()), store.Keyword(keyword), store.Kind(model.MeasureKind(kind)), store.Page(page, pageSize))
@@ -161,6 +182,10 @@ func CreateState(equipmentID int64, ctx iris.Context, s store.Store, validate *v
 			return err
 		}
 
+		if perm.Deny(ctx, equipment, resource.Ctrl) {
+			return lang.ErrNoPermission
+		}
+
 		var form struct {
 			Title           string `json:"title" validate:"required"`
 			MeasureID       int64  `json:"measure_id" validate:"required"`
@@ -182,12 +207,17 @@ func CreateState(equipmentID int64, ctx iris.Context, s store.Store, validate *v
 	})
 }
 
-func StateDetail(stateID int64, s store.Store) hero.Result {
+func StateDetail(stateID int64, ctx iris.Context, s store.Store) hero.Result {
 	return response.Wrap(func() interface{} {
 		state, err := s.GetState(stateID)
 		if err != nil {
 			return err
 		}
+
+		if perm.Deny(ctx, state, resource.View) {
+			return lang.ErrNoPermission
+		}
+
 		return state.Detail()
 	})
 }
@@ -197,6 +227,10 @@ func UpdateState(stateID int64, ctx iris.Context, s store.Store) hero.Result {
 		state, err := s.GetState(stateID)
 		if err != nil {
 			return err
+		}
+
+		if perm.Deny(ctx, state, resource.Ctrl) {
+			return lang.ErrNoPermission
 		}
 
 		var form struct {
@@ -237,11 +271,15 @@ func UpdateState(stateID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func DeleteState(stateID int64, s store.Store) hero.Result {
+func DeleteState(stateID int64, ctx iris.Context, s store.Store) hero.Result {
 	return response.Wrap(func() interface{} {
 		state, err := s.GetState(stateID)
 		if err != nil {
 			return err
+		}
+
+		if perm.Deny(ctx, state, resource.Ctrl) {
+			return lang.ErrNoPermission
 		}
 
 		err = state.Destroy()

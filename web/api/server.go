@@ -66,46 +66,46 @@ func (server *server) Start(ctx context.Context, cfg config.Config) error {
 
 		//设备分组
 		p.PartyFunc("/group", func(p router.Party) {
-			p.Get("/", hero.Handler(group.List))
-			p.Post("/", hero.Handler(group.Create))
-			p.Get("/{id:int64}", hero.Handler(group.Detail))
-			p.Put("/{id:int64}", hero.Handler(group.Update))
-			p.Delete("/{id:int64}", hero.Handler(group.Delete))
+			p.Get("/", hero.Handler(group.List)).Name = ResourceDef.GroupList
+			p.Post("/", hero.Handler(group.Create)).Name = ResourceDef.GroupCreate
+			p.Get("/{id:int64}", hero.Handler(group.Detail)).Name = ResourceDef.GroupDetail
+			p.Put("/{id:int64}", hero.Handler(group.Update)).Name = ResourceDef.GroupUpdate
+			p.Delete("/{id:int64}", hero.Handler(group.Delete)).Name = ResourceDef.GroupDelete
 		})
 
 		//物理设备
 		p.PartyFunc("/device", func(p router.Party) {
-			p.Get("/", hero.Handler(device.List))
-			p.Post("/", hero.Handler(device.Create))
-			p.Get("/{id:int64}", hero.Handler(device.Detail))
-			p.Put("/{id:int64}", hero.Handler(device.Update))
-			p.Delete("/{id:int64}", hero.Handler(device.Delete))
+			p.Get("/", hero.Handler(device.List)).Name = ResourceDef.DeviceList
+			p.Post("/", hero.Handler(device.Create)).Name = ResourceDef.DeviceCreate
+			p.Get("/{id:int64}", hero.Handler(device.Detail)).Name = ResourceDef.DeviceDetail
+			p.Put("/{id:int64}", hero.Handler(device.Update)).Name = ResourceDef.DeviceUpdate
+			p.Delete("/{id:int64}", hero.Handler(device.Delete)).Name = ResourceDef.DeviceDelete
 
 			//物理点位
-			p.Get("/{id:int64}/measure", hero.Handler(device.MeasureList))
+			p.Get("/{id:int64}/measure", hero.Handler(device.MeasureList)).Name = ResourceDef.MeasureList
 		})
 		//物理点位
 		p.PartyFunc("/measure", func(p router.Party) {
-			p.Get("/{id:int64}", hero.Handler(device.MeasureDetail))
+			p.Get("/{id:int64}", hero.Handler(device.MeasureDetail)).Name = ResourceDef.MeasureDetail
 		})
 
 		//自定义设备
 		p.PartyFunc("/equipment", func(p router.Party) {
-			p.Get("/", hero.Handler(equipment.List))
-			p.Post("/", hero.Handler(equipment.Create))
-			p.Get("/{id:int64}", hero.Handler(equipment.Detail))
-			p.Put("/{id:int64}", hero.Handler(equipment.Update))
-			p.Delete("/{id:int64}", hero.Handler(equipment.Delete))
+			p.Get("/", hero.Handler(equipment.List)).Name = ResourceDef.EquipmentList
+			p.Post("/", hero.Handler(equipment.Create)).Name = ResourceDef.EquipmentCreate
+			p.Get("/{id:int64}", hero.Handler(equipment.Detail)).Name = ResourceDef.EquipmentDetail
+			p.Put("/{id:int64}", hero.Handler(equipment.Update)).Name = ResourceDef.EquipmentUpdate
+			p.Delete("/{id:int64}", hero.Handler(equipment.Delete)).Name = ResourceDef.EquipmentDelete
 
 			//自定义点位
-			p.Get("/{id:int64}/state", hero.Handler(equipment.StateList))
-			p.Post("/{id:int64}/state", hero.Handler(equipment.CreateState))
+			p.Get("/{id:int64}/state", hero.Handler(equipment.StateList)).Name = ResourceDef.StateList
+			p.Post("/{id:int64}/state", hero.Handler(equipment.CreateState)).Name = ResourceDef.StateCreate
 		})
 		//自定义点位
 		p.PartyFunc("/state", func(p router.Party) {
-			p.Get("/{id:int64}", hero.Handler(equipment.StateDetail))
-			p.Put("/{id:int64}", hero.Handler(equipment.UpdateState))
-			p.Delete("/{id:int64}", hero.Handler(equipment.DeleteState))
+			p.Get("/{id:int64}", hero.Handler(equipment.StateDetail)).Name = ResourceDef.StateDetail
+			p.Put("/{id:int64}", hero.Handler(equipment.UpdateState)).Name = ResourceDef.StateUpdate
+			p.Delete("/{id:int64}", hero.Handler(equipment.DeleteState)).Name = ResourceDef.StateDelete
 		})
 	})
 	return server.app.Run(iris.Addr(":9090"))

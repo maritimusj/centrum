@@ -159,6 +159,10 @@ func MeasureList(deviceID int64, ctx iris.Context, s store.Store, cfg config.Con
 			return err
 		}
 
+		if perm.Deny(ctx, device, resource.Ctrl) {
+			return lang.ErrNoPermission
+		}
+
 		measures, total, err := s.GetMeasureList(store.Device(device.GetID()), store.Keyword(keyword), store.Kind(model.MeasureKind(kind)), store.Page(page, pageSize))
 		if err != nil {
 			return err
@@ -174,12 +178,17 @@ func MeasureList(deviceID int64, ctx iris.Context, s store.Store, cfg config.Con
 	})
 }
 
-func MeasureDetail(measureID int64, s store.Store) hero.Result {
+func MeasureDetail(measureID int64, ctx iris.Context, s store.Store) hero.Result {
 	return response.Wrap(func() interface{} {
 		measure, err := s.GetMeasure(measureID)
 		if err != nil {
 			return err
 		}
+
+		if perm.Deny(ctx, measure, resource.Ctrl) {
+			return lang.ErrNoPermission
+		}
+
 		return measure.Detail()
 	})
 }

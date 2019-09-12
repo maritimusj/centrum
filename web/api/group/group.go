@@ -6,7 +6,9 @@ import (
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/store"
+	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
 	"gopkg.in/go-playground/validator.v9"
 )
@@ -72,12 +74,17 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 	})
 }
 
-func Detail(groupID int64, s store.Store) hero.Result {
+func Detail(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 	return response.Wrap(func() interface{} {
 		group, err := s.GetGroup(groupID)
 		if err != nil {
 			return err
 		}
+
+		if perm.Deny(ctx, group, resource.View) {
+			return lang.ErrNoPermission
+		}
+
 		return group.Detail()
 	})
 }
@@ -89,9 +96,13 @@ func Update(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 			return err
 		}
 
+		if perm.Deny(ctx, group, resource.Ctrl) {
+			return lang.ErrNoPermission
+		}
+
 		var form struct {
 			Title      *string `json:"title"`
-			Devices    []int64 `json:"roles"`
+			Devices    []int64 `json:"devices"`
 			Equipments []int64 `json:"equipments"`
 		}
 
@@ -109,9 +120,19 @@ func Update(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 
 		if len(form.Devices) > 0 {
 			devices := make([]interface{}, 0, len(form.Devices))
-			for _, device := range form.Devices {
+			for _, deviceID := range form.Devices {
+				device, err := s.GetDevice(deviceID)
+				if err != nil {
+					return err
+				}
+
+				if perm.Deny(ctx, device, resource.Ctrl) {
+					return lang.ErrNoPermission
+				}
+
 				devices = append(devices, device)
 			}
+
 			err = group.AddDevice(devices...)
 			if err != nil {
 				return err
@@ -119,7 +140,16 @@ func Update(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 		}
 		if len(form.Equipments) > 0 {
 			equipments := make([]interface{}, 0, len(form.Equipments))
-			for _, equipment := range form.Equipments {
+			for _, equipmentID := range form.Equipments {
+				equipment, err := s.GetEquipment(equipmentID)
+				if err != nil {
+					return err
+				}
+
+				if perm.Deny(ctx, equipment, resource.Ctrl) {
+					return lang.ErrNoPermission
+				}
+
 				equipments = append(equipments, equipment)
 			}
 			err = group.AddEquipment(equipments...)
@@ -136,12 +166,17 @@ func Update(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Delete(groupID int64, s store.Store) hero.Result {
+func Delete(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 	return response.Wrap(func() interface{} {
 		group, err := s.GetGroup(groupID)
 		if err != nil {
 			return err
 		}
+
+		if perm.Deny(ctx, group, resource.Ctrl) {
+			return lang.ErrNoPermission
+		}
+
 		err = group.Destroy()
 		if err != nil {
 			return err

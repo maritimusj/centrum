@@ -16,8 +16,9 @@ type Equipment interface {
 	Desc() string
 	SetDesc(string) error
 
-	SetGroups(groups ...Group) error
+	SetGroups(groups ...interface{}) error
 	Groups() ([]Group, error)
 
+	GetStateList(keyword string, kind MeasureKind, page, pageSize int64) ([]State, int64, error)
 	CreateState(title string, measure interface{}, script string) (State, error)
 }

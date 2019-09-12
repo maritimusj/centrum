@@ -124,7 +124,7 @@ func (d *Device) SetGroups(groups ...interface{}) error {
 			case model.Group:
 				groupID = v.GetID()
 			default:
-				panic(errors.New("SetGroups: unknown groups"))
+				panic(errors.New("device SetGroups: unknown groups"))
 			}
 			_, err := d.store.GetGroup(groupID)
 			if err != nil {
@@ -155,12 +155,12 @@ func (d *Device) Groups() ([]model.Group, error) {
 	return groups, nil
 }
 
-func (d *Device) GetMeasureList(typ model.MeasureKind, page, pageSize int64) ([]model.Measure, int64, error) {
-	panic("implement me")
+func (d *Device) GetMeasureList(keyword string, kind model.MeasureKind, page, pageSize int64) ([]model.Measure, int64, error) {
+	return d.store.GetMeasureList(store.Device(d.GetID()), store.Keyword(keyword), store.Kind(kind), store.Page(page, pageSize))
 }
 
-func (d *Device) CreateMeasure(title string, tag string, typ model.MeasureKind) (model.Measure, error) {
-	panic("implement me")
+func (d *Device) CreateMeasure(title string, tag string, kind model.MeasureKind) (model.Measure, error) {
+	return d.store.CreateMeasure(d.GetID(), title, tag, kind)
 }
 
 func (d *Device) CreatedAt() time.Time {
@@ -185,15 +185,15 @@ func (d *Device) Save() error {
 func (d *Device) Simple() model.Map {
 	return model.Map{
 		"id":     d.id,
-		"enable": d.enable,
-		"name":   d.title,
+		"enable": d.IsEnabled(),
+		"title":   d.title,
 	}
 }
 
 func (d *Device) Brief() model.Map {
 	return model.Map{
 		"id":         d.id,
-		"enable":     d.enable,
+		"enable":     d.IsEnabled(),
 		"title":      d.title,
 		"created_at": d.createdAt,
 	}
@@ -202,7 +202,7 @@ func (d *Device) Brief() model.Map {
 func (d *Device) Detail() model.Map {
 	return model.Map{
 		"id":         d.id,
-		"enable":     d.enable,
+		"enable":     d.IsEnabled(),
 		"title":      d.title,
 		"created_at": d.createdAt,
 	}
