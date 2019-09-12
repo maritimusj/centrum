@@ -4,6 +4,7 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
@@ -23,34 +24,38 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
 		keyword := ctx.URLParam("keyword")
 
-		var params = []store.OptionFN{
-			store.Page(page, pageSize),
+		var params = []helper.OptionFN{
+			helper.Page(page, pageSize),
 		}
 
 		if keyword != "" {
-			params = append(params, store.Keyword(keyword))
+			params = append(params, helper.Keyword(keyword))
 		}
 
 		class := resource.Class(classID)
+		if !resource.IsValidClass(class) {
+			return lang.Error(lang.ErrInvalidResourceClassID)
+		}
+
 		if class == resource.Api {
 			sub := ctx.URLParam("sub")
 			if sub != "" {
-				params = append(params, store.Name(sub))
+				params = append(params, helper.Name(sub))
 			}
 		} else {
 			sub := ctx.URLParamInt64Default("sub", -1)
 			if sub != -1 {
 				switch class {
 				case resource.Group:
-					params = append(params, store.Parent(sub))
+					params = append(params, helper.Parent(sub))
 				case resource.Device:
-					params = append(params, store.Group(sub))
+					params = append(params, helper.Group(sub))
 				case resource.Measure:
-					params = append(params, store.Device(sub))
+					params = append(params, helper.Device(sub))
 				case resource.Equipment:
-					params = append(params, store.Group(sub))
+					params = append(params, helper.Group(sub))
 				case resource.State:
-					params = append(params, store.Equipment(sub))
+					params = append(params, helper.Equipment(sub))
 				}
 			}
 		}

@@ -1,6 +1,9 @@
 package model
 
-import "github.com/maritimusj/centrum/resource"
+import (
+	"github.com/maritimusj/centrum/helper"
+	"github.com/maritimusj/centrum/resource"
+)
 
 //虚拟设备
 type Equipment interface {
@@ -19,6 +22,6 @@ type Equipment interface {
 	SetGroups(groups ...interface{}) error
 	Groups() ([]Group, error)
 
-	GetStateList(keyword string, kind MeasureKind, page, pageSize int64) ([]State, int64, error)
+	GetStateList(options ...helper.OptionFN) ([]State, int64, error)
 	CreateState(title string, measure interface{}, script string) (State, error)
 }

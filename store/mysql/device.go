@@ -3,11 +3,11 @@ package mysqlStore
 import (
 	"errors"
 	"github.com/maritimusj/centrum/dirty"
+	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/status"
-	"github.com/maritimusj/centrum/store"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"time"
@@ -110,7 +110,7 @@ func (d *Device) SetOption(key string, value interface{}) error {
 }
 
 func (d *Device) SetGroups(groups ...interface{}) error {
-	err := d.store.TransactionDo(func(db store.DB) interface{} {
+	err := d.store.TransactionDo(func(db helper.DB) interface{} {
 		err := RemoveData(db, TbDeviceGroups, "device_id", d.id)
 		if err != nil {
 			return err
@@ -148,15 +148,15 @@ func (d *Device) SetGroups(groups ...interface{}) error {
 }
 
 func (d *Device) Groups() ([]model.Group, error) {
-	groups, _, err := d.store.GetGroupList(store.Device(d.id))
+	groups, _, err := d.store.GetGroupList(helper.Device(d.id))
 	if err != nil {
 		return nil, err
 	}
 	return groups, nil
 }
 
-func (d *Device) GetMeasureList(keyword string, kind model.MeasureKind, page, pageSize int64) ([]model.Measure, int64, error) {
-	return d.store.GetMeasureList(store.Device(d.GetID()), store.Keyword(keyword), store.Kind(kind), store.Page(page, pageSize))
+func (d *Device) GetMeasureList(options ...helper.OptionFN) ([]model.Measure, int64, error) {
+	return d.store.GetMeasureList(options...)
 }
 
 func (d *Device) CreateMeasure(title string, tag string, kind model.MeasureKind) (model.Measure, error) {
@@ -183,14 +183,20 @@ func (d *Device) Save() error {
 }
 
 func (d *Device) Simple() model.Map {
+	if d == nil {
+		return model.Map{}
+	}
 	return model.Map{
 		"id":     d.id,
 		"enable": d.IsEnabled(),
-		"title":   d.title,
+		"title":  d.title,
 	}
 }
 
 func (d *Device) Brief() model.Map {
+	if d == nil {
+		return model.Map{}
+	}
 	return model.Map{
 		"id":         d.id,
 		"enable":     d.IsEnabled(),
@@ -200,6 +206,9 @@ func (d *Device) Brief() model.Map {
 }
 
 func (d *Device) Detail() model.Map {
+	if d == nil {
+		return model.Map{}
+	}
 	return model.Map{
 		"id":         d.id,
 		"enable":     d.IsEnabled(),

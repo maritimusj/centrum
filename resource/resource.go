@@ -1,7 +1,9 @@
 package resource
 
+import "reflect"
+
 //动作
-type Action int
+type Action int8
 
 const (
 	Invoke Action = 0
@@ -12,14 +14,14 @@ const (
 )
 
 //结果
-type Effect int
+type Effect int8
 
 const (
 	Allow Effect = iota
 	Deny
 )
 
-type Class int
+type Class int8
 
 const (
 	Default Class = iota
@@ -30,6 +32,18 @@ const (
 	Equipment
 	State
 )
+
+func IsValidClass(class interface{}) bool {
+	v := reflect.ValueOf(class)
+	if v.IsValid() {
+		switch v.Kind() {
+		case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			val := v.Int()
+			return val > 0 && Class(val) <= State
+		}
+	}
+	return false
+}
 
 type Resource interface {
 	ResourceClass() Class

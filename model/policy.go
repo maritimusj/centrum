@@ -11,9 +11,6 @@ type Policy interface {
 
 	SetEffect(effect resource.Effect) error
 
-	IsAllow() bool
-	IsDeny() bool
-
 	Resource() resource.Resource
 	Action() resource.Action
 	Effect() resource.Effect

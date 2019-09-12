@@ -4,6 +4,7 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
@@ -16,16 +17,16 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
 
-		var params = []store.OptionFN{store.Page(page, pageSize)}
+		var params = []helper.OptionFN{helper.Page(page, pageSize)}
 
 		keyword := ctx.URLParam("keyword")
 		if keyword != "" {
-			params = append(params, store.Keyword(keyword))
+			params = append(params, helper.Keyword(keyword))
 		}
 
 		userID := ctx.URLParamInt64Default("user", -1)
 		if userID != -1 {
-			params = append(params, store.User(userID))
+			params = append(params, helper.User(userID))
 		}
 
 		roles, total, err := s.GetRoleList(params...)

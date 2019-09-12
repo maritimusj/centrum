@@ -1,14 +1,13 @@
 package mysqlStore
 
 import (
+	"errors"
 	"github.com/maritimusj/centrum/dirty"
+	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/status"
-	"github.com/maritimusj/centrum/store"
-
-	"errors"
 	"time"
 )
 
@@ -116,7 +115,7 @@ func (e *Equipment) SetDesc(desc string) error {
 }
 
 func (e *Equipment) SetGroups(groups ...interface{}) error {
-	err := e.store.TransactionDo(func(db store.DB) interface{} {
+	err := e.store.TransactionDo(func(db helper.DB) interface{} {
 		err := RemoveData(db, TbEquipmentGroups, "equipment_id", e.id)
 		if err != nil {
 			return err
@@ -154,15 +153,15 @@ func (e *Equipment) SetGroups(groups ...interface{}) error {
 }
 
 func (e *Equipment) Groups() ([]model.Group, error) {
-	groups, _, err := e.store.GetGroupList(store.Device(e.id))
+	groups, _, err := e.store.GetGroupList(helper.Device(e.id))
 	if err != nil {
 		return nil, err
 	}
 	return groups, nil
 }
 
-func (e *Equipment) GetStateList(keyword string, kind model.MeasureKind, page, pageSize int64) ([]model.State, int64, error) {
-	return e.store.GetStateList(store.Equipment(e.GetID()), store.Keyword(keyword), store.Kind(kind), store.Page(page, pageSize))
+func (e *Equipment) GetStateList(options ...helper.OptionFN) ([]model.State, int64, error) {
+	return e.store.GetStateList(options...)
 }
 
 func (e *Equipment) CreateState(title string, measure interface{}, script string) (model.State, error) {
@@ -179,6 +178,9 @@ func (e *Equipment) CreateState(title string, measure interface{}, script string
 }
 
 func (e *Equipment) Simple() model.Map {
+	if e == nil {
+		return model.Map{}
+	}
 	return model.Map{
 		"id":     e.id,
 		"enable": e.IsEnabled(),
@@ -187,6 +189,9 @@ func (e *Equipment) Simple() model.Map {
 }
 
 func (e *Equipment) Brief() model.Map {
+	if e == nil {
+		return model.Map{}
+	}
 	return model.Map{
 		"id":         e.id,
 		"enable":     e.IsEnabled(),
@@ -196,6 +201,9 @@ func (e *Equipment) Brief() model.Map {
 }
 
 func (e *Equipment) Detail() model.Map {
+	if e == nil {
+		return model.Map{}
+	}
 	return model.Map{
 		"id":         e.id,
 		"enable":     e.IsEnabled(),

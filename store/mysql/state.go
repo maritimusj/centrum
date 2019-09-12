@@ -2,8 +2,12 @@ package mysqlStore
 
 import (
 	"github.com/maritimusj/centrum/dirty"
+	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
+	"github.com/maritimusj/centrum/status"
+
+	"errors"
 	"time"
 )
 
@@ -46,77 +50,181 @@ func (s *State) ResourceDesc() string {
 }
 
 func (s *State) GetID() int64 {
-	panic("implement me")
+	return s.id
 }
 
 func (s *State) CreatedAt() time.Time {
-	panic("implement me")
+	return s.createdAt
 }
 
 func (s *State) Save() error {
-	panic("implement me")
+	if s.dirty.Any() {
+		err := SaveData(s.store.db, TbStates, s.dirty.Data(true), "id=?", s.id)
+		if err != nil {
+			return lang.InternalError(err)
+		}
+	}
+	return nil
 }
 
 func (s *State) Destroy() error {
-	panic("implement me")
+	return s.store.RemoveState(s.id)
 }
 
 func (s *State) Enable() error {
-	panic("implement me")
+	if s.enable != status.Enable {
+		s.enable = status.Enable
+		s.dirty.Set("enable", func() interface{} {
+			return s.enable
+		})
+	}
+	return s.Save()
 }
 
 func (s *State) Disable() error {
-	panic("implement me")
+	if s.enable != status.Disable {
+		s.enable = status.Disable
+		s.dirty.Set("enable", func() interface{} {
+			return s.enable
+		})
+	}
+	return s.Save()
 }
 
 func (s *State) IsEnabled() bool {
-	panic("implement me")
-}
-
-func (s *State) Simple() model.Map {
-	panic("implement me")
-}
-
-func (s *State) Brief() model.Map {
-	panic("implement me")
-}
-
-func (s *State) Detail() model.Map {
-	panic("implement me")
-}
-
-func (s *State) Measure() model.Measure {
-	panic("implement me")
-}
-
-func (s *State) Equipment() model.Equipment {
-	panic("implement me")
-}
-
-func (s *State) SetMeasure(measure interface{}) error {
-	panic("implement me")
+	return s.enable == status.Enable
 }
 
 func (s *State) Title() string {
-	panic("implement me")
+	return s.title
 }
 
-func (s *State) SetTitle(string) error {
-	panic("implement me")
+func (s *State) SetTitle(title string) error {
+	if s.title != title {
+		s.title = title
+		s.dirty.Set("title", func() interface{} {
+			return s.title
+		})
+	}
+	return s.Save()
 }
 
 func (s *State) Desc() string {
-	panic("implement me")
+	return s.desc
 }
 
 func (s *State) SetDesc(desc string) error {
-	panic("implement me")
+	if s.desc != desc {
+		s.desc = desc
+		s.dirty.Set("desc", func() interface{} {
+			return s.desc
+		})
+	}
+	return s.Save()
 }
 
 func (s *State) Script() string {
-	panic("implement me")
+	return s.script
 }
 
-func (s *State) SetScript(string) error {
-	panic("implement me")
+func (s *State) SetScript(script string) error {
+	if s.script != script {
+		s.script = script
+		s.dirty.Set("script", func() interface{} {
+			return s.script
+		})
+	}
+	return s.Save()
+}
+
+func (s *State) Measure() model.Measure {
+	if s.measureID > 0 {
+		measure, _ := s.store.GetMeasure(s.measureID)
+		if measure != nil {
+			return measure
+		}
+	}
+	return nil
+}
+
+func (s *State) Equipment() model.Equipment {
+	if s.equipmentID > 0 {
+		equipment, _ := s.store.GetEquipment(s.equipmentID)
+		if equipment != nil {
+			return equipment
+		}
+	}
+	return nil
+}
+
+func (s *State) SetMeasure(measure interface{}) error {
+	var measureID int64
+	switch v := measure.(type) {
+	case int64:
+		measureID = v
+	case model.Measure:
+		measureID = v.GetID()
+	default:
+		panic(errors.New("state SetMeasure: unknown measure"))
+	}
+
+	if measureID == s.measureID {
+		return nil
+	}
+
+	measure, err := s.store.GetMeasure(measureID)
+	if err != nil {
+		return err
+	}
+	s.measureID = measureID
+	s.dirty.Set("measure_id", func() interface{} {
+		return s.measureID
+	})
+	return s.Save()
+}
+
+func (s *State) Simple() model.Map {
+	if s == nil {
+		return model.Map{}
+	}
+	return model.Map{
+		"id":     s.id,
+		"enable": s.IsEnabled(),
+		"title":  s.title,
+	}
+}
+
+func (s *State) Brief() model.Map {
+	if s == nil {
+		return model.Map{}
+	}
+	return model.Map{
+		"id":         s.id,
+		"enable":     s.IsEnabled(),
+		"title":      s.title,
+		"desc":       s.desc,
+		"created_at": s.createdAt,
+	}
+}
+
+func (s *State) Detail() model.Map {
+	if s == nil {
+		return model.Map{}
+	}
+
+	detail := model.Map{
+		"id":         s.id,
+		"enable":     s.IsEnabled(),
+		"title":      s.title,
+		"desc":       s.desc,
+		"script":     s.script,
+		"created_at": s.createdAt,
+	}
+
+	measure := s.Measure()
+	if measure != nil {
+		detail["measure"] = measure.Simple()
+	}
+
+	return detail
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
@@ -27,7 +28,7 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 			}
 		}
 
-		groups, total, err := s.GetGroupList(store.Parent(parentGroupID), store.Keyword(keyword), store.Page(page, pageSize))
+		groups, total, err := s.GetGroupList(helper.Parent(parentGroupID), helper.Keyword(keyword), helper.Page(page, pageSize))
 		if err != nil {
 			return err
 		}

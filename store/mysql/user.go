@@ -3,11 +3,11 @@ package mysqlStore
 import (
 	"errors"
 	"github.com/maritimusj/centrum/dirty"
+	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/status"
-	"github.com/maritimusj/centrum/store"
 	"github.com/maritimusj/centrum/util"
 	"time"
 )
@@ -130,12 +130,14 @@ func (u *User) Update(profile model.Map) error {
 }
 
 func (u *User) SetRoles(roles ...interface{}) error {
-	err := u.store.TransactionDo(func(db store.DB) interface{} {
+	err := u.store.TransactionDo(func(db helper.DB) interface{} {
 		err := RemoveData(db, TbUserRoles, "user_id=?", u.id)
 		if err != nil {
 			return err
 		}
+
 		now := time.Now()
+
 		for _, role := range roles {
 			var roleID int64
 			switch v := role.(type) {
@@ -168,7 +170,7 @@ func (u *User) SetRoles(roles ...interface{}) error {
 }
 
 func (u *User) GetRoles() ([]model.Role, error) {
-	roles, _, err := u.store.GetRoleList(store.User(u.id))
+	roles, _, err := u.store.GetRoleList(helper.User(u.id))
 	if err != nil {
 		return nil, err
 	}
@@ -214,6 +216,9 @@ func (u *User) IsAllow(res resource.Resource, action resource.Action) (bool, err
 }
 
 func (u *User) Simple() model.Map {
+	if u == nil {
+		return model.Map{}
+	}
 	return model.Map{
 		"id":     u.id,
 		"enable": u.enable,
@@ -222,6 +227,9 @@ func (u *User) Simple() model.Map {
 }
 
 func (u *User) Brief() model.Map {
+	if u == nil {
+		return model.Map{}
+	}
 	return model.Map{
 		"id":         u.id,
 		"enable":     u.enable,
@@ -234,6 +242,9 @@ func (u *User) Brief() model.Map {
 }
 
 func (u *User) Detail() model.Map {
+	if u == nil {
+		return model.Map{}
+	}
 	return model.Map{
 		"id":         u.id,
 		"enable":     u.enable,

@@ -21,18 +21,6 @@ type Policy struct {
 	store *mysqlStore
 }
 
-func (p *Policy) SetEffect(effect resource.Effect) error {
-	panic("implement me")
-}
-
-func (p *Policy) IsAllow() bool {
-	panic("implement me")
-}
-
-func (p *Policy) IsDeny() bool {
-	panic("implement me")
-}
-
 func NewPolicy(s *mysqlStore, id int64) *Policy {
 	return &Policy{
 		id:    id,
@@ -78,18 +66,63 @@ func (p *Policy) Action() resource.Action {
 	return p.action
 }
 
+func (p *Policy) SetEffect(effect resource.Effect) error {
+	if p.effect != effect {
+		p.effect = effect
+		p.dirty.Set("effect", func() interface{} {
+			return p.effect
+		})
+	}
+	return p.Save()
+}
+
 func (p *Policy) Effect() resource.Effect {
 	return p.effect
 }
 
 func (p *Policy) Simple() model.Map {
-	panic("implement me")
+	if p == nil {
+		return model.Map{}
+	}
+	return model.Map{
+		"id": p.id,
+		"resource": model.Map{
+			"class": p.resourceClass,
+			"id":    p.resourceID,
+		},
+		"action": p.action,
+		"effect": p.effect,
+	}
 }
 
 func (p *Policy) Brief() model.Map {
-	panic("implement me")
+	if p == nil {
+		return model.Map{}
+	}
+	return model.Map{
+		"id": p.id,
+		"resource": model.Map{
+			"class": p.resourceClass,
+			"id":    p.resourceID,
+		},
+		"action":     p.action,
+		"effect":     p.effect,
+		"created_at": p.createdAt,
+	}
 }
 
 func (p *Policy) Detail() model.Map {
-	panic("implement me")
+	if p == nil {
+		return model.Map{}
+	}
+	return model.Map{
+		"id": p.id,
+		"resource": model.Map{
+			"class": p.resourceClass,
+			"id":    p.resourceID,
+		},
+		"action":     p.action,
+		"effect":     p.effect,
+		"created_at": p.createdAt,
+	}
 }

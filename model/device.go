@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/resource"
 	"github.com/tidwall/gjson"
 )
@@ -22,6 +23,6 @@ type Device interface {
 	SetGroups(groups ...interface{}) error
 	Groups() ([]Group, error)
 
-	GetMeasureList(keyword string, kind MeasureKind, page, pageSize int64) ([]Measure, int64, error)
+	GetMeasureList(options ...helper.OptionFN) ([]Measure, int64, error)
 	CreateMeasure(title string, tag string, kind MeasureKind) (Measure, error)
 }

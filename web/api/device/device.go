@@ -4,6 +4,7 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
@@ -18,16 +19,16 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
 
-		var params = []store.OptionFN{store.Page(page, pageSize), store.User(perm.AdminUser(ctx).GetID())}
+		var params = []helper.OptionFN{helper.Page(page, pageSize), helper.User(perm.AdminUser(ctx).GetID())}
 
 		keyword := ctx.URLParam("keyword")
 		if keyword != "" {
-			params = append(params, store.Keyword(keyword))
+			params = append(params, helper.Keyword(keyword))
 		}
 
 		groupID := ctx.URLParamInt64Default("group", -1)
 		if groupID != -1 {
-			params = append(params, store.Group(groupID))
+			params = append(params, helper.Group(groupID))
 		}
 
 		devices, total, err := s.GetDeviceList(params...)
@@ -163,7 +164,7 @@ func MeasureList(deviceID int64, ctx iris.Context, s store.Store, cfg config.Con
 			return lang.ErrNoPermission
 		}
 
-		measures, total, err := s.GetMeasureList(store.Device(device.GetID()), store.Keyword(keyword), store.Kind(model.MeasureKind(kind)), store.Page(page, pageSize))
+		measures, total, err := s.GetMeasureList(helper.Device(device.GetID()), helper.Keyword(keyword), helper.Kind(int8(kind)), helper.Page(page, pageSize))
 		if err != nil {
 			return err
 		}

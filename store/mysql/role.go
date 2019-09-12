@@ -126,13 +126,36 @@ func (r *Role) IsAllow(res resource.Resource, action resource.Action) (bool, err
 }
 
 func (r *Role) Simple() model.Map {
-	panic("implement me")
+	if r == nil {
+		return model.Map{}
+	}
+	return model.Map{
+		"id":     r.id,
+		"enable": r.IsEnabled(),
+		"title":  r.title,
+	}
 }
 
 func (r *Role) Brief() model.Map {
-	panic("implement me")
+	if r == nil {
+		return model.Map{}
+	}
+	return model.Map{
+		"id":         r.id,
+		"enable":     r.IsEnabled(),
+		"title":      r.title,
+		"created_at": r.createdAt,
+	}
 }
 
 func (r *Role) Detail() model.Map {
-	panic("implement me")
+	if r == nil {
+		return model.Map{}
+	}
+	return model.Map{
+		"id":         r.id,
+		"enable":     r.IsEnabled(),
+		"title":      r.title,
+		"created_at": r.createdAt,
+	}
 }

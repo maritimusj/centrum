@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/maritimusj/centrum/cache"
+	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
@@ -49,8 +50,8 @@ func New() store.Store {
 	}
 }
 
-func parseOption(options ...store.OptionFN) *store.Option {
-	option := store.Option{}
+func parseOption(options ...helper.OptionFN) *helper.Option {
+	option := helper.Option{}
 	for _, opt := range options {
 		if opt != nil {
 			opt(&option)
@@ -59,7 +60,7 @@ func parseOption(options ...store.OptionFN) *store.Option {
 	return &option
 }
 
-func (s *mysqlStore) TransactionDo(fn func(db store.DB) interface{}) interface{} {
+func (s *mysqlStore) TransactionDo(fn func(db helper.DB) interface{}) interface{} {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return lang.InternalError(err)
@@ -247,7 +248,7 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 
 func (s *mysqlStore) CreateUser(name string, password []byte, role model.Role) (model.User, error) {
 	result := <-s.Synchronized(TbUsers, func() interface{} {
-		return s.TransactionDo(func(db store.DB) interface{} {
+		return s.TransactionDo(func(db helper.DB) interface{} {
 			passwordData, err := util.HashPassword(password)
 			if err != nil {
 				return lang.InternalError(err)
@@ -313,7 +314,7 @@ func (s *mysqlStore) RemoveUser(userID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetUserList(options ...store.OptionFN) ([]model.User, int64, error) {
+func (s *mysqlStore) GetUserList(options ...helper.OptionFN) ([]model.User, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -470,7 +471,7 @@ func (s *mysqlStore) RemoveRole(roleID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetRoleList(options ...store.OptionFN) ([]model.Role, int64, error) {
+func (s *mysqlStore) GetRoleList(options ...helper.OptionFN) ([]model.Role, int64, error) {
 	option := parseOption(options...)
 	var (
 		fromSQL = "FROM " + TbRoles + " r "
@@ -676,7 +677,7 @@ func (s *mysqlStore) RemovePolicy(policyID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetPolicyList(res resource.Resource, options ...store.OptionFN) ([]model.Policy, int64, error) {
+func (s *mysqlStore) GetPolicyList(res resource.Resource, options ...helper.OptionFN) ([]model.Policy, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -834,7 +835,7 @@ func (s *mysqlStore) RemoveGroup(groupID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetGroupList(options ...store.OptionFN) ([]model.Group, int64, error) {
+func (s *mysqlStore) GetGroupList(options ...helper.OptionFN) ([]model.Group, int64, error) {
 	option := parseOption(options...)
 	var (
 		fromSQL = "FROM " + TbGroups + " WHERE 1"
@@ -1005,7 +1006,7 @@ SELECT device.*,p.action,p.effect FROM
 LEFT JOIN policies p ON p.resource_class=3 AND p.resource_id=device.id AND p.role_id=device.role_id
 */
 
-func (s *mysqlStore) GetDeviceList(options ...store.OptionFN) ([]model.Device, int64, error) {
+func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, int64, error) {
 	option := parseOption(options...)
 	var (
 		from  = "FROM " + TbDevicePoliciesVW + " d"
@@ -1017,7 +1018,7 @@ func (s *mysqlStore) GetDeviceList(options ...store.OptionFN) ([]model.Device, i
 	if option.UserID != nil {
 		userID := *option.UserID
 		if userID > 0 {
-			if option.DefaultEffect == resource.Allow {
+			if resource.Effect(option.DefaultEffect) == resource.Allow {
 				where += fmt.Sprintf(" AND d.role_id IN (SELECT role_id FROM %s WHERE user_id=?) AND ((d.action=? AND d.effect=?) OR (d.action IS NULL AND d.effect IS NULL))", TbUserRoles)
 			} else {
 				where += fmt.Sprintf(" AND d.role_id IN (SELECT role_id FROM %s WHERE user_id=?) AND d.action=? AND d.effect=?", TbUserRoles)
@@ -1185,7 +1186,7 @@ func (s *mysqlStore) RemoveMeasure(measureID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetMeasureList(options ...store.OptionFN) ([]model.Measure, int64, error) {
+func (s *mysqlStore) GetMeasureList(options ...helper.OptionFN) ([]model.Measure, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -1199,7 +1200,7 @@ func (s *mysqlStore) GetMeasureList(options ...store.OptionFN) ([]model.Measure,
 		params = append(params, option.DeviceID)
 	}
 
-	if option.Kind != model.AllKind {
+	if model.MeasureKind(option.Kind) != model.AllKind {
 		fromSQL += " AND kind=?"
 		params = append(params, option.Kind)
 	}
@@ -1353,7 +1354,7 @@ func (s *mysqlStore) RemoveEquipment(equipmentID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetEquipmentList(options ...store.OptionFN) ([]model.Equipment, int64, error) {
+func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equipment, int64, error) {
 	option := parseOption(options...)
 	var (
 		fromSQL = "FROM " + TbEquipments + " e"
@@ -1517,7 +1518,7 @@ func (s *mysqlStore) RemoveState(stateID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetStateList(options ...store.OptionFN) ([]model.State, int64, error) {
+func (s *mysqlStore) GetStateList(options ...helper.OptionFN) ([]model.State, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -1531,7 +1532,7 @@ func (s *mysqlStore) GetStateList(options ...store.OptionFN) ([]model.State, int
 		params = append(params, option.EquipmentID)
 	}
 
-	if option.Kind != model.AllKind {
+	if model.MeasureKind(option.Kind) != model.AllKind {
 		fromSQL += " AND m.kind=?"
 		params = append(params, option.Kind)
 	}
@@ -1593,7 +1594,7 @@ func (s *mysqlStore) GetStateList(options ...store.OptionFN) ([]model.State, int
 	return result, total, nil
 }
 
-func (s *mysqlStore) GetResourceList(class resource.Class, options ...store.OptionFN) ([]resource.Resource, int64, error) {
+func (s *mysqlStore) GetResourceList(class resource.Class, options ...helper.OptionFN) ([]resource.Resource, int64, error) {
 	var result []resource.Resource
 	switch class {
 	case resource.Api:
@@ -1758,7 +1759,7 @@ func (s *mysqlStore) GetApiResource(res interface{}) (model.ApiResource, error) 
 	return result.(model.ApiResource), nil
 }
 
-func (s *mysqlStore) GetApiResourceList(options ...store.OptionFN) ([]model.ApiResource, int64, error) {
+func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.ApiResource, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -1830,7 +1831,7 @@ func (s *mysqlStore) GetApiResourceList(options ...store.OptionFN) ([]model.ApiR
 
 func (s *mysqlStore) InitApiResource() error {
 	result := <-s.Synchronized(TbApiResources, func() interface{} {
-		return s.TransactionDo(func(db store.DB) interface{} {
+		return s.TransactionDo(func(db helper.DB) interface{} {
 			err := RemoveData(db, TbApiResources, "1")
 			if err != nil {
 				return err

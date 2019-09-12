@@ -2,15 +2,13 @@ package helper
 
 import (
 	"database/sql"
-	"github.com/maritimusj/centrum/model"
-	"github.com/maritimusj/centrum/resource"
 )
 
 type Option struct {
 	Limit         int64
 	Offset        int64
-	Kind          model.MeasureKind
-	Class         resource.Class
+	Kind          int8
+	Class         int8
 	ParentID      *int64
 	RoleID        *int64
 	UserID        *int64
@@ -20,7 +18,7 @@ type Option struct {
 	Name          string
 	Keyword       string
 	GetTotal      *bool
-	DefaultEffect resource.Effect
+	DefaultEffect int8
 }
 
 type OptionFN func(*Option)
@@ -51,13 +49,13 @@ func GetTotal(get bool) OptionFN {
 	}
 }
 
-func Kind(kind model.MeasureKind) OptionFN {
+func Kind(kind int8) OptionFN {
 	return func(i *Option) {
 		i.Kind = kind
 	}
 }
 
-func Class(class resource.Class) OptionFN {
+func Class(class int8) OptionFN {
 	return func(i *Option) {
 		i.Class = class
 	}
@@ -90,7 +88,7 @@ func User(userID int64) OptionFN {
 	}
 }
 
-func DefaultEffect(effect resource.Effect) OptionFN {
+func DefaultEffect(effect int8) OptionFN {
 	return func(i *Option) {
 		i.DefaultEffect = effect
 	}

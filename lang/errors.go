@@ -27,6 +27,8 @@ const (
 	ErrFailedDisableDefaultUser
 	ErrFailedRemoveDefaultUser
 
+	ErrInvalidResourceClassID
+
 	ErrPasswordWrong
 
 	ErrApiResourceNotFound
@@ -60,6 +62,8 @@ var (
 
 		ErrInvalidUser:   "当前用户不可用或者登录超时！",
 		ErrPasswordWrong: "密码不正确！",
+
+		ErrInvalidResourceClassID: "资源类型不正确！",
 
 		ErrApiResourceNotFound: "错误的api资源！",
 

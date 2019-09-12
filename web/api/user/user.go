@@ -4,6 +4,7 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/status"
@@ -19,7 +20,7 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
 		keyword := ctx.URLParam("keyword")
 
-		users, total, err := s.GetUserList(store.Keyword(keyword), store.Page(page, pageSize))
+		users, total, err := s.GetUserList(helper.Keyword(keyword), helper.Page(page, pageSize))
 		if err != nil {
 			return err
 		}
