@@ -18,17 +18,28 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
-		keyword := ctx.URLParam("keyword")
-		parentGroupID := ctx.URLParamInt64Default("parent", 0)
 
+		var params = []helper.OptionFN{
+			helper.DefaultEffect(int8(resource.Allow)),
+			helper.User(perm.AdminUser(ctx).GetID()),
+			helper.Page(page, pageSize),
+		}
+
+		keyword := ctx.URLParam("keyword")
+		if keyword != "" {
+			params = append(params, helper.Keyword(keyword))
+		}
+
+		parentGroupID := ctx.URLParamInt64Default("parent", 0)
 		if parentGroupID > 0 {
 			_, err := s.GetGroup(parentGroupID)
 			if err != nil {
 				return err
 			}
+			params = append(params, helper.Parent(parentGroupID))
 		}
 
-		groups, total, err := s.GetGroupList(helper.Parent(parentGroupID), helper.Keyword(keyword), helper.Page(page, pageSize))
+		groups, total, err := s.GetGroupList(params...)
 		if err != nil {
 			return err
 		}

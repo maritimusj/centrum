@@ -79,25 +79,25 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 
 		for _, res := range resources {
 			entry := model.Map{
-				"id":         res.ResourceID(),
+				"id":          res.ResourceID(),
 				"title":       res.ResourceTitle(),
 				"desc":        res.ResourceDesc(),
 				"class":       classID,
 				"class_title": lang.ResourceClassTitle(class),
 			}
 
-			if role != nil  {
+			if role != nil {
 				perm := model.Map{}
 				policies, err := role.GetPolicy(res)
 				if err != nil {
 					return err
 				}
-				if v, ok :=  policies[resource.View]; ok {
+				if v, ok := policies[resource.View]; ok {
 					perm["view"] = v.Effect()
 				} else {
 					perm["view*"] = cfg.DefaultEffect()
 				}
-				if v, ok :=  policies[resource.Ctrl]; ok {
+				if v, ok := policies[resource.Ctrl]; ok {
 					perm["ctrl"] = v.Effect()
 				} else {
 					perm["ctrl*"] = cfg.DefaultEffect()

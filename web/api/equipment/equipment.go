@@ -19,7 +19,11 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
 
-		var params = []helper.OptionFN{helper.Page(page, pageSize)}
+		var params = []helper.OptionFN{
+			helper.DefaultEffect(int8(resource.Allow)),
+			helper.User(perm.AdminUser(ctx).GetID()),
+			helper.Page(page, pageSize),
+		}
 
 		keyword := ctx.URLParam("keyword")
 		if keyword != "" {
@@ -142,8 +146,14 @@ func StateList(equipmentID int64, ctx iris.Context, s store.Store, cfg config.Co
 	return response.Wrap(func() interface{} {
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
-		keyword := ctx.URLParam("keyword")
 		kind := ctx.URLParamIntDefault("kind", int(model.AllKind))
+
+		var params = []helper.OptionFN{
+			helper.DefaultEffect(int8(resource.Allow)),
+			helper.User(perm.AdminUser(ctx).GetID()),
+			helper.Kind(int8(kind)),
+			helper.Page(page, pageSize),
+		}
 
 		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
@@ -154,10 +164,13 @@ func StateList(equipmentID int64, ctx iris.Context, s store.Store, cfg config.Co
 			return lang.ErrNoPermission
 		}
 
-		states, total, err := s.GetStateList(helper.Equipment(equipment.GetID()), helper.Keyword(keyword), helper.Kind(int8(kind)), helper.Page(page, pageSize))
+		params = append(params, helper.Equipment(equipment.GetID()))
+
+		states, total, err := s.GetStateList(params...)
 		if err != nil {
 			return err
 		}
+
 		var result = make([]model.Map, 0, len(states))
 		for _, state := range states {
 			result = append(result, state.Brief())

@@ -19,7 +19,11 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
 
-		var params = []helper.OptionFN{helper.DefaultEffect(int8(resource.Allow)), helper.Page(page, pageSize), helper.User(perm.AdminUser(ctx).GetID())}
+		var params = []helper.OptionFN{
+			helper.DefaultEffect(int8(resource.Allow)),
+			helper.User(perm.AdminUser(ctx).GetID()),
+			helper.Page(page, pageSize),
+		}
 
 		keyword := ctx.URLParam("keyword")
 		if keyword != "" {
@@ -150,8 +154,19 @@ func MeasureList(deviceID int64, ctx iris.Context, s store.Store, cfg config.Con
 	return response.Wrap(func() interface{} {
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
-		keyword := ctx.URLParam("keyword")
 		kind := ctx.URLParamIntDefault("kind", int(model.AllKind))
+
+		var params = []helper.OptionFN{
+			helper.DefaultEffect(int8(resource.Allow)),
+			helper.User(perm.AdminUser(ctx).GetID()),
+			helper.Kind(int8(kind)),
+			helper.Page(page, pageSize),
+		}
+
+		keyword := ctx.URLParam("keyword")
+		if keyword != "" {
+			params = append(params, helper.Keyword(keyword))
+		}
 
 		device, err := s.GetDevice(deviceID)
 		if err != nil {
@@ -162,14 +177,18 @@ func MeasureList(deviceID int64, ctx iris.Context, s store.Store, cfg config.Con
 			return lang.ErrNoPermission
 		}
 
-		measures, total, err := s.GetMeasureList(helper.Device(device.GetID()), helper.Keyword(keyword), helper.Kind(int8(kind)), helper.Page(page, pageSize))
+		params = append(params, helper.Device(device.GetID()))
+
+		measures, total, err := s.GetMeasureList(params...)
 		if err != nil {
 			return err
 		}
+
 		var result = make([]model.Map, 0, len(measures))
 		for _, measure := range measures {
 			result = append(result, measure.Brief())
 		}
+
 		return iris.Map{
 			"total": total,
 			"list":  result,

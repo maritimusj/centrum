@@ -549,8 +549,8 @@ func (s *mysqlStore) loadPolicy(id int64) (model.Policy, error) {
 		"role_id":        &policy.roleID,
 		"resource_class": &policy.resourceClass,
 		"resource_id":    &policy.resourceID,
-		"action?":         &policy.action,
-		"effect?":         &policy.effect,
+		"action?":        &policy.action,
+		"effect?":        &policy.effect,
 	}, "id=?", id)
 
 	if err != nil {
@@ -1429,7 +1429,7 @@ func (s *mysqlStore) loadState(id int64) (model.State, error) {
 		"equipment_id": &state.equipmentID,
 		"measure_id":   &state.measureID,
 		"script":       &state.script,
-		"created_at":    &state.createdAt,
+		"created_at":   &state.createdAt,
 	}, "id=?", id)
 
 	if err != nil {

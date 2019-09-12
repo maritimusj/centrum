@@ -85,8 +85,8 @@ func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 		type P struct {
 			ResourceClass int   `json:"class"`
 			ResourceID    int64 `json:"id"`
-			Action        int8   `json:"action"`
-			Effect        int8   `json:"effect"`
+			Action        int8  `json:"action"`
+			Effect        int8  `json:"effect"`
 		}
 		var form struct {
 			Title   *string `json:"title"`
