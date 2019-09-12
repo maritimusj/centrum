@@ -2,6 +2,7 @@ package mysqlStore
 
 import (
 	"github.com/maritimusj/centrum/dirty"
+	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
@@ -95,7 +96,7 @@ func (r *Role) SetPolicy(res resource.Resource, action resource.Action, effect r
 }
 
 func (r *Role) GetPolicy(res resource.Resource) (map[resource.Action]model.Policy, error) {
-	policies, _, err := r.store.GetPolicyList(res)
+	policies, _, err := r.store.GetPolicyList(res, helper.Role(r.id))
 	if err != nil {
 		return nil, err
 	}

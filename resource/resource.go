@@ -17,8 +17,8 @@ const (
 type Effect int8
 
 const (
-	Allow Effect = iota
-	Deny
+	Deny Effect = iota
+	Allow
 )
 
 type Class int8

@@ -23,6 +23,7 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
 		keyword := ctx.URLParam("keyword")
+		roleID := ctx.URLParamInt64Default("role", 0)
 
 		var params = []helper.OptionFN{
 			helper.Page(page, pageSize),
@@ -35,6 +36,15 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 		class := resource.Class(classID)
 		if !resource.IsValidClass(class) {
 			return lang.Error(lang.ErrInvalidResourceClassID)
+		}
+
+		var role model.Role
+		var err error
+		if roleID > 0 {
+			role, err = s.GetRole(roleID)
+			if err != nil {
+				return err
+			}
 		}
 
 		if class == resource.Api {
@@ -65,20 +75,46 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 			return err
 		}
 
-		var result = make([]model.Map, 0, len(resources))
+		var list = make([]model.Map, 0, len(resources))
+
 		for _, res := range resources {
-			result = append(result, model.Map{
-				"class":       classID,
-				"class_title": lang.ResourceClassTitle(class),
-				"uid":         res.ResourceID(),
+			entry := model.Map{
+				"id":         res.ResourceID(),
 				"title":       res.ResourceTitle(),
 				"desc":        res.ResourceDesc(),
-			})
+				"class":       classID,
+				"class_title": lang.ResourceClassTitle(class),
+			}
+
+			if role != nil  {
+				perm := model.Map{}
+				policies, err := role.GetPolicy(res)
+				if err != nil {
+					return err
+				}
+				if v, ok :=  policies[resource.View]; ok {
+					perm["view"] = v.Effect()
+				} else {
+					perm["view*"] = cfg.DefaultEffect()
+				}
+				if v, ok :=  policies[resource.Ctrl]; ok {
+					perm["ctrl"] = v.Effect()
+				} else {
+					perm["ctrl*"] = cfg.DefaultEffect()
+				}
+				entry["perm"] = perm
+			}
+
+			list = append(list, entry)
 		}
 
-		return iris.Map{
+		result := iris.Map{
 			"total": total,
-			"list":  result,
+			"list":  list,
 		}
+		if role != nil {
+			result["role"] = role.Brief()
+		}
+		return result
 	})
 }

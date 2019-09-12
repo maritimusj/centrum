@@ -549,9 +549,8 @@ func (s *mysqlStore) loadPolicy(id int64) (model.Policy, error) {
 		"role_id":        &policy.roleID,
 		"resource_class": &policy.resourceClass,
 		"resource_id":    &policy.resourceID,
-		"action":         &policy.action,
-		"effect":         &policy.effect,
-		"created_at":     &policy.createdAt,
+		"action?":         &policy.action,
+		"effect?":         &policy.effect,
 	}, "id=?", id)
 
 	if err != nil {
@@ -1000,17 +999,10 @@ func (s *mysqlStore) RemoveDevice(deviceID int64) error {
 	return nil
 }
 
-/*
-CREATE OR REPLACE VIEW device_policies_vw AS
-SELECT device.*,p.action,p.effect FROM
-(select d.*, r.id role_id FROM devices d, roles r) device
-LEFT JOIN policies p ON p.resource_class=3 AND p.resource_id=device.id AND p.role_id=device.role_id
-*/
-
 func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, int64, error) {
 	option := parseOption(options...)
 	var (
-		from  = "FROM " + TbDevicePoliciesVW + " d"
+		from  = "FROM " + TbDevices + " d"
 		where = " WHERE 1"
 	)
 
@@ -1019,12 +1011,18 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 	if option.UserID != nil {
 		userID := *option.UserID
 		if userID > 0 {
+			from += fmt.Sprintf(` LEFT JOIN (
+	SELECT d.id,p.role_id,p.action,p.effect FROM %s d 
+	INNER JOIN %s p ON p.resource_class=%d AND p.resource_id=d.id 
+	INNER JOIN %s r ON p.role_id=r.id
+	WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
+) b ON d.id=b.id`, TbDevices, TbPolicies, resource.Device, TbRoles, TbUserRoles, userID)
+
 			if resource.Effect(option.DefaultEffect) == resource.Allow {
-				where += fmt.Sprintf(" AND d.role_id IN (SELECT role_id FROM %s WHERE user_id=?) AND ((d.action=? AND d.effect=?) OR (d.action IS NULL AND d.effect IS NULL))", TbUserRoles)
+				where += " AND ((b.action=0 AND b.effect=1) OR (ISNULL(b.action) AND ISNULL(b.effect)))"
 			} else {
-				where += fmt.Sprintf(" AND d.role_id IN (SELECT role_id FROM %s WHERE user_id=?) AND d.action=? AND d.effect=?", TbUserRoles)
+				where += " AND (b.action=0 AND b.effect=1)"
 			}
-			params = append(params, userID, resource.View, resource.Allow)
 		}
 	}
 
@@ -1431,7 +1429,7 @@ func (s *mysqlStore) loadState(id int64) (model.State, error) {
 		"equipment_id": &state.equipmentID,
 		"measure_id":   &state.measureID,
 		"script":       &state.script,
-		"createdAt":    &state.createdAt,
+		"created_at":    &state.createdAt,
 	}, "id=?", id)
 
 	if err != nil {

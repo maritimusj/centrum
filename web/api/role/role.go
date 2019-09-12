@@ -1,8 +1,10 @@
 package role
 
 import (
+	"fmt"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
+	"github.com/kr/pretty"
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
@@ -83,8 +85,8 @@ func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 		type P struct {
 			ResourceClass int   `json:"class"`
 			ResourceID    int64 `json:"id"`
-			Action        int   `json:"action"`
-			Effect        int   `json:"effect"`
+			Action        int8   `json:"action"`
+			Effect        int8   `json:"effect"`
 		}
 		var form struct {
 			Title   *string `json:"title"`
@@ -93,11 +95,7 @@ func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 		if err = ctx.ReadJSON(&form); err != nil {
 			return lang.ErrInvalidRequestData
 		}
-
-		if form.Title != nil && *form.Title != "" {
-			role.SetTitle(*form.Title)
-		}
-
+		fmt.Printf("%# v", pretty.Formatter(form))
 		if len(form.Polices) > 0 {
 			for _, p := range form.Polices {
 				res, err := s.GetResource(resource.Class(p.ResourceClass), p.ResourceID)
@@ -109,6 +107,10 @@ func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 					return err
 				}
 			}
+		}
+
+		if form.Title != nil && *form.Title != "" {
+			role.SetTitle(*form.Title)
 		}
 
 		err = role.Save()
