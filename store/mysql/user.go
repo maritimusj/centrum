@@ -216,7 +216,7 @@ func (u *User) Simple() model.Map {
 	}
 	return model.Map{
 		"id":     u.id,
-		"enable": u.enable,
+		"enable": u.IsEnabled(),
 		"name":   u.name,
 	}
 }
@@ -227,7 +227,7 @@ func (u *User) Brief() model.Map {
 	}
 	return model.Map{
 		"id":         u.id,
-		"enable":     u.enable,
+		"enable":     u.IsEnabled(),
 		"name":       u.name,
 		"title":      u.title,
 		"mobile":     u.mobile,
@@ -242,7 +242,7 @@ func (u *User) Detail() model.Map {
 	}
 	return model.Map{
 		"id":         u.id,
-		"enable":     u.enable,
+		"enable":     u.IsEnabled(),
 		"name":       u.name,
 		"title":      u.title,
 		"mobile":     u.mobile,

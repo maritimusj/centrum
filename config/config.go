@@ -16,11 +16,16 @@ type Config interface {
 	DefaultUserName() string
 
 	DefaultEffect() resource.Effect
+	IsRoleEnabled() bool
 }
 
 type config struct {
 	jwtTokenKey []byte
 	logLevel    string
+}
+
+func (c *config) IsRoleEnabled() bool {
+	return false
 }
 
 func (c *config) LogLevel() string {

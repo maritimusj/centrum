@@ -23,11 +23,13 @@ var (
 		{resource.UserDetail, "查看资料", "查看用户资料"},
 		{resource.UserDelete, "删除用户", "删除用户"},
 
-		{resource.RoleList, "角色列表", "查看角色列表"},
-		{resource.RoleCreate, "创建角色", "创建新的角色"},
-		{resource.RoleUpdate, "编辑角色", "修改角色权限"},
-		{resource.RoleDetail, "查看角色", "查看角色详情"},
-		{resource.RoleDelete, "删除角色", "删除角色"},
+		/*
+			{resource.RoleList, "角色列表", "查看角色列表"},
+			{resource.RoleCreate, "创建角色", "创建新的角色"},
+			{resource.RoleUpdate, "编辑角色", "修改角色权限"},
+			{resource.RoleDetail, "查看角色", "查看角色详情"},
+			{resource.RoleDelete, "删除角色", "删除角色"},
+		*/
 
 		{resource.GroupList, "分组列表", "查看全部设备分组"},
 		{resource.GroupCreate, "创建分组", "创建新的设备分组"},

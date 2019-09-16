@@ -1,12 +1,15 @@
 package user
 
 import (
+	"fmt"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
+	"github.com/kr/pretty"
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/status"
 	"github.com/maritimusj/centrum/store"
 	"github.com/maritimusj/centrum/util"
@@ -65,6 +68,10 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 			}
 		}
 
+		if role.IsEnabled() && role == nil {
+			return lang.ErrRoleNotFound
+		}
+
 		user, err := s.CreateUser(form.Username, []byte(form.Password), role)
 		if err != nil {
 			return err
@@ -105,7 +112,7 @@ func Update(userID int64, ctx iris.Context, s store.Store, cfg config.Config) he
 			return lang.ErrInvalidRequestData
 		}
 
-		if form.Roles != nil {
+		if cfg.IsRoleEnabled() && form.Roles != nil {
 			roles := make([]interface{}, 0, len(form.Roles))
 			for _, role := range form.Roles {
 				roles = append(roles, role)
@@ -162,5 +169,72 @@ func Delete(userID int64, s store.Store, cfg config.Config) hero.Result {
 			return err
 		}
 		return lang.Ok
+	})
+}
+
+func UpdatePerm(userID int64, ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
+	return response.Wrap(func() interface{} {
+		user, err := s.GetUser(userID)
+		if err != nil {
+			return err
+		}
+
+		if user.Name() == cfg.DefaultUserName() {
+			return lang.ErrFailedEditDefaultUserPerm
+		}
+
+		roles, err := user.GetRoles()
+		if err != nil {
+			return err
+		}
+
+		update := func(role model.Role) interface{} {
+			type P struct {
+				ResourceClass int   `json:"class"`
+				ResourceID    int64 `json:"id"`
+				Action        int8  `json:"action"`
+				Effect        int8  `json:"effect"`
+			}
+			var form struct {
+				Title   *string `json:"title"`
+				Polices []P     `json:"policies"`
+			}
+			if err = ctx.ReadJSON(&form); err != nil {
+				return lang.ErrInvalidRequestData
+			}
+
+			fmt.Printf("%# v", pretty.Formatter(form))
+
+			if len(form.Polices) > 0 {
+				for _, p := range form.Polices {
+					res, err := s.GetResource(resource.Class(p.ResourceClass), p.ResourceID)
+					if err != nil {
+						return err
+					}
+					_, err = role.SetPolicy(res, resource.Action(p.Action), resource.Effect(p.Effect))
+					if err != nil {
+						return err
+					}
+				}
+			}
+
+			if form.Title != nil && *form.Title != "" {
+				role.SetTitle(*form.Title)
+			}
+
+			err = role.Save()
+			if err != nil {
+				return err
+			}
+			return lang.Ok
+		}
+
+		for _, role := range roles {
+			if role.Title() == user.Name() {
+				return update(role)
+			}
+		}
+
+		return lang.ErrRoleNotFound
 	})
 }

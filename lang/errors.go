@@ -26,6 +26,7 @@ const (
 
 	ErrFailedDisableDefaultUser
 	ErrFailedRemoveDefaultUser
+	ErrFailedEditDefaultUserPerm
 
 	ErrInvalidResourceClassID
 
@@ -69,17 +70,19 @@ var (
 
 		ErrUnknownRole: "用户角色不正确！",
 
-		ErrUserNotFound:             "用户不存在！",
-		ErrUserExists:               "用户已经存在！",
-		ErrFailedDisableDefaultUser: "不能禁用系统默认用户！",
-		ErrFailedRemoveDefaultUser:  "不能删除系统默认用户！",
-		ErrRoleNotFound:             "用户角色不存在！",
-		ErrPolicyNotFound:           "策略不存在！",
-		ErrGroupNotFound:            "设备分组不存在！",
-		ErrDeviceNotFound:           "设备不存在！",
-		ErrMeasureNotFound:          "点位不存在！",
-		ErrEquipmentNotFound:        "自定设备不存在！",
-		ErrStateNotFound:            "自定义点位不存在！",
+		ErrUserNotFound:              "用户不存在！",
+		ErrUserExists:                "用户已经存在！",
+		ErrFailedDisableDefaultUser:  "不能禁用系统默认用户！",
+		ErrFailedRemoveDefaultUser:   "不能删除系统默认用户！",
+		ErrFailedEditDefaultUserPerm: "不能编辑默认用户角色！",
+
+		ErrRoleNotFound:      "用户角色不存在！",
+		ErrPolicyNotFound:    "策略不存在！",
+		ErrGroupNotFound:     "设备分组不存在！",
+		ErrDeviceNotFound:    "设备不存在！",
+		ErrMeasureNotFound:   "点位不存在！",
+		ErrEquipmentNotFound: "自定设备不存在！",
+		ErrStateNotFound:     "自定义点位不存在！",
 	}
 )
 

@@ -9,7 +9,6 @@ import (
 	"github.com/maritimusj/centrum/store"
 	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
-	"net/http"
 	"time"
 
 	jwtMiddleware "github.com/iris-contrib/middleware/jwt"
@@ -34,7 +33,7 @@ func CheckUser(c iris.Context, store store.Store, cfg config.Config) {
 	data := c.Values().Get("jwt").(*jwt.Token).Claims.(jwt.MapClaims)
 	user, err := store.GetUser(data["sub"].(float64))
 	if err != nil {
-		c.StatusCode(http.StatusForbidden)
+		c.StatusCode(iris.StatusForbidden)
 	} else {
 		c.Values().Set(perm.DefaultEffect, cfg.DefaultEffect())
 		c.Values().Set(perm.AdminUserKey, user)

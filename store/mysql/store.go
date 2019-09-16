@@ -329,7 +329,7 @@ func (s *mysqlStore) RemoveUser(userID int64) error {
 				}
 			}
 
-			//清空其它角色
+			//清空其它角色关联
 			err = user.SetRoles()
 			if err != nil {
 				return err
