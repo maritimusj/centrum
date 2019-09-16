@@ -6,6 +6,7 @@ import (
 )
 
 type Config interface {
+	LogLevel() string
 	DefaultPageSize() int64
 	DBConnStr() string
 	JwtTokenKey() []byte
@@ -17,6 +18,11 @@ type Config interface {
 
 type config struct {
 	jwtTokenKey []byte
+	logLevel    string
+}
+
+func (c *config) LogLevel() string {
+	return c.logLevel
 }
 
 func (c *config) DefaultEffect() resource.Effect {
@@ -46,5 +52,6 @@ func (c *config) DefaultPageSize() int64 {
 func New() Config {
 	return &config{
 		jwtTokenKey: []byte("util.RandStr(32, util.RandAll)"),
+		logLevel:    "error",
 	}
 }

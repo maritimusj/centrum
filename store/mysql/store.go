@@ -16,22 +16,23 @@ import (
 	"github.com/maritimusj/centrum/util"
 	"sync"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
-	TbUsers            = "`users`"
-	TbRoles            = "`roles`"
-	TbUserRoles        = "`user_roles`"
-	TbPolicies         = "`policies`"
-	TbGroups           = "`groups`"
-	TbDevices          = "`devices`"
-	TbMeasures         = "`measures`"
-	TbDeviceGroups     = "`device_groups`"
-	TbEquipments       = "`equipments`"
-	TbStates           = "`states`"
-	TbEquipmentGroups  = "`equipment_groups`"
-	TbApiResources     = "`api_resources`"
-	TbDevicePoliciesVW = "`device_policies_vw`"
+	TbUsers           = "`users`"
+	TbRoles           = "`roles`"
+	TbUserRoles       = "`user_roles`"
+	TbPolicies        = "`policies`"
+	TbGroups          = "`groups`"
+	TbDevices         = "`devices`"
+	TbMeasures        = "`measures`"
+	TbDeviceGroups    = "`device_groups`"
+	TbEquipments      = "`equipments`"
+	TbStates          = "`states`"
+	TbEquipmentGroups = "`equipment_groups`"
+	TbApiResources    = "`api_resources`"
 )
 
 type mysqlStore struct {
@@ -89,12 +90,12 @@ func (s *mysqlStore) Synchronized(name string, fn func() interface{}) <-chan int
 	defer s.mu.Unlock()
 
 	v, ok := s.lockerMap[name]
-	if ok {
+	if !ok {
 		v := sync.Mutex{}
 		s.lockerMap[name] = v
 	}
 
-	resultChan := make(chan interface{})
+	resultChan := make(chan interface{}, 1)
 	go func() {
 		v.Lock()
 		s.wg.Add(1)
@@ -113,7 +114,6 @@ func (s *mysqlStore) Synchronized(name string, fn func() interface{}) <-chan int
 			resultChan <- fn()
 			return
 		}
-
 	}()
 
 	return resultChan
@@ -223,6 +223,7 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 				return err
 			}
 		} else {
+			log.Tracef("GetUser from cache: %d:%s", user.GetID(), user.Name())
 			return user
 		}
 
@@ -451,6 +452,7 @@ func (s *mysqlStore) createRole(db DB, title string) (model.Role, error) {
 
 	return result.(model.Role), nil
 }
+
 func (s *mysqlStore) CreateRole(title string) (model.Role, error) {
 	return s.createRole(s.db, title)
 }
@@ -838,23 +840,42 @@ func (s *mysqlStore) RemoveGroup(groupID int64) error {
 func (s *mysqlStore) GetGroupList(options ...helper.OptionFN) ([]model.Group, int64, error) {
 	option := parseOption(options...)
 	var (
-		fromSQL = "FROM " + TbGroups + " WHERE 1"
+		from  = "FROM " + TbGroups + " g"
+		where = " WHERE 1"
 	)
 
 	var params []interface{}
 
+	if option.UserID != nil {
+		userID := *option.UserID
+		if userID > 0 {
+			from += fmt.Sprintf(` LEFT JOIN (
+SELECT g.id,p.role_id,p.action,p.effect FROM %s g
+INNER JOIN %s p ON p.resource_class=%d AND p.resource_id=g.id
+INNER JOIN %s r ON p.role_id=r.id
+WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
+) b ON g.id=b.id`, TbGroups, TbPolicies, resource.Group, TbRoles, TbUserRoles, userID)
+
+			if option.DefaultEffect == resource.Allow {
+				where += " AND ((b.action=0 AND b.effect=1) OR (ISNULL(b.action) AND ISNULL(b.effect)))"
+			} else {
+				where += " AND (b.action=0 AND b.effect=1)"
+			}
+		}
+	}
+
 	if option.ParentID != nil {
-		fromSQL += " AND parent_id=?"
+		from += " AND g.parent_id=?"
 		params = append(params, *option.ParentID)
 	}
 
 	if option.Keyword != "" {
-		fromSQL += " AND title REGEXP ?"
+		where += " AND g.title REGEXP ?"
 		params = append(params, option.Keyword)
 	}
 
 	var total int64
-	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
+	if err := s.db.QueryRow("SELECT COUNT(DISTINCT g.id) "+from+where, params...).Scan(&total); err != nil {
 		return nil, 0, lang.InternalError(err)
 	}
 
@@ -862,19 +883,20 @@ func (s *mysqlStore) GetGroupList(options ...helper.OptionFN) ([]model.Group, in
 		return []model.Group{}, 0, nil
 	}
 
-	fromSQL += " ORDER BY id ASC"
+	where += " ORDER BY g.id ASC"
 
 	if option.Limit > 0 {
-		fromSQL += " LIMIT ?"
+		where += " LIMIT ?"
 		params = append(params, option.Limit)
 	}
 
 	if option.Offset > 0 {
-		fromSQL += " OFFSET ?"
+		where += " OFFSET ?"
 		params = append(params, option.Offset)
 	}
 
-	rows, err := s.db.Query("SELECT id "+fromSQL, params...)
+	log.Trace("SELECT DISTINCT g.id "+from+where)
+	rows, err := s.db.Query("SELECT DISTINCT g.id "+from+where, params...)
 	if err != nil {
 		return nil, 0, lang.InternalError(err)
 	}
@@ -910,7 +932,7 @@ func (s *mysqlStore) loadDevice(id int64) (model.Device, error) {
 	err := LoadData(s.db, TbDevices, map[string]interface{}{
 		"enable":     &device.enable,
 		"title":      &device.title,
-		"options":    &device.options,
+		"options?":   &device.options,
 		"created_at": &device.createdAt,
 	}, "id=?", id)
 
@@ -1018,7 +1040,7 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 	WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 ) b ON d.id=b.id`, TbDevices, TbPolicies, resource.Device, TbRoles, TbUserRoles, userID)
 
-			if resource.Effect(option.DefaultEffect) == resource.Allow {
+			if option.DefaultEffect == resource.Allow {
 				where += " AND ((b.action=0 AND b.effect=1) OR (ISNULL(b.action) AND ISNULL(b.effect)))"
 			} else {
 				where += " AND (b.action=0 AND b.effect=1)"
@@ -1036,7 +1058,6 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 		where += " AND d.title REGEXP ?"
 		params = append(params, option.Keyword)
 	}
-	println("SELECT DISTINCT d.id " + from + where)
 	var total int64
 	if option.GetTotal == nil || *option.GetTotal {
 		if err := s.db.QueryRow("SELECT COUNT(DISTINCT d.id) "+from+where, params...).Scan(&total); err != nil {
@@ -1060,6 +1081,7 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 		params = append(params, option.Offset)
 	}
 
+	log.Trace("SELECT DISTINCT d.id " + from + where)
 	rows, err := s.db.Query("SELECT DISTINCT d.id "+from+where, params...)
 	if err != nil {
 		return nil, 0, lang.InternalError(err)
@@ -1138,7 +1160,7 @@ func (s *mysqlStore) GetMeasure(measureID int64) (model.Measure, error) {
 	return result.(model.Measure), nil
 }
 
-func (s *mysqlStore) CreateMeasure(deviceID int64, title string, tag string, kind model.MeasureKind) (model.Measure, error) {
+func (s *mysqlStore) CreateMeasure(deviceID int64, title string, tag string, kind resource.MeasureKind) (model.Measure, error) {
 	result := <-s.Synchronized(TbMeasures, func() interface{} {
 		data := map[string]interface{}{
 			"enable":    status.Enable,
@@ -1189,28 +1211,47 @@ func (s *mysqlStore) GetMeasureList(options ...helper.OptionFN) ([]model.Measure
 	option := parseOption(options...)
 
 	var (
-		fromSQL = "FROM " + TbMeasures + " WHERE 1"
+		from  = "FROM " + TbMeasures + " m"
+		where = " WHERE 1"
 	)
 
 	var params []interface{}
 
+	if option.UserID != nil {
+		userID := *option.UserID
+		if userID > 0 {
+			from += fmt.Sprintf(` LEFT JOIN (
+SELECT m.id,p.role_id,p.action,p.effect FROM %s m
+INNER JOIN %s p ON p.resource_class=%d AND p.resource_id=m.id
+INNER JOIN %s r ON p.role_id=r.id
+WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
+) b ON m.id=b.id`, TbMeasures, TbPolicies, resource.Measure, TbRoles, TbUserRoles, userID)
+
+			if option.DefaultEffect == resource.Allow {
+				where += " AND ((b.action=0 AND b.effect=1) OR (ISNULL(b.action) AND ISNULL(b.effect)))"
+			} else {
+				where += " AND (b.action=0 AND b.effect=1)"
+			}
+		}
+	}
+
 	if option.DeviceID > 0 {
-		fromSQL += " AND device_id=?"
+		where += " AND m.device_id=?"
 		params = append(params, option.DeviceID)
 	}
 
-	if model.MeasureKind(option.Kind) != model.AllKind {
-		fromSQL += " AND kind=?"
+	if option.Kind != resource.AllKind {
+		where += " AND m.kind=?"
 		params = append(params, option.Kind)
 	}
 
 	if option.Keyword != "" {
-		fromSQL += " AND title REGEXP ?"
+		where += " AND m.title REGEXP ?"
 		params = append(params, option.Keyword)
 	}
 
 	var total int64
-	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
+	if err := s.db.QueryRow("SELECT COUNT(DISTINCT m.id) "+from+where, params...).Scan(&total); err != nil {
 		return nil, 0, lang.InternalError(err)
 	}
 
@@ -1218,19 +1259,20 @@ func (s *mysqlStore) GetMeasureList(options ...helper.OptionFN) ([]model.Measure
 		return []model.Measure{}, 0, nil
 	}
 
-	fromSQL += " ORDER BY id ASC"
+	where += " ORDER BY m.id ASC"
 
 	if option.Limit > 0 {
-		fromSQL += " LIMIT ?"
+		where += " LIMIT ?"
 		params = append(params, option.Limit)
 	}
 
 	if option.Offset > 0 {
-		fromSQL += " OFFSET ?"
+		where += " OFFSET ?"
 		params = append(params, option.Offset)
 	}
 
-	rows, err := s.db.Query("SELECT id "+fromSQL, params...)
+	log.Trace("SELECT DISTINCT d.id " + from + where)
+	rows, err := s.db.Query("SELECT DISTINCT m.id "+from+where, params...)
 	if err != nil {
 		return nil, 0, lang.InternalError(err)
 	}
@@ -1356,22 +1398,42 @@ func (s *mysqlStore) RemoveEquipment(equipmentID int64) error {
 func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equipment, int64, error) {
 	option := parseOption(options...)
 	var (
-		fromSQL = "FROM " + TbEquipments + " e"
+		from  = "FROM " + TbEquipments + " e"
+		where = " WHERE 1"
 	)
 
 	var params []interface{}
+
+	if option.UserID != nil {
+		userID := *option.UserID
+		if userID > 0 {
+			from += fmt.Sprintf(` LEFT JOIN (
+	SELECT e.id,p.role_id,p.action,p.effect FROM %s e 
+	INNER JOIN %s p ON p.resource_class=%d AND p.resource_id=e.id 
+	INNER JOIN %s r ON p.role_id=r.id
+	WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
+) b ON e.id=b.id`, TbEquipments, TbPolicies, resource.Equipment, TbRoles, TbUserRoles, userID)
+
+			if option.DefaultEffect == resource.Allow {
+				where += " AND ((b.action=0 AND b.effect=1) OR (ISNULL(b.action) AND ISNULL(b.effect)))"
+			} else {
+				where += " AND (b.action=0 AND b.effect=1)"
+			}
+		}
+	}
+
 	if option.GroupID != nil {
-		fromSQL += " INNER JOIN " + TbEquipmentGroups + " g ON e.id=g.equip_id WHERE g.group_id=?"
+		where += " INNER JOIN " + TbEquipmentGroups + " g ON e.id=g.equip_id WHERE g.group_id=?"
 		params = append(params, *option.GroupID)
 	}
 
 	if option.Keyword != "" {
-		fromSQL += " AND e.title REGEXP ?"
+		where += " AND e.title REGEXP ?"
 		params = append(params, option.Keyword)
 	}
 
 	var total int64
-	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
+	if err := s.db.QueryRow("SELECT COUNT(DISTINCT e.id) "+from+where, params...).Scan(&total); err != nil {
 		return nil, 0, lang.InternalError(err)
 	}
 
@@ -1379,18 +1441,18 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 		return []model.Equipment{}, 0, nil
 	}
 
-	fromSQL += " ORDER BY e.id ASC"
+	where += " ORDER BY e.id ASC"
 
 	if option.Limit > 0 {
-		fromSQL += " LIMIT ?"
+		where += " LIMIT ?"
 		params = append(params, option.Limit)
 	}
 
 	if option.Offset > 0 {
-		fromSQL += " OFFSET ?"
+		where += " OFFSET ?"
 		params = append(params, option.Offset)
 	}
-	rows, err := s.db.Query("SELECT e.id "+fromSQL, params...)
+	rows, err := s.db.Query("SELECT DISTINCT e.id "+from+where, params...)
 	if err != nil {
 		return nil, 0, lang.InternalError(err)
 	}
@@ -1521,28 +1583,47 @@ func (s *mysqlStore) GetStateList(options ...helper.OptionFN) ([]model.State, in
 	option := parseOption(options...)
 
 	var (
-		fromSQL = "FROM " + TbStates + " s INNER JOIN " + TbMeasures + " m ON s.measure_id=m.id WHERE 1"
+		from  = "FROM " + TbStates + " s"
+		where = " WHERE 1"
 	)
 
 	var params []interface{}
 
+	if option.UserID != nil {
+		userID := *option.UserID
+		if userID > 0 {
+			from += fmt.Sprintf(` LEFT JOIN (
+SELECT s.id,p.role_id,p.action,p.effect FROM %s s
+INNER JOIN %s p ON p.resource_class=%d AND p.resource_id=m.id
+INNER JOIN %s r ON p.role_id=r.id
+WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
+) b ON s.id=b.id`, TbStates, TbPolicies, resource.State, TbRoles, TbUserRoles, userID)
+
+			if option.DefaultEffect == resource.Allow {
+				where += " AND ((b.action=0 AND b.effect=1) OR (ISNULL(b.action) AND ISNULL(b.effect)))"
+			} else {
+				where += " AND (b.action=0 AND b.effect=1)"
+			}
+		}
+	}
+
 	if option.EquipmentID > 0 {
-		fromSQL += " AND s.equipment_id=?"
+		where += " AND s.equipment_id=?"
 		params = append(params, option.EquipmentID)
 	}
 
-	if model.MeasureKind(option.Kind) != model.AllKind {
-		fromSQL += " AND m.kind=?"
+	if option.Kind != resource.AllKind {
+		where += " AND m.kind=?"
 		params = append(params, option.Kind)
 	}
 
 	if option.Keyword != "" {
-		fromSQL += " AND s.title REGEXP ?"
+		where += " AND s.title REGEXP ?"
 		params = append(params, option.Keyword)
 	}
 
 	var total int64
-	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
+	if err := s.db.QueryRow("SELECT COUNT(DISTINCT s.id) "+from+where, params...).Scan(&total); err != nil {
 		return nil, 0, lang.InternalError(err)
 	}
 
@@ -1550,19 +1631,20 @@ func (s *mysqlStore) GetStateList(options ...helper.OptionFN) ([]model.State, in
 		return []model.State{}, 0, nil
 	}
 
-	fromSQL += " ORDER BY s.id ASC"
+	where += " ORDER BY s.id ASC"
 
 	if option.Limit > 0 {
-		fromSQL += " LIMIT ?"
+		where += " LIMIT ?"
 		params = append(params, option.Limit)
 	}
 
 	if option.Offset > 0 {
-		fromSQL += " OFFSET ?"
+		where += " OFFSET ?"
 		params = append(params, option.Offset)
 	}
 
-	rows, err := s.db.Query("SELECT s.id "+fromSQL, params...)
+	log.Trace("SELECT DISTINCT e.id "+from+where)
+	rows, err := s.db.Query("SELECT DISTINCT s.id "+from+where, params...)
 	if err != nil {
 		return nil, 0, lang.InternalError(err)
 	}

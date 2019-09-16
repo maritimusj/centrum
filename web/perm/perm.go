@@ -16,7 +16,7 @@ const (
 
 func IsDefaultAdminUser(ctx iris.Context) bool {
 	v := ctx.Values().Get(DefaultAdminUserKey)
-	return v != nil
+	return v != nil && v.(bool)
 }
 
 func AdminUser(ctx iris.Context) model.User {

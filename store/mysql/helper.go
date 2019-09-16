@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/util"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -54,7 +54,7 @@ func LoadData(db DB, tbName string, data map[string]interface{}, cond string, pa
 		SQL.WriteString(cond)
 
 		err := db.QueryRow(SQL.String(), params...).Scan(values...)
-		log.Printf("LoadData: %s => %s\r\n", SQL.String(), util.If(err != nil, err, "Ok"))
+		log.Tracef("LoadData: %s => %s", SQL.String(), util.If(err != nil, err, "Ok"))
 		if err != nil {
 			return err
 		}
@@ -86,7 +86,7 @@ func CreateData(db DB, tbName string, data map[string]interface{}) (int64, error
 		SQL.WriteString(")")
 
 		result, err := db.Exec(SQL.String(), values...)
-		log.Printf("createData: %s => %s\r\n", SQL.String(), util.If(err != nil, err, "Ok"))
+		log.Tracef("createData: %s => %s", SQL.String(), util.If(err != nil, err, "Ok"))
 
 		if err != nil {
 			return 0, err
@@ -126,7 +126,7 @@ func SaveData(db DB, tbName string, data map[string]interface{}, cond string, pa
 		SQL.WriteString(cond)
 
 		_, err := db.Exec(SQL.String(), values...)
-		log.Printf("SaveData: %s => %s\r\n", SQL.String(), util.If(err != nil, err, "Ok"))
+		log.Tracef("SaveData: %s => %s", SQL.String(), util.If(err != nil, err, "Ok"))
 		if err != nil {
 			return err
 		}
@@ -137,7 +137,9 @@ func SaveData(db DB, tbName string, data map[string]interface{}, cond string, pa
 }
 
 func RemoveData(db DB, tbName string, cond string, params ...interface{}) error {
-	_, err := db.Exec("DELETE FROM "+tbName+" WHERE "+cond, params...)
+	SQL := "DELETE FROM " + tbName + " WHERE " + cond
+	_, err := db.Exec(SQL, params...)
+	log.Tracef("RemoveData: %s => %s", SQL, util.If(err != nil, err, "Ok"))
 	if err != nil {
 		if err != sql.ErrNoRows {
 			return err
@@ -148,7 +150,9 @@ func RemoveData(db DB, tbName string, cond string, params ...interface{}) error 
 
 func IsDataExists(db DB, tbName string, cond string, params ...interface{}) (bool, error) {
 	var total int64
-	err := db.QueryRow("SELECT COUNT(*) FROM "+tbName+" WHERE "+cond+" Limit 1", params...).Scan(&total)
+	SQL := "SELECT COUNT(*) FROM " + tbName + " WHERE " + cond + " Limit 1"
+	err := db.QueryRow(SQL, params...).Scan(&total)
+	log.Tracef("IsDataExists: %s => %s", SQL, util.If(err != nil, err, "Ok"))
 	if err != nil {
 		if err != sql.ErrNoRows {
 			return false, err

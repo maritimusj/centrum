@@ -20,8 +20,6 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
 
 		var params = []helper.OptionFN{
-			helper.DefaultEffect(int8(resource.Allow)),
-			helper.User(perm.AdminUser(ctx).GetID()),
 			helper.Page(page, pageSize),
 		}
 
@@ -37,6 +35,11 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 				return err
 			}
 			params = append(params, helper.Parent(parentGroupID))
+		}
+
+		if !perm.IsDefaultAdminUser(ctx) {
+			params = append(params, helper.User(perm.AdminUser(ctx).GetID()))
+			params = append(params, helper.DefaultEffect(cfg.DefaultEffect()))
 		}
 
 		groups, total, err := s.GetGroupList(params...)

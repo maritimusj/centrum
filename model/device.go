@@ -24,5 +24,5 @@ type Device interface {
 	Groups() ([]Group, error)
 
 	GetMeasureList(options ...helper.OptionFN) ([]Measure, int64, error)
-	CreateMeasure(title string, tag string, kind MeasureKind) (Measure, error)
+	CreateMeasure(title string, tag string, kind resource.MeasureKind) (Measure, error)
 }

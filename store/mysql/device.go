@@ -156,7 +156,7 @@ func (d *Device) GetMeasureList(options ...helper.OptionFN) ([]model.Measure, in
 	return d.store.GetMeasureList(options...)
 }
 
-func (d *Device) CreateMeasure(title string, tag string, kind model.MeasureKind) (model.Measure, error) {
+func (d *Device) CreateMeasure(title string, tag string, kind resource.MeasureKind) (model.Measure, error) {
 	return d.store.CreateMeasure(d.GetID(), title, tag, kind)
 }
 

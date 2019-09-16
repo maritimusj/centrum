@@ -98,8 +98,8 @@ func (m *Measure) Tag() string {
 	return m.tag
 }
 
-func (m *Measure) Kind() model.MeasureKind {
-	return model.MeasureKind(m.kind)
+func (m *Measure) Kind() resource.MeasureKind {
+	return resource.MeasureKind(m.kind)
 }
 
 func (m *Measure) CreatedAt() time.Time {

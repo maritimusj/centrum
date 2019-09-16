@@ -33,6 +33,16 @@ const (
 	State
 )
 
+type MeasureKind int
+
+const (
+	AllKind MeasureKind = iota
+	AI
+	AO
+	DI
+	DO
+)
+
 func IsValidClass(class interface{}) bool {
 	v := reflect.ValueOf(class)
 	if v.IsValid() {

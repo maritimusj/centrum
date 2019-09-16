@@ -2,16 +2,6 @@ package model
 
 import "github.com/maritimusj/centrum/resource"
 
-type MeasureKind int
-
-const (
-	AllKind MeasureKind = iota
-	AI
-	AO
-	DI
-	DO
-)
-
 //点位
 type Measure interface {
 	DBEntry
@@ -26,5 +16,5 @@ type Measure interface {
 	SetTitle(title string)
 
 	Tag() string
-	Kind() MeasureKind
+	Kind() resource.MeasureKind
 }

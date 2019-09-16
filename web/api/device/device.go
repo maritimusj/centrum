@@ -20,8 +20,6 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
 
 		var params = []helper.OptionFN{
-			helper.DefaultEffect(int8(resource.Allow)),
-			helper.User(perm.AdminUser(ctx).GetID()),
 			helper.Page(page, pageSize),
 		}
 
@@ -33,6 +31,11 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 		groupID := ctx.URLParamInt64Default("group", -1)
 		if groupID != -1 {
 			params = append(params, helper.Group(groupID))
+		}
+
+		if !perm.IsDefaultAdminUser(ctx) {
+			params = append(params, helper.User(perm.AdminUser(ctx).GetID()))
+			params = append(params, helper.DefaultEffect(cfg.DefaultEffect()))
 		}
 
 		devices, total, err := s.GetDeviceList(params...)
@@ -152,15 +155,23 @@ func Delete(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 
 func MeasureList(deviceID int64, ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
+		device, err := s.GetDevice(deviceID)
+		if err != nil {
+			return err
+		}
+
+		if perm.Deny(ctx, device, resource.View) {
+			return lang.ErrNoPermission
+		}
+
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
-		kind := ctx.URLParamIntDefault("kind", int(model.AllKind))
+		kind := ctx.URLParamIntDefault("kind", int(resource.AllKind))
 
 		var params = []helper.OptionFN{
-			helper.DefaultEffect(int8(resource.Allow)),
-			helper.User(perm.AdminUser(ctx).GetID()),
-			helper.Kind(int8(kind)),
 			helper.Page(page, pageSize),
+			helper.Kind(resource.MeasureKind(kind)),
+			helper.Device(device.GetID()),
 		}
 
 		keyword := ctx.URLParam("keyword")
@@ -168,16 +179,10 @@ func MeasureList(deviceID int64, ctx iris.Context, s store.Store, cfg config.Con
 			params = append(params, helper.Keyword(keyword))
 		}
 
-		device, err := s.GetDevice(deviceID)
-		if err != nil {
-			return err
+		if !perm.IsDefaultAdminUser(ctx) {
+			params = append(params, helper.User(perm.AdminUser(ctx).GetID()))
+			params = append(params, helper.DefaultEffect(cfg.DefaultEffect()))
 		}
-
-		if perm.Deny(ctx, device, resource.Ctrl) {
-			return lang.ErrNoPermission
-		}
-
-		params = append(params, helper.Device(device.GetID()))
 
 		measures, total, err := s.GetMeasureList(params...)
 		if err != nil {
@@ -203,7 +208,7 @@ func MeasureDetail(measureID int64, ctx iris.Context, s store.Store) hero.Result
 			return err
 		}
 
-		if perm.Deny(ctx, measure, resource.Ctrl) {
+		if perm.Deny(ctx, measure, resource.View) {
 			return lang.ErrNoPermission
 		}
 

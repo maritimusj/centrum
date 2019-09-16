@@ -20,8 +20,6 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
 
 		var params = []helper.OptionFN{
-			helper.DefaultEffect(int8(resource.Allow)),
-			helper.User(perm.AdminUser(ctx).GetID()),
 			helper.Page(page, pageSize),
 		}
 
@@ -35,10 +33,16 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 			params = append(params, helper.Group(groupID))
 		}
 
+		if !perm.IsDefaultAdminUser(ctx) {
+			params = append(params, helper.DefaultEffect(cfg.DefaultEffect()))
+			params = append(params, helper.User(perm.AdminUser(ctx).GetID()))
+		}
+
 		equipments, total, err := s.GetEquipmentList(params...)
 		if err != nil {
 			return err
 		}
+
 		var result = make([]model.Map, 0, len(equipments))
 		for _, equipment := range equipments {
 			result = append(result, equipment.Brief())
@@ -144,17 +148,6 @@ func Delete(equipmentID int64, ctx iris.Context, s store.Store) hero.Result {
 
 func StateList(equipmentID int64, ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
-		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
-		kind := ctx.URLParamIntDefault("kind", int(model.AllKind))
-
-		var params = []helper.OptionFN{
-			helper.DefaultEffect(int8(resource.Allow)),
-			helper.User(perm.AdminUser(ctx).GetID()),
-			helper.Kind(int8(kind)),
-			helper.Page(page, pageSize),
-		}
-
 		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
@@ -164,7 +157,20 @@ func StateList(equipmentID int64, ctx iris.Context, s store.Store, cfg config.Co
 			return lang.ErrNoPermission
 		}
 
-		params = append(params, helper.Equipment(equipment.GetID()))
+		page := ctx.URLParamInt64Default("page", 1)
+		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
+		kind := ctx.URLParamIntDefault("kind", int(resource.AllKind))
+
+		var params = []helper.OptionFN{
+			helper.Page(page, pageSize),
+			helper.Kind(resource.MeasureKind(kind)),
+			helper.Equipment(equipment.GetID()),
+		}
+
+		if !perm.IsDefaultAdminUser(ctx) {
+			params = append(params, helper.DefaultEffect(cfg.DefaultEffect()))
+			params = append(params, helper.User(perm.AdminUser(ctx).GetID()))
+		}
 
 		states, total, err := s.GetStateList(params...)
 		if err != nil {

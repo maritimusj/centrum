@@ -108,7 +108,7 @@ func (server *server) Start(ctx context.Context, cfg config.Config) error {
 			p.Delete("/{id:int64}", hero.Handler(equipment.DeleteState)).Name = ResourceDef.StateDelete
 		})
 	})
-	return server.app.Run(iris.Addr(":9090"))
+	return server.app.Run(iris.Addr(":9090"), iris.WithoutServerError(iris.ErrServerClosed))
 }
 
 func (server *server) Close() {

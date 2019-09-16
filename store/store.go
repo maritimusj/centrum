@@ -36,7 +36,7 @@ type Store interface {
 	RemoveDevice(deviceID int64) error
 	GetDeviceList(options ...helper.OptionFN) ([]model.Device, int64, error)
 
-	CreateMeasure(deviceID int64, title string, tag string, kind model.MeasureKind) (model.Measure, error)
+	CreateMeasure(deviceID int64, title string, tag string, kind resource.MeasureKind) (model.Measure, error)
 	GetMeasure(measureID int64) (model.Measure, error)
 	RemoveMeasure(measureID int64) error
 	GetMeasureList(options ...helper.OptionFN) ([]model.Measure, int64, error)
