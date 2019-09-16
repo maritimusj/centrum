@@ -6,6 +6,7 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/core/router"
 	"github.com/kataras/iris/hero"
+	"github.com/maritimusj/centrum/web/api/my"
 
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/web/api/web"
@@ -50,10 +51,18 @@ func (server *server) Start(ctx context.Context, cfg config.Config) error {
 		p.PartyFunc("/", func(p router.Party) {
 			web.RequireToken(p, cfg)
 			p.Use(hero.Handler(perm.Check))
+
+			p.PartyFunc("/my", func(p router.Party) {
+				p.Get("/profile", hero.Handler(my.Detail))
+				p.Put("/profile", hero.Handler(my.Update))
+				p.Get("/perm/{class:string}", hero.Handler(my.Perm))
+				p.Post("/perm/{class:string}", hero.Handler(my.MultiPerm))
+			})
+
 			//资源
 			p.PartyFunc("/resource", func(p router.Party) {
-				p.Get("/", hero.Handler(resource.GroupList))
-				p.Get("/{groupID:int}/", hero.Handler(resource.List))
+				p.Get("/", hero.Handler(resource.GroupList)).Name = ResourceDef.ResourceList
+				p.Get("/{groupID:int}/", hero.Handler(resource.List)).Name = ResourceDef.ResourceDetail
 			})
 
 			//角色
@@ -93,11 +102,11 @@ func (server *server) Start(ctx context.Context, cfg config.Config) error {
 
 				//物理点位
 				p.Get("/{id:int64}/measure", hero.Handler(device.MeasureList)).Name = ResourceDef.MeasureList
-				p.Post("/{id:int64}/measure", hero.Handler(device.CreateMeasure))
+				p.Post("/{id:int64}/measure", hero.Handler(device.CreateMeasure)).Name = ResourceDef.MeasureCreate
 			})
 			//物理点位
 			p.PartyFunc("/measure", func(p router.Party) {
-				p.Delete("/{id:int64}", hero.Handler(device.DeleteMeasure))
+				p.Delete("/{id:int64}", hero.Handler(device.DeleteMeasure)).Name = ResourceDef.MeasureDelete
 				p.Get("/{id:int64}", hero.Handler(device.MeasureDetail)).Name = ResourceDef.MeasureDetail
 			})
 

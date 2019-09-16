@@ -1,6 +1,9 @@
 package resource
 
 const (
+	ResourceList   = "resource.list"
+	ResourceDetail = "resource.detail"
+
 	UserList   = "user.list"
 	UserCreate = "user.create"
 	UserDetail = "user.detail"

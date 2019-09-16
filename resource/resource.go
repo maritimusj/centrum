@@ -1,16 +1,20 @@
 package resource
 
-import "reflect"
+import (
+	"reflect"
+	"strings"
+)
 
 //动作
 type Action int8
 
 const (
-	Invoke Action = 0
-)
-const (
 	View Action = iota
 	Ctrl
+)
+
+const (
+	Invoke = Ctrl
 )
 
 //结果
@@ -42,6 +46,24 @@ const (
 	DI
 	DO
 )
+
+var (
+	classTitle = map[string]Class{
+		"api":       Api,
+		"group":     Group,
+		"device":    Device,
+		"measure":   Measure,
+		"equipment": Equipment,
+		"state":     State,
+	}
+)
+
+func ParseClass(class string) Class {
+	if v, ok := classTitle[strings.ToLower(class)]; ok {
+		return v
+	}
+	return Default
+}
 
 func IsValidClass(class interface{}) bool {
 	v := reflect.ValueOf(class)

@@ -16,7 +16,7 @@ var (
 		resource.State:     "自定义点位",
 	}
 
-	ApiResourcesMap = [][3]string{
+	ApiResourcesMap = [...][3]string{
 		{resource.UserList, "用户列表", "查看用户列表"},
 		{resource.UserCreate, "创建用户", "创建新用户"},
 		{resource.UserUpdate, "编辑用户", "修改用户资料"},
