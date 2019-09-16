@@ -42,9 +42,15 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 		if err != nil {
 			return err
 		}
+
 		var result = make([]model.Map, 0, len(devices))
 		for _, device := range devices {
-			result = append(result, device.Brief())
+			brief := device.Brief()
+			brief["perm"] = iris.Map{
+				"view": true,
+				"ctrl": perm.Allow(ctx, device, resource.Ctrl),
+			}
+			result = append(result, brief)
 		}
 
 		return iris.Map{
@@ -191,7 +197,12 @@ func MeasureList(deviceID int64, ctx iris.Context, s store.Store, cfg config.Con
 
 		var result = make([]model.Map, 0, len(measures))
 		for _, measure := range measures {
-			result = append(result, measure.Brief())
+			brief := measure.Brief()
+			brief["perm"] = iris.Map{
+				"view": true,
+				"ctrl": perm.Allow(ctx, measure, resource.Ctrl),
+			}
+			result = append(result, brief)
 		}
 
 		return iris.Map{

@@ -48,7 +48,12 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 		}
 		var result = make([]model.Map, 0, len(groups))
 		for _, group := range groups {
-			result = append(result, group.Brief())
+			brief := group.Brief()
+			brief["perm"] = iris.Map{
+				"view": true,
+				"ctrl": perm.Allow(ctx, group, resource.Ctrl),
+			}
+			result = append(result, brief)
 		}
 
 		return iris.Map{

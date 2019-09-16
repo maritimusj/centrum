@@ -45,7 +45,12 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 
 		var result = make([]model.Map, 0, len(equipments))
 		for _, equipment := range equipments {
-			result = append(result, equipment.Brief())
+			brief := equipment.Brief()
+			brief["perm"] = iris.Map{
+				"view": true,
+				"ctrl": perm.Allow(ctx, equipment, resource.Ctrl),
+			}
+			result = append(result, brief)
 		}
 
 		return iris.Map{
@@ -179,7 +184,12 @@ func StateList(equipmentID int64, ctx iris.Context, s store.Store, cfg config.Co
 
 		var result = make([]model.Map, 0, len(states))
 		for _, state := range states {
-			result = append(result, state.Brief())
+			brief := state.Brief()
+			brief["perm"] = iris.Map{
+				"view": true,
+				"ctrl": perm.Allow(ctx, state, resource.Ctrl),
+			}
+			result = append(result, brief)
 		}
 
 		return iris.Map{
@@ -202,6 +212,7 @@ func CreateState(equipmentID int64, ctx iris.Context, s store.Store, validate *v
 
 		var form struct {
 			Title           string `json:"title" validate:"required"`
+			Desc            string `json:"desc"`
 			MeasureID       int64  `json:"measure_id" validate:"required"`
 			TransformScript string `json:"script"`
 		}
@@ -213,7 +224,7 @@ func CreateState(equipmentID int64, ctx iris.Context, s store.Store, validate *v
 			return lang.ErrInvalidRequestData
 		}
 
-		state, err := equipment.CreateState(form.Title, form.MeasureID, form.TransformScript)
+		state, err := equipment.CreateState(form.Title, form.Desc, form.MeasureID, form.TransformScript)
 		if err != nil {
 			return err
 		}

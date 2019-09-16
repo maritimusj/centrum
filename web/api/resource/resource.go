@@ -24,6 +24,24 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
 		keyword := ctx.URLParam("keyword")
 		roleID := ctx.URLParamInt64Default("role", 0)
+		userID := ctx.URLParamInt64Default("user", 0)
+
+		var err error
+
+		var role model.Role
+		var user model.User
+
+		if roleID > 0 {
+			role, err = s.GetRole(roleID)
+			if err != nil {
+				return err
+			}
+		} else if userID > 0 {
+			user, err = s.GetUser(userID)
+			if err != nil {
+				return err
+			}
+		}
 
 		var params = []helper.OptionFN{
 			helper.Page(page, pageSize),
@@ -36,15 +54,6 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 		class := resource.Class(classID)
 		if !resource.IsValidClass(class) {
 			return lang.Error(lang.ErrInvalidResourceClassID)
-		}
-
-		var role model.Role
-		var err error
-		if roleID > 0 {
-			role, err = s.GetRole(roleID)
-			if err != nil {
-				return err
-			}
 		}
 
 		if class == resource.Api {
@@ -76,7 +85,6 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 		}
 
 		var list = make([]model.Map, 0, len(resources))
-
 		for _, res := range resources {
 			entry := model.Map{
 				"id":          res.ResourceID(),
@@ -92,16 +100,64 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 				if err != nil {
 					return err
 				}
-				if v, ok := policies[resource.View]; ok {
-					perm["view"] = v.Effect()
+				if resource.Class(classID) == resource.Api {
+					if v, ok := policies[resource.Invoke]; ok {
+						perm["invoke"] = v.Effect() == resource.Allow
+					} else {
+						perm["invoke"] = cfg.DefaultEffect() == resource.Allow
+					}
 				} else {
-					perm["view*"] = cfg.DefaultEffect()
+					if v, ok := policies[resource.View]; ok {
+						perm["view"] = v.Effect() == resource.Allow
+					} else {
+						perm["view"] = cfg.DefaultEffect()
+					}
+					if v, ok := policies[resource.Ctrl]; ok {
+						perm["ctrl"] = v.Effect() == resource.Allow
+					} else {
+						perm["ctrl"] = cfg.DefaultEffect() == resource.Allow
+					}
 				}
-				if v, ok := policies[resource.Ctrl]; ok {
-					perm["ctrl"] = v.Effect()
+				entry["perm"] = perm
+			} else if user != nil {
+				perm := model.Map{}
+				if resource.Class(classID) == resource.Api {
+					allowed, err := user.IsAllow(res, resource.Invoke)
+					if err != nil {
+						switch err {
+						case lang.Error(lang.ErrPolicyNotFound):
+							perm["invoke"] = cfg.DefaultEffect() == resource.Allow
+						default:
+							perm["invoke"] = false
+						}
+					} else {
+						perm["invoke"] = allowed
+					}
 				} else {
-					perm["ctrl*"] = cfg.DefaultEffect()
+					allowView, err := user.IsAllow(res, resource.View)
+					if err != nil {
+						switch err {
+						case lang.Error(lang.ErrPolicyNotFound):
+							perm["view"] = cfg.DefaultEffect() == resource.Allow
+						default:
+							perm["view"] = false
+						}
+					} else {
+						perm["view"] = allowView
+					}
+					allowCtrl, err := user.IsAllow(res, resource.Ctrl)
+					if err != nil {
+						switch err {
+						case lang.Error(lang.ErrPolicyNotFound):
+							perm["ctrl"] = cfg.DefaultEffect() == resource.Allow
+						default:
+							perm["ctrl"] = false
+						}
+					} else {
+						perm["ctrl"] = allowCtrl
+					}
 				}
+
 				entry["perm"] = perm
 			}
 

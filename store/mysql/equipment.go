@@ -160,7 +160,7 @@ func (e *Equipment) GetStateList(options ...helper.OptionFN) ([]model.State, int
 	return e.store.GetStateList(options...)
 }
 
-func (e *Equipment) CreateState(title string, measure interface{}, script string) (model.State, error) {
+func (e *Equipment) CreateState(title, desc string, measure interface{}, script string) (model.State, error) {
 	var measureID int64
 	switch v := measure.(type) {
 	case int64:
@@ -170,7 +170,7 @@ func (e *Equipment) CreateState(title string, measure interface{}, script string
 	default:
 		panic(errors.New("equipment CreateState: unknown measure"))
 	}
-	return e.store.CreateState(e.GetID(), measureID, title, script)
+	return e.store.CreateState(e.GetID(), measureID, title, desc, script)
 }
 
 func (e *Equipment) Simple() model.Map {

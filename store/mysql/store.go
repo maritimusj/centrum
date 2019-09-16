@@ -1545,6 +1545,7 @@ func (s *mysqlStore) loadState(id int64) (model.State, error) {
 	err := LoadData(s.db, TbStates, map[string]interface{}{
 		"enable":       &state.enable,
 		"title":        &state.title,
+		"desc?":        &state.desc,
 		"equipment_id": &state.equipmentID,
 		"measure_id":   &state.measureID,
 		"script":       &state.script,
@@ -1588,11 +1589,12 @@ func (s *mysqlStore) GetState(stateID int64) (model.State, error) {
 	return result.(model.State), nil
 }
 
-func (s *mysqlStore) CreateState(equipmentID int64, measureID int64, title string, script string) (model.State, error) {
+func (s *mysqlStore) CreateState(equipmentID, measureID int64, title, desc, script string) (model.State, error) {
 	result := <-s.Synchronized(TbStates, func() interface{} {
 		data := map[string]interface{}{
 			"enable":       status.Enable,
 			"title":        title,
+			"desc":         desc,
 			"equipment_id": equipmentID,
 			"measure_id":   measureID,
 			"script":       script,

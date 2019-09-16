@@ -47,7 +47,7 @@ type Store interface {
 	GetEquipmentList(options ...helper.OptionFN) ([]model.Equipment, int64, error)
 
 	GetState(stateID int64) (model.State, error)
-	CreateState(equipmentID int64, measureID int64, title string, script string) (model.State, error)
+	CreateState(equipmentID, measureID int64, title, desc, script string) (model.State, error)
 	RemoveState(stateID int64) error
 	GetStateList(options ...helper.OptionFN) ([]model.State, int64, error)
 
