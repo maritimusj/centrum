@@ -1,6 +1,9 @@
 package model
 
-import "github.com/maritimusj/centrum/resource"
+import (
+	"github.com/maritimusj/centrum/helper"
+	"github.com/maritimusj/centrum/resource"
+)
 
 //角色
 type Role interface {
@@ -17,4 +20,6 @@ type Role interface {
 	GetPolicy(res resource.Resource) (map[resource.Action]Policy, error)
 
 	IsAllow(res resource.Resource, action resource.Action) (bool, error)
+
+	GetUserList(options ...helper.OptionFN) ([]User, int64, error)
 }

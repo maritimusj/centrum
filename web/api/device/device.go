@@ -201,6 +201,40 @@ func MeasureList(deviceID int64, ctx iris.Context, s store.Store, cfg config.Con
 	})
 }
 
+func CreateMeasure(deviceID int64, ctx iris.Context, s store.Store, validate *validator.Validate) hero.Result {
+	return response.Wrap(func() interface{} {
+		device, err := s.GetDevice(deviceID)
+		if err != nil {
+			return err
+		}
+
+		if perm.Deny(ctx, device, resource.Ctrl) {
+			return lang.ErrNoPermission
+		}
+
+		var form struct {
+			Title string `json:"title" validate:"required"`
+			Tag   string `json:"tag" validate:"required"`
+			Kind  int8   `json:"kind" validate:"required"`
+		}
+
+		if err := ctx.ReadJSON(&form); err != nil {
+			return lang.ErrInvalidRequestData
+		}
+
+		if err := validate.Struct(&form); err != nil {
+			return lang.ErrInvalidRequestData
+		}
+
+		measure, err := s.CreateMeasure(device.GetID(), form.Title, form.Tag, resource.MeasureKind(form.Kind))
+		if err != nil {
+			return err
+		}
+
+		return measure.Simple()
+	})
+}
+
 func MeasureDetail(measureID int64, ctx iris.Context, s store.Store) hero.Result {
 	return response.Wrap(func() interface{} {
 		measure, err := s.GetMeasure(measureID)
@@ -213,5 +247,23 @@ func MeasureDetail(measureID int64, ctx iris.Context, s store.Store) hero.Result
 		}
 
 		return measure.Detail()
+	})
+}
+func DeleteMeasure(measureID int64, ctx iris.Context, s store.Store) hero.Result {
+	return response.Wrap(func() interface{} {
+		measure, err := s.GetMeasure(measureID)
+		if err != nil {
+			return err
+		}
+
+		if perm.Deny(ctx, measure, resource.View) {
+			return lang.ErrNoPermission
+		}
+
+		err = measure.Destroy()
+		if err != nil {
+			return err
+		}
+		return lang.Ok
 	})
 }

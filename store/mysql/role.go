@@ -86,6 +86,10 @@ func (r *Role) SetTitle(title string) {
 	}
 }
 
+func (r *Role) GetUserList(options ...helper.OptionFN) ([]model.User, int64, error) {
+	return r.store.GetUserList(helper.Role(r.GetID()))
+}
+
 func (r *Role) SetPolicy(res resource.Resource, action resource.Action, effect resource.Effect) (model.Policy, error) {
 	policy, err := r.store.CreatePolicyIsNotExists(r.id, res, action, effect)
 	if err != nil {

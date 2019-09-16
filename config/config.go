@@ -7,6 +7,8 @@ import (
 
 type Config interface {
 	LogLevel() string
+	SetLogLevel(string)
+
 	DefaultPageSize() int64
 	DBConnStr() string
 	JwtTokenKey() []byte
@@ -23,6 +25,10 @@ type config struct {
 
 func (c *config) LogLevel() string {
 	return c.logLevel
+}
+
+func (c *config) SetLogLevel(level string) {
+	c.logLevel = level
 }
 
 func (c *config) DefaultEffect() resource.Effect {
@@ -42,7 +48,7 @@ func (c *config) JwtTokenKey() []byte {
 }
 
 func (c *config) DBConnStr() string {
-	return "root:123456@/chuanyan?charset=utf8mb4&parseTime=true&loc=Local"
+	return "root:12345678@/chuanyan?charset=utf8mb4&parseTime=true&loc=Local"
 }
 
 func (c *config) DefaultPageSize() int64 {

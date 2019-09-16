@@ -22,6 +22,8 @@ func main() {
 	logLevel := flag.String("l", cfg.LogLevel(), "log level, [trace,debug,info,warn,error,fatal]")
 	flag.Parse()
 
+	cfg.SetLogLevel(*logLevel)
+
 	level, err := log.ParseLevel(*logLevel)
 	if err != nil {
 		log.Fatal(err)

@@ -273,6 +273,7 @@ func (s *mysqlStore) CreateUser(name string, password []byte, role model.Role) (
 				return err
 			}
 
+			//未指定角色则创建同名角色
 			if role == nil {
 				role, err = s.createRole(db, name)
 				if err != nil {
@@ -300,13 +301,48 @@ func (s *mysqlStore) CreateUser(name string, password []byte, role model.Role) (
 }
 
 func (s *mysqlStore) RemoveUser(userID int64) error {
+	user, err := s.GetUser(userID)
+	if err != nil {
+		return err
+	}
+
 	result := <-s.Synchronized(TbUsers, func() interface{} {
-		err := RemoveData(s.db, TbUsers, "id=?", userID)
-		if err != nil {
-			return lang.InternalError(err)
-		}
-		s.cache.Remove(&User{id: userID})
-		return nil
+		return s.TransactionDo(func(db helper.DB) interface{} {
+			roles, err := user.GetRoles()
+			if err != nil {
+				return err
+			}
+
+			//删除默认创建的同名角色
+			for _, role := range roles {
+				if role.Title() == user.Name() {
+					users, total, err := role.GetUserList(helper.GetTotal(true))
+					if err != nil {
+						return err
+					}
+					if total == 1 && users[0].Name() == user.Name() {
+						err = role.Destroy()
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+
+			//清空其它角色
+			err = user.SetRoles()
+			if err != nil {
+				return err
+			}
+
+			err = RemoveData(s.db, TbUsers, "id=?", userID)
+			if err != nil {
+				return lang.InternalError(err)
+			}
+
+			s.cache.Remove(&User{id: userID})
+			return nil
+		})
 	})
 
 	if err, ok := result.(error); ok {
@@ -319,17 +355,24 @@ func (s *mysqlStore) GetUserList(options ...helper.OptionFN) ([]model.User, int6
 	option := parseOption(options...)
 
 	var (
-		fromSQL = "FROM " + TbUsers + " WHERE 1"
+		from  = "FROM " + TbUsers + " u"
+		where = " WHERE 1"
 	)
 
 	var params []interface{}
+	if option.RoleID != nil && *option.RoleID > 0 {
+		from += " LEFT JOIN " + TbUserRoles + " r ON u.id=r.user_id"
+		where += " AND r.role_id=?"
+		params = append(params, *option.RoleID)
+	}
+
 	if option.Keyword != "" {
-		fromSQL += " AND (name REGEXP ? OR title REGEXP ? OR mobile REGEXP ? OR email REGEXP ?)"
+		where += " AND (u.name REGEXP ? OR u.title REGEXP ? OR u.mobile REGEXP ? OR u.email REGEXP ?)"
 		params = append(params, option.Keyword, option.Keyword, option.Keyword, option.Keyword)
 	}
 
 	var total int64
-	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
+	if err := s.db.QueryRow("SELECT COUNT(DISTINCT u.id) "+from+where, params...).Scan(&total); err != nil {
 		return nil, 0, lang.InternalError(err)
 	}
 
@@ -337,19 +380,19 @@ func (s *mysqlStore) GetUserList(options ...helper.OptionFN) ([]model.User, int6
 		return []model.User{}, 0, nil
 	}
 
-	fromSQL += " ORDER BY id ASC"
+	where += " ORDER BY u.id ASC"
 
 	if option.Limit > 0 {
-		fromSQL += " LIMIT ?"
+		where += " LIMIT ?"
 		params = append(params, option.Limit)
 	}
 
 	if option.Offset > 0 {
-		fromSQL += " OFFSET ?"
+		where += " OFFSET ?"
 		params = append(params, option.Offset)
 	}
 
-	rows, err := s.db.Query("SELECT id "+fromSQL, params...)
+	rows, err := s.db.Query("SELECT DISTINCT u.id "+from+where, params...)
 	if err != nil {
 		return nil, 0, lang.InternalError(err)
 	}
@@ -459,12 +502,25 @@ func (s *mysqlStore) CreateRole(title string) (model.Role, error) {
 
 func (s *mysqlStore) RemoveRole(roleID int64) error {
 	result := <-s.Synchronized(TbRoles, func() interface{} {
-		err := RemoveData(s.db, TbRoles, "id=?", roleID)
-		if err != nil {
-			return lang.InternalError(err)
-		}
-		s.cache.Remove(&Role{id: roleID})
-		return nil
+		return s.TransactionDo(func(db helper.DB) interface{} {
+			policies, _, err := s.GetPolicyList(nil, helper.Role(roleID))
+			if err != nil {
+				return err
+			}
+			for _, p := range policies {
+				err = p.Destroy()
+				if err != nil {
+					return err
+				}
+			}
+
+			err = RemoveData(s.db, TbRoles, "id=?", roleID)
+			if err != nil {
+				return lang.InternalError(err)
+			}
+			s.cache.Remove(&Role{id: roleID})
+			return nil
+		})
 	})
 
 	if err, ok := result.(error); ok {
@@ -895,7 +951,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		params = append(params, option.Offset)
 	}
 
-	log.Trace("SELECT DISTINCT g.id "+from+where)
+	log.Trace("SELECT DISTINCT g.id " + from + where)
 	rows, err := s.db.Query("SELECT DISTINCT g.id "+from+where, params...)
 	if err != nil {
 		return nil, 0, lang.InternalError(err)
@@ -1163,11 +1219,12 @@ func (s *mysqlStore) GetMeasure(measureID int64) (model.Measure, error) {
 func (s *mysqlStore) CreateMeasure(deviceID int64, title string, tag string, kind resource.MeasureKind) (model.Measure, error) {
 	result := <-s.Synchronized(TbMeasures, func() interface{} {
 		data := map[string]interface{}{
-			"enable":    status.Enable,
-			"device_id": deviceID,
-			"title":     title,
-			"tag":       tag,
-			"kind":      kind,
+			"enable":     status.Enable,
+			"device_id":  deviceID,
+			"title":      title,
+			"tag":        tag,
+			"kind":       kind,
+			"created_at": time.Now(),
 		}
 
 		measureID, err := CreateData(s.db, TbMeasures, data)
@@ -1643,7 +1700,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		params = append(params, option.Offset)
 	}
 
-	log.Trace("SELECT DISTINCT e.id "+from+where)
+	log.Trace("SELECT DISTINCT e.id " + from + where)
 	rows, err := s.db.Query("SELECT DISTINCT s.id "+from+where, params...)
 	if err != nil {
 		return nil, 0, lang.InternalError(err)
