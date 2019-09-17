@@ -100,6 +100,10 @@ func Update(userID int64, ctx iris.Context, s store.Store, cfg config.Config) he
 			return err
 		}
 
+		if user.Name() == cfg.DefaultUserName() && perm.AdminUser(ctx).Name() != cfg.DefaultUserName() {
+			return lang.ErrNoPermission
+		}
+
 		var form struct {
 			Enable   *bool   `json:"enable"`
 			Password *string `json:"password"`
@@ -125,7 +129,7 @@ func Update(userID int64, ctx iris.Context, s store.Store, cfg config.Config) he
 			}
 		}
 
-		if form.Password != nil {
+		if form.Password != nil && *form.Password != "" {
 			user.ResetPassword(*form.Password)
 		}
 

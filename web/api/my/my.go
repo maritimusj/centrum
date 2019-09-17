@@ -35,7 +35,7 @@ func Update(ctx iris.Context) hero.Result {
 
 		my := perm.AdminUser(ctx)
 
-		if form.Password != nil {
+		if form.Password != nil && *form.Password != "" {
 			my.ResetPassword(*form.Password)
 		}
 
@@ -49,9 +49,11 @@ func Update(ctx iris.Context) hero.Result {
 		if form.Email != nil {
 			data["email"] = *form.Email
 		}
+
 		if len(data) > 0 {
 			my.Update(data)
 		}
+
 		err = my.Save()
 		if err != nil {
 			return err
