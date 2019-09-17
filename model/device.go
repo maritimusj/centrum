@@ -10,6 +10,7 @@ import (
 type Device interface {
 	DBEntry
 	EnableEntry
+	LogEntry
 	Profile
 
 	resource.Resource

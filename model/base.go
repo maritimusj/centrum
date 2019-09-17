@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"github.com/sirupsen/logrus"
+	"time"
+)
 
 type DBEntry interface {
 	GetID() int64
@@ -20,4 +23,9 @@ type Profile interface {
 	Simple() Map
 	Brief() Map
 	Detail() Map
+}
+
+type LogEntry interface {
+	LogUID() string
+	Logger() *logrus.Entry
 }

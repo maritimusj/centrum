@@ -2,6 +2,7 @@ package mysqlStore
 
 import (
 	"errors"
+	"fmt"
 	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
@@ -9,6 +10,9 @@ import (
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/status"
 	"github.com/maritimusj/centrum/util"
+
+	log "github.com/sirupsen/logrus"
+
 	"time"
 )
 
@@ -33,6 +37,14 @@ func NewUser(s *mysqlStore, id int64) *User {
 		dirty: dirty.New(),
 		store: s,
 	}
+}
+
+func (u *User) LogUID() string {
+	return fmt.Sprintf("user:%d", u.id)
+}
+
+func (u *User) Logger() *log.Entry {
+	return log.WithField("src", u.LogUID())
 }
 
 func (u *User) GetID() int64 {

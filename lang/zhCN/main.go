@@ -101,6 +101,11 @@ var (
 		lang.ResourceStateDeleteTitle: "删除自定义点位",
 		lang.ResourceStateDeleteDesc:  "删除一个自定义点位",
 
+		lang.ResourceLogListTitle:   "系统日志",
+		lang.ResourceLogListDesc:    "查看系统日志",
+		lang.ResourceLogDeleteTitle: "删除系统日志",
+		lang.ResourceLogDeleteDesc:  "清空系统日志记录",
+
 		lang.DefaultUserPasswordResetOk: "默认用户密码已重置！",
 		lang.LogDeletedByUser:           "管理 %s 清空日志！",
 	}

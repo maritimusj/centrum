@@ -6,9 +6,11 @@ import (
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
+	"github.com/maritimusj/centrum/logStore"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/store"
+	"github.com/maritimusj/centrum/web/api/web"
 	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
 	"gopkg.in/go-playground/validator.v9"
@@ -305,5 +307,34 @@ func DeleteState(stateID int64, ctx iris.Context, s store.Store) hero.Result {
 			return err
 		}
 		return lang.Ok
+	})
+}
+
+func LogList(equipmentID int64, ctx iris.Context, s store.Store, store logStore.Store, cfg config.Config) hero.Result {
+	return response.Wrap(func() interface{} {
+		equipment, err := s.GetEquipment(equipmentID)
+		if err != nil {
+			return err
+		}
+
+		if perm.Deny(ctx, equipment, resource.Ctrl) {
+			return lang.ErrNoPermission
+		}
+
+		return web.GetLogList(equipment.LogUID(), ctx, store, cfg)
+	})
+}
+
+func LogDelete(equipmentID int64, ctx iris.Context, s store.Store, store logStore.Store) hero.Result {
+	return response.Wrap(func() interface{} {
+		equipment, err := s.GetEquipment(equipmentID)
+		if err != nil {
+			return err
+		}
+
+		if perm.Deny(ctx, equipment, resource.Ctrl) {
+			return lang.ErrNoPermission
+		}
+		return web.DeleteLog(equipment.LogUID(), ctx, store)
 	})
 }

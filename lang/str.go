@@ -94,6 +94,11 @@ const (
 	ResourceStateDeleteTitle
 	ResourceStateDeleteDesc
 
+	ResourceLogListTitle
+	ResourceLogListDesc
+	ResourceLogDeleteTitle
+	ResourceLogDeleteDesc
+
 	DefaultUserPasswordResetOk
 	LogDeletedByUser
 )
@@ -148,7 +153,7 @@ func load() {
 	}
 }
 
-func ApiResourcesMap ()[][3]string {
+func ApiResourcesMap() [][3]string {
 	return [][3]string{
 		{resource.UserList, Str(ResourceUserListTitle), Str(ResourceUserListDesc)},
 		{resource.UserCreate, Str(ResourceUserCreateTitle), Str(ResourceUserCreateDesc)},
@@ -191,6 +196,9 @@ func ApiResourcesMap ()[][3]string {
 		{resource.StateDetail, Str(ResourceStateDetailTitle), Str(ResourceStateDetailDesc)},
 		{resource.StateUpdate, Str(ResourceStateUpdateTitle), Str(ResourceStateUpdateDesc)},
 		{resource.StateDelete, Str(ResourceStateDeleteTitle), Str(ResourceStateDeleteDesc)},
+
+		{resource.LogList, Str(ResourceLogListTitle), Str(ResourceLogListDesc)},
+		{resource.LogDelete, Str(ResourceLogDeleteTitle), Str(ResourceLogDeleteDesc)},
 	}
 }
 

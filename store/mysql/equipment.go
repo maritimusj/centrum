@@ -2,12 +2,14 @@ package mysqlStore
 
 import (
 	"errors"
+	"fmt"
 	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/status"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -28,6 +30,14 @@ func NewEquipment(s *mysqlStore, id int64) *Equipment {
 		dirty: dirty.New(),
 		store: s,
 	}
+}
+
+func (e *Equipment) LogUID() string {
+	return fmt.Sprintf("equipment:%d", e.id)
+}
+
+func (e *Equipment) Logger() *log.Entry {
+	return log.WithField("src", e.LogUID())
 }
 
 func (e *Equipment) ResourceClass() resource.Class {

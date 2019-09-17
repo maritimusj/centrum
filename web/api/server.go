@@ -91,6 +91,10 @@ func (server *server) Start(ctx context.Context, cfg config.Config) error {
 				if !cfg.IsRoleEnabled() {
 					p.Put("/{id:int64}/perm", hero.Handler(user.UpdatePerm)).Name = ResourceDef.RoleUpdate
 				}
+
+				//日志
+				p.Get("/{id:int64}/log", hero.Handler(user.LogList))
+				p.Delete("/{id:int64}/log", hero.Handler(user.LogDelete))
 			})
 
 			//设备分组
@@ -113,6 +117,10 @@ func (server *server) Start(ctx context.Context, cfg config.Config) error {
 				//物理点位
 				p.Get("/{id:int64}/measure", hero.Handler(device.MeasureList)).Name = ResourceDef.MeasureList
 				p.Post("/{id:int64}/measure", hero.Handler(device.CreateMeasure)).Name = ResourceDef.MeasureCreate
+
+				//日志
+				p.Get("/{id:int64}/log", hero.Handler(device.LogList))
+				p.Delete("/{id:int64}/log", hero.Handler(device.LogDelete))
 			})
 			//物理点位
 			p.PartyFunc("/measure", func(p router.Party) {
@@ -131,6 +139,10 @@ func (server *server) Start(ctx context.Context, cfg config.Config) error {
 				//自定义点位
 				p.Get("/{id:int64}/state", hero.Handler(equipment.StateList)).Name = ResourceDef.StateList
 				p.Post("/{id:int64}/state", hero.Handler(equipment.CreateState)).Name = ResourceDef.StateCreate
+
+				//日志
+				p.Get("/{id:int64}/log", hero.Handler(equipment.LogList))
+				p.Delete("/{id:int64}/log", hero.Handler(equipment.LogDelete))
 			})
 
 			//自定义点位
@@ -140,11 +152,12 @@ func (server *server) Start(ctx context.Context, cfg config.Config) error {
 				p.Delete("/{id:int64}", hero.Handler(equipment.DeleteState)).Name = ResourceDef.StateDelete
 			})
 
-			//日志
-			p.PartyFunc("/log", func(p router.Party) {
-				p.Get("/level", hero.Handler(log.Level))
-				p.Get("/{src:string}", hero.Handler(log.List))
-				p.Delete("/{src:string}", hero.Handler(log.Delete))
+			//日志等级
+			p.Get("/log/level", hero.Handler(log.Level))
+			//系统日志
+			p.PartyFunc("/syslog", func(p router.Party) {
+				p.Get("/", hero.Handler(log.List)).Name = ResourceDef.LogList
+				p.Delete("/", hero.Handler(log.Delete)).Name = ResourceDef.LogDelete
 			})
 		})
 	})

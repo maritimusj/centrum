@@ -45,4 +45,7 @@ const (
 	StateDetail = "state.detail"
 	StateUpdate = "state.update"
 	StateDelete = "state.delete"
+
+	LogList   = "log.list"
+	LogDelete = "log.delete"
 )

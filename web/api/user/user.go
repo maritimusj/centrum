@@ -2,6 +2,8 @@ package user
 
 import (
 	"fmt"
+	"github.com/maritimusj/centrum/logStore"
+	"github.com/maritimusj/centrum/web/api/web"
 
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
@@ -254,5 +256,31 @@ func UpdatePerm(userID int64, ctx iris.Context, s store.Store, cfg config.Config
 		}
 
 		return lang.ErrRoleNotFound
+	})
+}
+
+func LogList(userID int64, ctx iris.Context, s store.Store, store logStore.Store, cfg config.Config) hero.Result {
+	return response.Wrap(func() interface{} {
+		user, err := s.GetUser(userID)
+		if err != nil {
+			return err
+		}
+
+		return web.GetLogList(user.LogUID(), ctx, store, cfg)
+	})
+}
+
+func LogDelete(userID int64, ctx iris.Context, s store.Store, store logStore.Store, cfg config.Config) hero.Result {
+	return response.Wrap(func() interface{} {
+		user, err := s.GetUser(userID)
+		if err != nil {
+			return err
+		}
+
+		if perm.AdminUser(ctx).Name() != cfg.DefaultUserName() {
+			return lang.ErrNoPermission
+		}
+
+		return web.DeleteLog(user.LogUID(), ctx, store)
 	})
 }

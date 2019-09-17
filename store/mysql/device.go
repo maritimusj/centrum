@@ -2,12 +2,14 @@ package mysqlStore
 
 import (
 	"errors"
+	"fmt"
 	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/status"
+	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"time"
@@ -31,6 +33,14 @@ func NewDDevice(store *mysqlStore, id int64) *Device {
 		dirty: dirty.New(),
 		store: store,
 	}
+}
+
+func (d *Device) LogUID() string {
+	return fmt.Sprintf("device:%d", d.id)
+}
+
+func (d *Device) Logger() *log.Entry {
+	return log.WithField("src", d.LogUID())
 }
 
 func (d *Device) ResourceID() int64 {

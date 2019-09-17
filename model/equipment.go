@@ -9,6 +9,7 @@ import (
 type Equipment interface {
 	DBEntry
 	EnableEntry
+	LogEntry
 	Profile
 
 	resource.Resource

@@ -8,6 +8,7 @@ type Map map[string]interface{}
 type User interface {
 	DBEntry
 	EnableEntry
+	LogEntry
 	Profile
 
 	Name() string
