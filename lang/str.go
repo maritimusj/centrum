@@ -95,6 +95,7 @@ const (
 	ResourceStateDeleteDesc
 
 	DefaultUserPasswordResetOk
+	LogDeletedByUser
 )
 
 type ErrorCode int

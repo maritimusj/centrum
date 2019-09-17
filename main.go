@@ -89,7 +89,7 @@ func main() {
 
 	//API服务
 	server := api.New()
-	server.Register(s, cfg)
+	server.Register(s, cfg, logDBStore)
 
 	err = server.Start(ctx, cfg)
 	if err != nil {

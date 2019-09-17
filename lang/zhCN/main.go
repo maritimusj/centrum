@@ -102,6 +102,7 @@ var (
 		lang.ResourceStateDeleteDesc:  "删除一个自定义点位",
 
 		lang.DefaultUserPasswordResetOk: "默认用户密码已重置！",
+		lang.LogDeletedByUser:           "管理 %s 清空日志！",
 	}
 
 	errStrMap = map[lang.ErrorCode]string{
