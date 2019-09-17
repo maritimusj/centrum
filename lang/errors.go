@@ -5,113 +5,42 @@ import (
 	"fmt"
 )
 
-type ErrorCode int
-
-const (
-	Ok ErrorCode = iota
-	ErrUnknown
-	ErrInternal
-
-	ErrInvalidConnStr
-
-	ErrInvalidRequestData
-	ErrTokenExpired
-	ErrNoPermission
-
-	ErrCacheNotFound
-
-	ErrInvalidUser
-	ErrUserNotFound
-	ErrUserExists
-
-	ErrFailedDisableDefaultUser
-	ErrFailedRemoveDefaultUser
-	ErrFailedEditDefaultUserPerm
-
-	ErrFailedRemoveUserSelf
-
-	ErrInvalidResourceClassID
-
-	ErrPasswordWrong
-
-	ErrApiResourceNotFound
-
-	ErrUnknownRole
-	ErrRoleNotFound
-
-	ErrPolicyNotFound
-	ErrGroupNotFound
-
-	ErrDeviceNotFound
-	ErrMeasureNotFound
-	ErrEquipmentNotFound
-	ErrStateNotFound
-)
-
 var (
-	errMap    = make(map[string]error)
-	errStrMap = map[ErrorCode]string{
-		Ok:          "Ok",
-		ErrUnknown:  "未知错误！",
-		ErrInternal: "系统错误: %s",
-
-		ErrInvalidConnStr: "数据库连接参数不正确！",
-
-		ErrInvalidRequestData: "不正确的请求数据！",
-		ErrTokenExpired:       "请先登录！",
-		ErrNoPermission:       "没有权限！",
-
-		ErrCacheNotFound: "缓存中没有数据！",
-
-		ErrInvalidUser:   "当前用户不可用或者登录超时！",
-		ErrPasswordWrong: "密码不正确！",
-
-		ErrInvalidResourceClassID: "资源类型不正确！",
-
-		ErrApiResourceNotFound: "错误的api资源！",
-
-		ErrUnknownRole: "用户角色不正确！",
-
-		ErrUserNotFound:              "用户不存在！",
-		ErrUserExists:                "用户已经存在！",
-		ErrFailedDisableDefaultUser:  "不能禁用系统默认用户！",
-		ErrFailedRemoveDefaultUser:   "不能删除系统默认用户！",
-		ErrFailedEditDefaultUserPerm: "不能编辑默认用户角色！",
-
-		ErrFailedRemoveUserSelf: "不能删除当前登录的用户账号！",
-
-		ErrRoleNotFound:      "用户角色不存在！",
-		ErrPolicyNotFound:    "策略不存在！",
-		ErrGroupNotFound:     "设备分组不存在！",
-		ErrDeviceNotFound:    "设备不存在！",
-		ErrMeasureNotFound:   "点位不存在！",
-		ErrEquipmentNotFound: "自定设备不存在！",
-		ErrStateNotFound:     "自定义点位不存在！",
-	}
+	errMap    = map[string]error{}
+	errStrMap = map[int]map[ErrorCode]string{}
 )
 
-func ErrorStr(code ErrorCode) string {
-	if str, ok := errStrMap[code]; ok {
-		return str
+func ErrorStr(code ErrorCode, params ...interface{}) string {
+	var str string
+	if region, ok := errStrMap[regionIndex]; ok {
+		if str, ok = region[code]; !ok {
+			str = region[ErrUnknown]
+		}
+	} else {
+		str = region[ErrUnknownLang]
 	}
-	return errStrMap[ErrUnknown]
-}
-
-func InternalError(err error) error {
-	return Error(ErrInternal, err)
+	return str
 }
 
 func Error(code ErrorCode, params ...interface{}) error {
-	str, ok := errStrMap[code]
-	if !ok {
-		str = errStrMap[ErrUnknown]
+	var str string
+	if region, ok := errStrMap[regionIndex]; ok {
+		if str, ok = region[code]; !ok {
+			str = region[ErrUnknown]
+		}
+	} else {
+		str = region[ErrUnknownLang]
 	}
-
 	errStr := fmt.Sprintf(str, params...)
 	if err, ok := errMap[errStr]; ok {
 		return err
 	}
+
 	err := errors.New(errStr)
 	errMap[errStr] = err
 	return err
+}
+
+func InternalError(err error) error {
+	return Error(ErrInternal, err)
 }

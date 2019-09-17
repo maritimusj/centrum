@@ -1976,7 +1976,7 @@ func (s *mysqlStore) InitApiResource() error {
 			if err != nil {
 				return err
 			}
-			for _, entry := range lang.ApiResourcesMap {
+			for _, entry := range lang.ApiResourcesMap() {
 				_, err := CreateData(db, TbApiResources, map[string]interface{}{
 					"name":  entry[0],
 					"title": entry[1],

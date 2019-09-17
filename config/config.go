@@ -9,6 +9,8 @@ type Config interface {
 	LogLevel() string
 	SetLogLevel(string)
 
+	LogFileName() string
+
 	DefaultPageSize() int64
 	DBConnStr() string
 	JwtTokenKey() []byte
@@ -22,6 +24,11 @@ type Config interface {
 type config struct {
 	jwtTokenKey []byte
 	logLevel    string
+	logFileName string
+}
+
+func (c *config) LogFileName() string {
+	return c.logFileName
 }
 
 func (c *config) IsRoleEnabled() bool {
@@ -64,5 +71,6 @@ func New() Config {
 	return &config{
 		jwtTokenKey: []byte("util.RandStr(32, util.RandAll)"),
 		logLevel:    "error",
+		logFileName: "./log.data",
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/kataras/iris/core/router"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/web/api/log"
 	"github.com/maritimusj/centrum/web/api/my"
 	"github.com/maritimusj/centrum/web/api/web"
 	"github.com/maritimusj/centrum/web/perm"
@@ -131,11 +132,19 @@ func (server *server) Start(ctx context.Context, cfg config.Config) error {
 				p.Get("/{id:int64}/state", hero.Handler(equipment.StateList)).Name = ResourceDef.StateList
 				p.Post("/{id:int64}/state", hero.Handler(equipment.CreateState)).Name = ResourceDef.StateCreate
 			})
+
 			//自定义点位
 			p.PartyFunc("/state", func(p router.Party) {
 				p.Get("/{id:int64}", hero.Handler(equipment.StateDetail)).Name = ResourceDef.StateDetail
 				p.Put("/{id:int64}", hero.Handler(equipment.UpdateState)).Name = ResourceDef.StateUpdate
 				p.Delete("/{id:int64}", hero.Handler(equipment.DeleteState)).Name = ResourceDef.StateDelete
+			})
+
+			//日志
+			p.PartyFunc("/log", func(p router.Party) {
+				p.Get("/level", hero.Handler(log.Level))
+				p.Get("/{src:string}", hero.Handler(log.List))
+				p.Delete("/{src:string}", hero.Handler(log.Delete))
 			})
 		})
 	})

@@ -5,65 +5,199 @@ import (
 	"github.com/maritimusj/centrum/resource"
 )
 
-var (
-	resourceGroupsMap = map[resource.Class]string{
-		resource.Default:   "默认分组",
-		resource.Api:       "后台权限",
-		resource.Group:     "设备分组",
-		resource.Device:    "设备",
-		resource.Measure:   "点位",
-		resource.Equipment: "自定义设备",
-		resource.State:     "自定义点位",
-	}
+const (
+	_ = iota
+	ResourceDefault
+	ResourceApi
+	ResourceGroup
+	ResourceDevice
+	ResourceMeasure
+	ResourceEquipment
+	ResourceState
 
-	ApiResourcesMap = [...][3]string{
-		{resource.UserList, "用户列表", "查看用户列表"},
-		{resource.UserCreate, "创建用户", "创建新用户"},
-		{resource.UserUpdate, "编辑用户", "修改用户资料"},
-		{resource.UserDetail, "查看资料", "查看用户资料"},
-		{resource.UserDelete, "删除用户", "删除用户"},
+	LogTrace
+	LogDebug
+	LogInfo
+	LogWarn
+	LogError
+	LogFatal
+	LogPanic
 
-		/*
-			{resource.RoleList, "角色列表", "查看角色列表"},
-			{resource.RoleCreate, "创建角色", "创建新的角色"},
-			{resource.RoleUpdate, "编辑角色", "修改角色权限"},
-			{resource.RoleDetail, "查看角色", "查看角色详情"},
-			{resource.RoleDelete, "删除角色", "删除角色"},
-		*/
+	ResourceUserListTitle
+	ResourceUserListDesc
+	ResourceUserCreateTitle
+	ResourceUserCreateDesc
+	ResourceUserUpdateTitle
+	ResourceUserUpdateDesc
+	ResourceUserDetailTitle
+	ResourceUserDetailDesc
+	ResourceUserDeleteTitle
+	ResourceUserDeleteDesc
+	ResourceRoleListTitle
+	ResourceRoleListDesc
+	ResourceRoleCreateTitle
+	ResourceRoleCreateDesc
+	ResourceRoleUpdateTitle
+	ResourceRoleUpdateDesc
+	ResourceRoleDetailTitle
+	ResourceRoleDetailDesc
+	ResourceRoleDeleteTitle
+	ResourceRoleDeleteDesc
+	ResourceGroupListTitle
+	ResourceGroupListDesc
+	ResourceGroupCreateTitle
+	ResourceGroupCreateDesc
+	ResourceGroupDetailTitle
+	ResourceGroupDetailDesc
+	ResourceGroupUpdateTitle
+	ResourceGroupUpdateDesc
+	ResourceGroupDeleteTitle
+	ResourceGroupDeleteDesc
+	ResourceDeviceListTitle
+	ResourceDeviceListDesc
+	ResourceDeviceCreateTitle
+	ResourceDeviceCreateDesc
+	ResourceDeviceDetailTitle
+	ResourceDeviceDetailDesc
+	ResourceDeviceUpdateTitle
+	ResourceDeviceUpdateDesc
+	ResourceDeviceDeleteTitle
+	ResourceDeviceDeleteDesc
+	ResourceMeasureListTitle
+	ResourceMeasureListDesc
+	ResourceMeasureCreateTitle
+	ResourceMeasureCreateDesc
+	ResourceMeasureDetailTitle
+	ResourceMeasureDetailDesc
+	ResourceMeasureUpdateTitle
+	ResourceMeasureUpdateDesc
+	ResourceMeasureDeleteTitle
+	ResourceMeasureDeleteDesc
+	ResourceEquipmentListTitle
+	ResourceEquipmentListDesc
+	ResourceEquipmentCreateTitle
+	ResourceEquipmentCreateDesc
+	ResourceEquipmentDetailTitle
+	ResourceEquipmentDetailDesc
+	ResourceEquipmentUpdateTitle
+	ResourceEquipmentUpdateDesc
+	ResourceEquipmentDeleteTitle
+	ResourceEquipmentDeleteDesc
+	ResourceStateListTitle
+	ResourceStateListDesc
+	ResourceStateCreateTitle
+	ResourceStateCreateDesc
+	ResourceStateDetailTitle
+	ResourceStateDetailDesc
+	ResourceStateUpdateTitle
+	ResourceStateUpdateDesc
+	ResourceStateDeleteTitle
+	ResourceStateDeleteDesc
 
-		{resource.GroupList, "分组列表", "查看全部设备分组"},
-		{resource.GroupCreate, "创建分组", "创建新的设备分组"},
-		{resource.GroupDetail, "查看分组", "查看分组详情"},
-		{resource.GroupUpdate, "编辑分组", "修改分组信息"},
-		{resource.GroupDelete, "删除分级", "删除设备分组"},
-
-		{resource.DeviceList, "设备列表", "查看设备列表"},
-		{resource.DeviceCreate, "添加设备", "添加新设备"},
-		{resource.DeviceDetail, "查看设备", "查看设备详情"},
-		{resource.DeviceUpdate, "编辑设备", "修改设备详情"},
-		{resource.DeviceDelete, "删除设备", "移除一个设备"},
-
-		{resource.MeasureList, "点位列表", "查看点位列表"},
-		{resource.MeasureCreate, "添加点位", "添加一个新的点位"},
-		{resource.MeasureDetail, "查看点位", "查看点位详情"},
-		{resource.MeasureUpdate, "编辑点位", "修改点位"},
-		{resource.MeasureDelete, "删除点位", "删除点位"},
-
-		{resource.EquipmentList, "自定义设备列表", "查看自定义设备列表"},
-		{resource.EquipmentCreate, "创建自定义设备", "创建一个新的自定义设备"},
-		{resource.EquipmentDetail, "查看自定义设备", "查看自定义设备详情"},
-		{resource.EquipmentUpdate, "编辑自定义设备", "修改自定义设备"},
-		{resource.EquipmentDelete, "删除自定义设备", "删除一个自定设备"},
-
-		{resource.StateList, "自定义点位列表", "查看自定义点位列表"},
-		{resource.StateCreate, "添加自定义点位", "添加一个新的自定义点位"},
-		{resource.StateDetail, "查看自定义点位", "查看片定义点位详情"},
-		{resource.StateUpdate, "编辑自定义点位", "修改自定义点位"},
-		{resource.StateDelete, "删除自定义点位", "删除一个自定义点位"},
-	}
+	DefaultUserPasswordResetOk
 )
 
+type ErrorCode int
+
+const (
+	Ok ErrorCode = iota
+	ErrUnknown
+	ErrUnknownLang
+	ErrInternal
+	ErrInvalidConnStr
+	ErrInvalidRequestData
+	ErrTokenExpired
+	ErrNoPermission
+	ErrCacheNotFound
+	ErrInvalidUser
+	ErrUserDisabled
+	ErrPasswordWrong
+	ErrInvalidResourceClassID
+	ErrApiResourceNotFound
+	ErrUnknownRole
+	ErrUserNotFound
+	ErrUserExists
+	ErrFailedDisableDefaultUser
+	ErrFailedRemoveDefaultUser
+	ErrFailedEditDefaultUserPerm
+	ErrFailedRemoveUserSelf
+	ErrFailedDisableUserSelf
+	ErrRoleNotFound
+	ErrPolicyNotFound
+	ErrGroupNotFound
+	ErrDeviceNotFound
+	ErrMeasureNotFound
+	ErrEquipmentNotFound
+	ErrStateNotFound
+)
+
+var (
+	resourceGroupsMap map[resource.Class]string
+)
+
+func load() {
+	resourceGroupsMap = map[resource.Class]string{
+		resource.Default:   Str(ResourceDefault),
+		resource.Api:       Str(ResourceApi),
+		resource.Group:     Str(ResourceGroup),
+		resource.Device:    Str(ResourceDevice),
+		resource.Measure:   Str(ResourceMeasure),
+		resource.Equipment: Str(ResourceEquipment),
+		resource.State:     Str(ResourceState),
+	}
+}
+
+func ApiResourcesMap ()[][3]string {
+	return [][3]string{
+		{resource.UserList, Str(ResourceUserListTitle), Str(ResourceUserListDesc)},
+		{resource.UserCreate, Str(ResourceUserCreateTitle), Str(ResourceUserCreateDesc)},
+		{resource.UserUpdate, Str(ResourceUserUpdateTitle), Str(ResourceUserUpdateDesc)},
+		{resource.UserDetail, Str(ResourceUserDetailTitle), Str(ResourceUserDetailDesc)},
+		{resource.UserDelete, Str(ResourceUserDeleteTitle), Str(ResourceUserDeleteDesc)},
+
+		{resource.RoleList, Str(ResourceRoleListTitle), Str(ResourceRoleListDesc)},
+		{resource.RoleCreate, Str(ResourceRoleCreateTitle), Str(ResourceRoleCreateDesc)},
+		{resource.RoleUpdate, Str(ResourceRoleUpdateTitle), Str(ResourceRoleUpdateDesc)},
+		{resource.RoleDetail, Str(ResourceRoleDetailTitle), Str(ResourceRoleDetailDesc)},
+		{resource.RoleDelete, Str(ResourceRoleDeleteTitle), Str(ResourceRoleDeleteDesc)},
+
+		{resource.GroupList, Str(ResourceGroupListTitle), Str(ResourceGroupListDesc)},
+		{resource.GroupCreate, Str(ResourceGroupCreateTitle), Str(ResourceGroupCreateDesc)},
+		{resource.GroupDetail, Str(ResourceGroupDetailTitle), Str(ResourceGroupDetailDesc)},
+		{resource.GroupUpdate, Str(ResourceGroupUpdateTitle), Str(ResourceGroupUpdateDesc)},
+		{resource.GroupDelete, Str(ResourceGroupDeleteTitle), Str(ResourceGroupDeleteDesc)},
+
+		{resource.DeviceList, Str(ResourceDeviceListTitle), Str(ResourceDeviceListDesc)},
+		{resource.DeviceCreate, Str(ResourceDeviceCreateTitle), Str(ResourceDeviceCreateDesc)},
+		{resource.DeviceDetail, Str(ResourceDeviceDetailTitle), Str(ResourceDeviceDetailDesc)},
+		{resource.DeviceUpdate, Str(ResourceDeviceUpdateTitle), Str(ResourceDeviceUpdateDesc)},
+		{resource.DeviceDelete, Str(ResourceDeviceDeleteTitle), Str(ResourceDeviceDeleteDesc)},
+
+		{resource.MeasureList, Str(ResourceMeasureListTitle), Str(ResourceMeasureListDesc)},
+		{resource.MeasureCreate, Str(ResourceMeasureCreateTitle), Str(ResourceMeasureCreateDesc)},
+		{resource.MeasureDetail, Str(ResourceMeasureDetailTitle), Str(ResourceMeasureDetailDesc)},
+		{resource.MeasureUpdate, Str(ResourceMeasureUpdateTitle), Str(ResourceMeasureUpdateDesc)},
+		{resource.MeasureDelete, Str(ResourceMeasureDeleteTitle), Str(ResourceMeasureDeleteDesc)},
+
+		{resource.EquipmentList, Str(ResourceEquipmentListTitle), Str(ResourceEquipmentListDesc)},
+		{resource.EquipmentCreate, Str(ResourceEquipmentCreateTitle), Str(ResourceEquipmentCreateDesc)},
+		{resource.EquipmentDetail, Str(ResourceEquipmentDetailTitle), Str(ResourceEquipmentDetailDesc)},
+		{resource.EquipmentUpdate, Str(ResourceEquipmentUpdateTitle), Str(ResourceEquipmentUpdateDesc)},
+		{resource.EquipmentDelete, Str(ResourceEquipmentDeleteTitle), Str(ResourceEquipmentDeleteDesc)},
+
+		{resource.StateList, Str(ResourceStateListTitle), Str(ResourceStateListTitle)},
+		{resource.StateCreate, Str(ResourceStateCreateTitle), Str(ResourceStateCreateDesc)},
+		{resource.StateDetail, Str(ResourceStateDetailTitle), Str(ResourceStateDetailDesc)},
+		{resource.StateUpdate, Str(ResourceStateUpdateTitle), Str(ResourceStateUpdateDesc)},
+		{resource.StateDelete, Str(ResourceStateDeleteTitle), Str(ResourceStateDeleteDesc)},
+	}
+}
+
 func ResourceClassTitle(class resource.Class) string {
+	if len(resourceGroupsMap) == 0 {
+		load()
+	}
+
 	if v, ok := resourceGroupsMap[class]; ok {
 		return v
 	}

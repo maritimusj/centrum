@@ -59,6 +59,9 @@ func Login(ctx iris.Context, store store.Store, cfg config.Config) hero.Result {
 		if err != nil {
 			return err
 		}
+		if !user.IsEnabled() {
+			return lang.ErrUserDisabled
+		}
 		if !user.CheckPassword(form.Password) {
 			return lang.ErrPasswordWrong
 		}

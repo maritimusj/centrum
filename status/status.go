@@ -1,6 +1,6 @@
 package status
 
 const (
-	Enable = iota
+	Enable int8 = iota
 	Disable
 )
