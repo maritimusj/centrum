@@ -28,6 +28,8 @@ const (
 	ErrFailedRemoveDefaultUser
 	ErrFailedEditDefaultUserPerm
 
+	ErrFailedRemoveUserSelf
+
 	ErrInvalidResourceClassID
 
 	ErrPasswordWrong
@@ -75,6 +77,8 @@ var (
 		ErrFailedDisableDefaultUser:  "不能禁用系统默认用户！",
 		ErrFailedRemoveDefaultUser:   "不能删除系统默认用户！",
 		ErrFailedEditDefaultUserPerm: "不能编辑默认用户角色！",
+
+		ErrFailedRemoveUserSelf: "不能删除当前登录的用户账号！",
 
 		ErrRoleNotFound:      "用户角色不存在！",
 		ErrPolicyNotFound:    "策略不存在！",

@@ -68,7 +68,7 @@ func Allow(ctx iris.Context, res resource.Resource, action resource.Action) bool
 	}
 
 	if err == lang.Error(lang.ErrPolicyNotFound) {
-		log .Trace("没找到策略，使用默认设置：resource title: ", res.ResourceTitle(), "id: ", res.ResourceID(), " class: ", res.ResourceClass())
+		log.Trace("没找到策略，使用默认设置：resource title: ", res.ResourceTitle(), "id: ", res.ResourceID(), " class: ", res.ResourceClass())
 		return ctx.Values().Get(DefaultEffect).(resource.Effect) == resource.Allow
 	}
 	return false

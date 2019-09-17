@@ -42,6 +42,7 @@ func (server *server) Start(ctx context.Context, cfg config.Config) error {
 	crs := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"}, // allows everything, use that to change the hosts.
 		AllowedHeaders:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "DELETE", "PUT", "HEAD"},
 		AllowCredentials: true,
 	})
 

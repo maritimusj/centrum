@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/kr/pretty"
@@ -13,6 +14,7 @@ import (
 	"github.com/maritimusj/centrum/status"
 	"github.com/maritimusj/centrum/store"
 	"github.com/maritimusj/centrum/util"
+	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
 	"gopkg.in/go-playground/validator.v9"
 )
@@ -39,7 +41,7 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	})
 }
 
-func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.Result {
+func Create(ctx iris.Context, s store.Store, validate *validator.Validate, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
 			Username string `json:"username" validate:"required"`
@@ -68,7 +70,7 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 			}
 		}
 
-		if role.IsEnabled() && role == nil {
+		if cfg.IsRoleEnabled() && role == nil {
 			return lang.ErrRoleNotFound
 		}
 
@@ -126,6 +128,7 @@ func Update(userID int64, ctx iris.Context, s store.Store, cfg config.Config) he
 		if form.Password != nil {
 			user.ResetPassword(*form.Password)
 		}
+
 		var data = model.Map{}
 		if form.Enable != nil {
 			if !*form.Enable && user.Name() == cfg.DefaultUserName() {
@@ -142,9 +145,11 @@ func Update(userID int64, ctx iris.Context, s store.Store, cfg config.Config) he
 		if form.Email != nil {
 			data["email"] = *form.Email
 		}
+
 		if len(data) > 0 {
 			user.Update(data)
 		}
+
 		err = user.Save()
 		if err != nil {
 			return err
@@ -153,7 +158,7 @@ func Update(userID int64, ctx iris.Context, s store.Store, cfg config.Config) he
 	})
 }
 
-func Delete(userID int64, s store.Store, cfg config.Config) hero.Result {
+func Delete(userID int64, ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
 		user, err := s.GetUser(userID)
 		if err != nil {
@@ -162,6 +167,10 @@ func Delete(userID int64, s store.Store, cfg config.Config) hero.Result {
 
 		if user.Name() == cfg.DefaultUserName() {
 			return lang.ErrFailedRemoveDefaultUser
+		}
+
+		if user.Name() == perm.AdminUser(ctx).Name() {
+			return lang.ErrFailedRemoveUserSelf
 		}
 
 		err = user.Destroy()
