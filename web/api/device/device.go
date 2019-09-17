@@ -65,6 +65,7 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 		var form struct {
 			Title   string `json:"title" validate:"required"`
 			ConnStr string `json:"params.connStr" validate:"required"`
+			Interval int64 `json:"params.interval" validate:"required"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
@@ -78,6 +79,7 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 		device, err := s.CreateDevice(form.Title, map[string]interface{}{
 			"params": map[string]interface{}{
 				"connStr": form.ConnStr,
+				"interval": form.Interval,
 			},
 		})
 		if err != nil {
@@ -260,6 +262,7 @@ func MeasureDetail(measureID int64, ctx iris.Context, s store.Store) hero.Result
 		return measure.Detail()
 	})
 }
+
 func DeleteMeasure(measureID int64, ctx iris.Context, s store.Store) hero.Result {
 	return response.Wrap(func() interface{} {
 		measure, err := s.GetMeasure(measureID)

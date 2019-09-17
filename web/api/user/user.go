@@ -129,7 +129,7 @@ func Update(userID int64, ctx iris.Context, s store.Store, cfg config.Config) he
 		var data = model.Map{}
 		if form.Enable != nil {
 			if !*form.Enable && user.Name() == cfg.DefaultUserName() {
-				return lang.ErrFailedRemoveDefaultUser
+				return lang.ErrFailedDisableDefaultUser
 			}
 			data["enable"] = util.If(*form.Enable, status.Enable, status.Disable)
 		}

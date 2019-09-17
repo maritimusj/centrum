@@ -6,6 +6,7 @@ import (
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/util"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -44,9 +45,9 @@ func MustAdminOk(ctx iris.Context, fn func(admin model.User) interface{}) interf
 }
 
 func IsAllowed(ctx iris.Context, resource resource.Resource, action resource.Action) (bool, error) {
-	//if IsDefaultAdminUser(ctx) {
-	//	return true, nil
-	//}
+	if IsDefaultAdminUser(ctx) {
+		return true, nil
+	}
 
 	user := AdminUser(ctx)
 	if user != nil && user.IsEnabled() {
@@ -67,7 +68,7 @@ func Allow(ctx iris.Context, res resource.Resource, action resource.Action) bool
 	}
 
 	if err == lang.Error(lang.ErrPolicyNotFound) {
-		println("没找到策略，默认通过！resource title: ", res.ResourceTitle(), "id: ", res.ResourceID(), " class: ", res.ResourceClass())
+		log .Trace("没找到策略，使用默认设置：resource title: ", res.ResourceTitle(), "id: ", res.ResourceID(), " class: ", res.ResourceClass())
 		return ctx.Values().Get(DefaultEffect).(resource.Effect) == resource.Allow
 	}
 	return false

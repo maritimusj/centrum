@@ -9,14 +9,13 @@ import (
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/store"
 	"github.com/maritimusj/centrum/web/response"
-	"log"
+	log "github.com/sirupsen/logrus"
 )
 
 func Check(ctx iris.Context, store store.Store, cfg config.Config) hero.Result {
 	result := MustAdminOk(ctx, func(admin model.User) interface{} {
 		//总是允许系统默认用户
 		if IsDefaultAdminUser(ctx) {
-			println("默认用户，通过！")
 			return nil
 		}
 
@@ -24,7 +23,7 @@ func Check(ctx iris.Context, store store.Store, cfg config.Config) hero.Result {
 		res, err := store.GetApiResource(router.Name())
 		if err != nil {
 			if err == lang.Error(lang.ErrApiResourceNotFound) && cfg.DefaultEffect() == resource.Allow {
-				log.Printf("没找到API资源，user: %s, router: %s 默认通过！\r\n", admin.Name(), router.Name())
+				log.Tracef("没找到API资源，user: %s, router: %s 默认通过！", admin.Name(), router.Name())
 				return nil
 			}
 			return err
@@ -36,7 +35,7 @@ func Check(ctx iris.Context, store store.Store, cfg config.Config) hero.Result {
 		}
 
 		if err == lang.Error(lang.ErrPolicyNotFound) && cfg.DefaultEffect() == resource.Allow {
-			log.Printf("没找到策略，user: %s, router: %s 默认通过！\r\n", admin.Name(), router.Name())
+			log.Tracef("没找到策略，user: %s, router: %s 默认通过！", admin.Name(), router.Name())
 			return nil
 		}
 		return lang.Error(lang.ErrNoPermission)
