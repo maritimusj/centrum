@@ -13,6 +13,7 @@ import (
 	"github.com/maritimusj/centrum/web/api/web"
 	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -85,7 +86,14 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 			},
 		})
 		if err != nil {
+			go	perm.AdminUser(ctx).Logger().WithFields(logrus.Fields{
+				"title": form.Title,
+				"connStr": form.ConnStr,
+				"interval": form.Interval,
+			}).Info(lang.Str(lang.CreateDeviceFail, err))
 			return err
+		} else {
+			go	perm.AdminUser(ctx).Logger().WithFields(logrus.Fields(device.Brief())).Info(lang.Str(lang.CreateDeviceOk, device.Title()))
 		}
 
 		return device.Simple()
@@ -121,13 +129,18 @@ func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 		var form struct {
 			Title   *string `json:"title"`
 			ConnStr *string `json:"params.connStr"`
+			Interval *int64 `json:"params.interval"`
 		}
+
 		if err = ctx.ReadJSON(&form); err != nil {
 			return lang.ErrInvalidRequestData
 		}
 
+		logFields := make(map[string]interface{})
+
 		if form.Title != nil {
 			device.SetTitle(*form.Title)
+			logFields["title"] = form.Title
 		}
 
 		if form.ConnStr != nil {
@@ -135,11 +148,24 @@ func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 			if err != nil {
 				return err
 			}
+			logFields["connStr"] = form.ConnStr
 		}
+		if form.Interval != nil {
+			err = device.SetOption("params.interval", form.Interval)
+			if err != nil {
+				return err
+			}
+			logFields["Interval"] = form.Interval
+		}
+
 		err = device.Save()
 		if err != nil {
+			go	perm.AdminUser(ctx).Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceFail, device.Title(), err))
 			return err
+		} else {
+			go	perm.AdminUser(ctx).Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceOk, device.Title()))
 		}
+
 		return lang.Ok
 	})
 }
@@ -157,7 +183,10 @@ func Delete(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 
 		err = device.Destroy()
 		if err != nil {
+			go	perm.AdminUser(ctx).Logger().Info(lang.Str(lang.DeleteDeviceFail, device.Title(), err))
 			return err
+		} else {
+			go	perm.AdminUser(ctx).Logger().Info(lang.Str(lang.DeleteDeviceOk, device.Title()))
 		}
 		return lang.Ok
 	})

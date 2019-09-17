@@ -101,6 +101,13 @@ const (
 
 	DefaultUserPasswordResetOk
 	LogDeletedByUser
+
+	CreateDeviceOk
+	CreateDeviceFail
+	UpdateDeviceOk
+	UpdateDeviceFail
+	DeleteDeviceOk
+	DeleteDeviceFail
 )
 
 type ErrorCode int

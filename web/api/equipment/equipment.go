@@ -317,7 +317,7 @@ func LogList(equipmentID int64, ctx iris.Context, s store.Store, store logStore.
 			return err
 		}
 
-		if perm.Deny(ctx, equipment, resource.Ctrl) {
+		if perm.Deny(ctx, equipment, resource.View) {
 			return lang.ErrNoPermission
 		}
 
