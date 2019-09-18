@@ -240,12 +240,12 @@ func UpdatePerm(userID int64, ctx iris.Context, s store.Store, cfg config.Config
 			type P struct {
 				ResourceClass int   `json:"class"`
 				ResourceID    int64 `json:"id"`
-				Action        int8  `json:"action"`
-				Effect        int8  `json:"effect"`
+				Invoke        *bool  `json:"invoke"`
+				View          *bool  `json:"view"`
+				Ctrl          *bool  `json:"ctrl"`
 			}
 			var form struct {
-				Title   *string `json:"title"`
-				Polices []P     `json:"policies"`
+				Policies []P `json:"policies"`
 			}
 			if err = ctx.ReadJSON(&form); err != nil {
 				return lang.ErrInvalidRequestData
@@ -253,21 +253,34 @@ func UpdatePerm(userID int64, ctx iris.Context, s store.Store, cfg config.Config
 
 			fmt.Printf("%# v", pretty.Formatter(form))
 
-			if len(form.Polices) > 0 {
-				for _, p := range form.Polices {
+			if len(form.Policies) > 0 {
+				for _, p := range form.Policies {
 					res, err := s.GetResource(resource.Class(p.ResourceClass), p.ResourceID)
 					if err != nil {
 						return err
 					}
-					_, err = role.SetPolicy(res, resource.Action(p.Action), resource.Effect(p.Effect))
-					if err != nil {
-						return err
+					if p.Invoke != nil {
+						effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
+						_, err = role.SetPolicy(res, resource.Invoke,  effect)
+						if err != nil {
+							return err
+						}
+					}
+					if p.View != nil {
+						effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
+						_, err = role.SetPolicy(res, resource.View,  effect)
+						if err != nil {
+							return err
+						}
+					}
+					if p.Ctrl != nil {
+						effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
+						_, err = role.SetPolicy(res, resource.Ctrl,  effect)
+						if err != nil {
+							return err
+						}
 					}
 				}
-			}
-
-			if form.Title != nil && *form.Title != "" {
-				role.SetTitle(*form.Title)
 			}
 
 			err = role.Save()

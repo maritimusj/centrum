@@ -59,7 +59,7 @@ func (server *server) Start(cfg config.Config) error {
 			p.PartyFunc("/my", func(p router.Party) {
 				p.Get("/profile", hero.Handler(my.Detail))
 				p.Put("/profile", hero.Handler(my.Update))
-				//请求判断当前用户对于某个资源的权限情况
+				//请求当前用户对于某个资源的权限情况
 				p.Get("/perm/{class:string}", hero.Handler(my.Perm))
 				p.Post("/perm/{class:string}", hero.Handler(my.MultiPerm))
 			})

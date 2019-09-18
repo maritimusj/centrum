@@ -105,7 +105,6 @@ func (r *Role) SetPolicy(res resource.Resource, action resource.Action, effect r
 	if err != nil {
 		return nil, err
 	}
-
 	return policy, nil
 }
 
