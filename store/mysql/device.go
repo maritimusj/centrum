@@ -117,39 +117,33 @@ func (d *Device) SetOption(key string, value interface{}) error {
 }
 
 func (d *Device) SetGroups(groups ...interface{}) error {
-	err := d.store.TransactionDo(func(db helper.DB) interface{} {
-		err := RemoveData(db, TbDeviceGroups, "device_id", d.id)
+	err := RemoveData(d.store.db, TbDeviceGroups, "device_id", d.id)
+	if err != nil {
+		return err
+	}
+	now := time.Now()
+	for _, group := range groups {
+		var groupID int64
+		switch v := group.(type) {
+		case int64:
+			groupID = v
+		case model.Group:
+			groupID = v.GetID()
+		default:
+			panic(errors.New("device SetGroups: unknown groups"))
+		}
+		_, err := d.store.GetGroup(groupID)
 		if err != nil {
 			return err
 		}
-		now := time.Now()
-		for _, group := range groups {
-			var groupID int64
-			switch v := group.(type) {
-			case int64:
-				groupID = v
-			case model.Group:
-				groupID = v.GetID()
-			default:
-				panic(errors.New("device SetGroups: unknown groups"))
-			}
-			_, err := d.store.GetGroup(groupID)
-			if err != nil {
-				return err
-			}
-			_, err = CreateData(db, TbDeviceGroups, map[string]interface{}{
-				"device_id":  d.id,
-				"group_id":   groupID,
-				"created_at": now,
-			})
-			if err != nil {
-				return lang.InternalError(err)
-			}
+		_, err = CreateData(d.store.db, TbDeviceGroups, map[string]interface{}{
+			"device_id":  d.id,
+			"group_id":   groupID,
+			"created_at": now,
+		})
+		if err != nil {
+			return lang.InternalError(err)
 		}
-		return nil
-	})
-	if err != nil {
-		return err.(error)
 	}
 	return nil
 }

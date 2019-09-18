@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"database/sql"
 	"github.com/maritimusj/centrum/resource"
 )
 
@@ -117,10 +116,4 @@ func Keyword(keyword string) OptionFN {
 	return func(i *Option) {
 		i.Keyword = keyword
 	}
-}
-
-type DB interface {
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-	QueryRow(query string, args ...interface{}) *sql.Row
 }

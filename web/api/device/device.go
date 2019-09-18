@@ -4,12 +4,14 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/db"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/logStore"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/store"
+	mysqlStore "github.com/maritimusj/centrum/store/mysql"
 	"github.com/maritimusj/centrum/web/api/web"
 	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
@@ -170,25 +172,30 @@ func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Delete(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
+func Delete(deviceID int64, ctx iris.Context, tx db.WithTransaction) hero.Result {
 	return response.Wrap(func() interface{} {
-		device, err := s.GetDevice(deviceID)
-		if err != nil {
-			return err
-		}
+		return tx.TransactionDo(func(db db.DB) interface{} {
+			s := mysqlStore.Attach(db)
 
-		if perm.Deny(ctx, device, resource.Ctrl) {
-			return lang.ErrNoPermission
-		}
+			device, err := s.GetDevice(deviceID)
+			if err != nil {
+				return err
+			}
 
-		err = device.Destroy()
-		if err != nil {
-			go perm.AdminUser(ctx).Logger().Info(lang.Str(lang.DeleteDeviceFail, device.Title(), err))
-			return err
-		} else {
-			go perm.AdminUser(ctx).Logger().Info(lang.Str(lang.DeleteDeviceOk, device.Title()))
-		}
-		return lang.Ok
+			if perm.Deny(ctx, device, resource.Ctrl) {
+				return lang.ErrNoPermission
+			}
+
+			err = device.Destroy()
+			if err != nil {
+				go perm.AdminUser(ctx).Logger().Info(lang.Str(lang.DeleteDeviceFail, device.Title(), err))
+				return err
+			} else {
+				go perm.AdminUser(ctx).Logger().Info(lang.Str(lang.DeleteDeviceOk, device.Title()))
+			}
+
+			return lang.Ok
+		})
 	})
 }
 

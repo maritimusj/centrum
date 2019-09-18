@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"github.com/iris-contrib/middleware/cors"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/core/router"
@@ -25,7 +24,7 @@ import (
 
 type Server interface {
 	Register(values ...interface{})
-	Start(ctx context.Context, cfg config.Config) error
+	Start(cfg config.Config) error
 	Close()
 }
 
@@ -37,7 +36,7 @@ func (server *server) Register(values ...interface{}) {
 	hero.Register(values...)
 }
 
-func (server *server) Start(ctx context.Context, cfg config.Config) error {
+func (server *server) Start(cfg config.Config) error {
 	hero.Register(validator.New())
 	server.app.Logger().SetLevel(cfg.LogLevel())
 

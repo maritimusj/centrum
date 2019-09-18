@@ -1,16 +1,12 @@
 package store
 
 import (
-	"context"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
 )
 
 type Store interface {
-	Open(context context.Context, option map[string]interface{}) error
-	Close()
-
 	GetOrganization(org interface{}) (model.Organization, error)
 	CreateOrganization(name string, title string) (model.Organization, error)
 	RemoveOrganization(org interface{}) error

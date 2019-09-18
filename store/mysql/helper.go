@@ -4,19 +4,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/maritimusj/centrum/db"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/util"
 	log "github.com/sirupsen/logrus"
 	"strings"
 )
 
-type DB interface {
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-	QueryRow(query string, args ...interface{}) *sql.Row
-}
-
-func getOrganizationByName(db DB, name string) (int64, error) {
+func getOrganizationByName(db db.DB, name string) (int64, error) {
 	var orgID int64
 	err := LoadData(db, TbOrganization, map[string]interface{}{
 		"id": &orgID,
@@ -30,7 +25,7 @@ func getOrganizationByName(db DB, name string) (int64, error) {
 	return orgID, nil
 }
 
-func getUserIDByName(db DB, name string) (int64, error) {
+func getUserIDByName(db db.DB, name string) (int64, error) {
 	var userID int64
 	err := LoadData(db, TbUsers, map[string]interface{}{
 		"id": &userID,
@@ -44,7 +39,7 @@ func getUserIDByName(db DB, name string) (int64, error) {
 	return userID, nil
 }
 
-func LoadData(db DB, tbName string, data map[string]interface{}, cond string, params ...interface{}) error {
+func LoadData(db db.DB, tbName string, data map[string]interface{}, cond string, params ...interface{}) error {
 	if len(data) > 0 {
 		var names = make([]string, 0, len(data))
 		var values = make([]interface{}, 0, len(data))
@@ -78,7 +73,7 @@ func LoadData(db DB, tbName string, data map[string]interface{}, cond string, pa
 	panic(errors.New("LoadData: empty data"))
 }
 
-func CreateData(db DB, tbName string, data map[string]interface{}) (int64, error) {
+func CreateData(db db.DB, tbName string, data map[string]interface{}) (int64, error) {
 	if len(data) > 0 {
 		var params = make([]string, 0, len(data))
 		var values = make([]interface{}, 0, len(data))
@@ -117,7 +112,7 @@ func CreateData(db DB, tbName string, data map[string]interface{}) (int64, error
 	panic(errors.New("CreateData: empty data"))
 }
 
-func SaveData(db DB, tbName string, data map[string]interface{}, cond string, params ...interface{}) error {
+func SaveData(db db.DB, tbName string, data map[string]interface{}, cond string, params ...interface{}) error {
 	if len(data) > 0 {
 		var values = make([]interface{}, 0, len(data))
 		var placeHolders = make([]string, 0, len(data))
@@ -150,7 +145,7 @@ func SaveData(db DB, tbName string, data map[string]interface{}, cond string, pa
 	panic(errors.New("SaveData: empty data"))
 }
 
-func RemoveData(db DB, tbName string, cond string, params ...interface{}) error {
+func RemoveData(db db.DB, tbName string, cond string, params ...interface{}) error {
 	SQL := "DELETE FROM " + tbName + " WHERE " + cond
 	_, err := db.Exec(SQL, params...)
 	log.Tracef("RemoveData: %s => %s", SQL, util.If(err != nil, err, "Ok"))
@@ -162,7 +157,7 @@ func RemoveData(db DB, tbName string, cond string, params ...interface{}) error 
 	return nil
 }
 
-func IsDataExists(db DB, tbName string, cond string, params ...interface{}) (bool, error) {
+func IsDataExists(db db.DB, tbName string, cond string, params ...interface{}) (bool, error) {
 	var total int64
 	SQL := "SELECT COUNT(*) FROM " + tbName + " WHERE " + cond + " Limit 1"
 	err := db.QueryRow(SQL, params...).Scan(&total)

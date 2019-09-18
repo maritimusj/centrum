@@ -6,7 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/cache"
+	"github.com/maritimusj/centrum/cache/memCache"
+	"github.com/maritimusj/centrum/db"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
@@ -37,14 +40,23 @@ const (
 )
 
 type mysqlStore struct {
-	db    *sql.DB
+	db    db.DB
 	cache cache.Cache
-
-	ctx context.Context
+	ctx   context.Context
 }
 
 func New() store.Store {
-	return &mysqlStore{}
+	return &mysqlStore{
+		cache: memCache.New(),
+	}
+}
+
+func Attach(db db.DB) store.Store {
+	return &mysqlStore{
+		db:    db,
+		cache: memCache.DefaultCache,
+		ctx:   app.Ctx,
+	}
 }
 
 func parseOption(options ...helper.OptionFN) *helper.Option {
@@ -55,62 +67,6 @@ func parseOption(options ...helper.OptionFN) *helper.Option {
 		}
 	}
 	return &option
-}
-
-func (s *mysqlStore) TransactionDo(fn func(db helper.DB) interface{}) interface{} {
-	tx, err := s.db.Begin()
-	if err != nil {
-		return lang.InternalError(err)
-	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
-
-	res := fn(tx)
-	if res != nil {
-		if err, ok := res.(error); ok {
-			return err
-		}
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return lang.InternalError(err)
-	}
-
-	return res
-}
-
-func (s *mysqlStore) Open(ctx context.Context, option map[string]interface{}) error {
-	if c, ok := option["cache"].(cache.Cache); ok {
-		s.cache = c
-	} else {
-		panic(errors.New("invalid cache"))
-	}
-
-	if connStr, ok := option["connStr"].(string); ok {
-		db, err := sql.Open("mysql", connStr)
-		if err != nil {
-			return lang.InternalError(err)
-		}
-
-		ctxTimeout, _ := context.WithTimeout(ctx, time.Second*3)
-		err = db.PingContext(ctxTimeout)
-		if err != nil {
-			return lang.InternalError(err)
-		}
-
-		s.db = db
-		s.ctx = ctx
-		return nil
-	}
-	return lang.Error(lang.ErrInvalidConnStr)
-}
-
-func (s *mysqlStore) Close() {
-	if s != nil && s.db != nil {
-		_ = s.db.Close()
-	}
 }
 
 func (s *mysqlStore) GetResourceGroupList() []interface{} {
@@ -142,7 +98,7 @@ func (s *mysqlStore) GetResourceGroupList() []interface{} {
 	}
 }
 
-func (s *mysqlStore) loadOrganization(db DB, id int64) (*Organization, error) {
+func (s *mysqlStore) loadOrganization(db db.DB, id int64) (*Organization, error) {
 	var org = NewOrganization(s, id)
 	err := LoadData(db, TbOrganization, map[string]interface{}{
 		"enable":     &org.enable,
@@ -242,15 +198,13 @@ func (s *mysqlStore) RemoveOrganization(id interface{}) error {
 		return err
 	}
 	result := <-synchronized.Do(s.ctx, TbOrganization, func() interface{} {
-		return s.TransactionDo(func(db helper.DB) interface{} {
-			err = RemoveData(db, TbOrganization, "id=?", org.GetID())
-			if err != nil {
-				return lang.InternalError(err)
-			}
+		err = RemoveData(s.db, TbOrganization, "id=?", org.GetID())
+		if err != nil {
+			return lang.InternalError(err)
+		}
 
-			s.cache.Remove(org)
-			return nil
-		})
+		s.cache.Remove(org)
+		return nil
 	})
 	if err, ok := result.(error); ok {
 		return err
@@ -324,7 +278,7 @@ func (s *mysqlStore) GetOrganizationList(options ...helper.OptionFN) ([]model.Or
 	return result, total, nil
 }
 
-func (s *mysqlStore) loadUser(db DB, id int64) (*User, error) {
+func (s *mysqlStore) loadUser(db db.DB, id int64) (*User, error) {
 	var user = NewUser(s, id)
 	err := LoadData(db, TbUsers, map[string]interface{}{
 		"enable":     &user.enable,
@@ -392,49 +346,47 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 
 func (s *mysqlStore) CreateUser(name string, password []byte, role model.Role) (model.User, error) {
 	result := <-synchronized.Do(s.ctx, TbUsers, func() interface{} {
-		return s.TransactionDo(func(db helper.DB) interface{} {
-			passwordData, err := util.HashPassword(password)
-			if err != nil {
-				return lang.InternalError(err)
-			}
-			userID, err := CreateData(db, TbUsers, map[string]interface{}{
-				"enable":     status.Enable,
-				"name":       name,
-				"password":   passwordData,
-				"title":      name,
-				"mobile":     "",
-				"email":      "",
-				"created_at": time.Now(),
-			})
-
-			if err != nil {
-				return lang.InternalError(err)
-			}
-
-			user, err := s.loadUser(db, userID)
-			if err != nil {
-				return err
-			}
-
-			//未指定角色则创建同名角色
-			if role == nil {
-				role, err = s.createRole(db, name)
-				if err != nil {
-					return err
-				}
-			}
-
-			err = user.SetRoles(role)
-			if err != nil {
-				return err
-			}
-
-			err = s.cache.Save(user)
-			if err != nil {
-				return err
-			}
-			return user
+		passwordData, err := util.HashPassword(password)
+		if err != nil {
+			return lang.InternalError(err)
+		}
+		userID, err := CreateData(s.db, TbUsers, map[string]interface{}{
+			"enable":     status.Enable,
+			"name":       name,
+			"password":   passwordData,
+			"title":      name,
+			"mobile":     "",
+			"email":      "",
+			"created_at": time.Now(),
 		})
+
+		if err != nil {
+			return lang.InternalError(err)
+		}
+
+		user, err := s.loadUser(s.db, userID)
+		if err != nil {
+			return err
+		}
+
+		//未指定角色则创建同名角色
+		if role == nil {
+			role, err = s.createRole(s.db, name)
+			if err != nil {
+				return err
+			}
+		}
+
+		err = user.SetRoles(role)
+		if err != nil {
+			return err
+		}
+
+		err = s.cache.Save(user)
+		if err != nil {
+			return err
+		}
+		return user
 	})
 
 	if err, ok := result.(error); ok {
@@ -450,42 +402,40 @@ func (s *mysqlStore) RemoveUser(userID int64) error {
 	}
 
 	result := <-synchronized.Do(s.ctx, TbUsers, func() interface{} {
-		return s.TransactionDo(func(db helper.DB) interface{} {
-			roles, err := user.GetRoles()
-			if err != nil {
-				return err
-			}
+		roles, err := user.GetRoles()
+		if err != nil {
+			return err
+		}
 
-			//删除默认创建的同名角色
-			for _, role := range roles {
-				if role.Title() == user.Name() {
-					users, total, err := role.GetUserList(helper.GetTotal(true))
+		//删除默认创建的同名角色
+		for _, role := range roles {
+			if role.Title() == user.Name() {
+				users, total, err := role.GetUserList(helper.GetTotal(true))
+				if err != nil {
+					return err
+				}
+				if total == 1 && users[0].Name() == user.Name() {
+					err = role.Destroy()
 					if err != nil {
 						return err
 					}
-					if total == 1 && users[0].Name() == user.Name() {
-						err = role.Destroy()
-						if err != nil {
-							return err
-						}
-					}
 				}
 			}
+		}
 
-			//清空其它角色关联
-			err = user.SetRoles()
-			if err != nil {
-				return err
-			}
+		//清空其它角色关联
+		err = user.SetRoles()
+		if err != nil {
+			return err
+		}
 
-			err = RemoveData(s.db, TbUsers, "id=?", userID)
-			if err != nil {
-				return lang.InternalError(err)
-			}
+		err = RemoveData(s.db, TbUsers, "id=?", userID)
+		if err != nil {
+			return lang.InternalError(err)
+		}
 
-			s.cache.Remove(user)
-			return nil
-		})
+		s.cache.Remove(user)
+		return nil
 	})
 
 	if err, ok := result.(error); ok {
@@ -610,7 +560,7 @@ func (s *mysqlStore) GetRole(roleID int64) (model.Role, error) {
 	return result.(model.Role), nil
 }
 
-func (s *mysqlStore) createRole(db DB, title string) (model.Role, error) {
+func (s *mysqlStore) createRole(db db.DB, title string) (model.Role, error) {
 	result := <-synchronized.Do(s.ctx, TbRoles, func() interface{} {
 		roleID, err := CreateData(s.db, TbRoles, map[string]interface{}{
 			"enable":     status.Enable,
@@ -645,25 +595,23 @@ func (s *mysqlStore) CreateRole(title string) (model.Role, error) {
 
 func (s *mysqlStore) RemoveRole(roleID int64) error {
 	result := <-synchronized.Do(s.ctx, TbRoles, func() interface{} {
-		return s.TransactionDo(func(db helper.DB) interface{} {
-			policies, _, err := s.GetPolicyList(nil, helper.Role(roleID))
+		policies, _, err := s.GetPolicyList(nil, helper.Role(roleID))
+		if err != nil {
+			return err
+		}
+		for _, p := range policies {
+			err = p.Destroy()
 			if err != nil {
 				return err
 			}
-			for _, p := range policies {
-				err = p.Destroy()
-				if err != nil {
-					return err
-				}
-			}
+		}
 
-			err = RemoveData(s.db, TbRoles, "id=?", roleID)
-			if err != nil {
-				return lang.InternalError(err)
-			}
-			s.cache.Remove(&Role{id: roleID})
-			return nil
-		})
+		err = RemoveData(s.db, TbRoles, "id=?", roleID)
+		if err != nil {
+			return lang.InternalError(err)
+		}
+		s.cache.Remove(&Role{id: roleID})
+		return nil
 	})
 
 	if err, ok := result.(error); ok {
@@ -2114,23 +2062,21 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 
 func (s *mysqlStore) InitApiResource() error {
 	result := <-synchronized.Do(s.ctx, TbApiResources, func() interface{} {
-		return s.TransactionDo(func(db helper.DB) interface{} {
-			err := RemoveData(db, TbApiResources, "1")
+		err := RemoveData(s.db, TbApiResources, "1")
+		if err != nil {
+			return err
+		}
+		for _, entry := range lang.ApiResourcesMap() {
+			_, err := CreateData(s.db, TbApiResources, map[string]interface{}{
+				"name":  entry[0],
+				"title": entry[1],
+				"desc":  entry[2],
+			})
 			if err != nil {
 				return err
 			}
-			for _, entry := range lang.ApiResourcesMap() {
-				_, err := CreateData(db, TbApiResources, map[string]interface{}{
-					"name":  entry[0],
-					"title": entry[1],
-					"desc":  entry[2],
-				})
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		})
+		}
+		return nil
 	})
 
 	if result != nil {

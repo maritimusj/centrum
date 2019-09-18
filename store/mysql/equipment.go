@@ -121,39 +121,33 @@ func (e *Equipment) SetDesc(desc string) {
 }
 
 func (e *Equipment) SetGroups(groups ...interface{}) error {
-	err := e.store.TransactionDo(func(db helper.DB) interface{} {
-		err := RemoveData(db, TbEquipmentGroups, "equipment_id", e.id)
+	err := RemoveData(e.store.db, TbEquipmentGroups, "equipment_id", e.id)
+	if err != nil {
+		return err
+	}
+	now := time.Now()
+	for _, group := range groups {
+		var groupID int64
+		switch v := group.(type) {
+		case int64:
+			groupID = v
+		case model.Group:
+			groupID = v.GetID()
+		default:
+			panic(errors.New("equipment SetGroups: unknown groups"))
+		}
+		_, err := e.store.GetGroup(groupID)
 		if err != nil {
 			return err
 		}
-		now := time.Now()
-		for _, group := range groups {
-			var groupID int64
-			switch v := group.(type) {
-			case int64:
-				groupID = v
-			case model.Group:
-				groupID = v.GetID()
-			default:
-				panic(errors.New("equipment SetGroups: unknown groups"))
-			}
-			_, err := e.store.GetGroup(groupID)
-			if err != nil {
-				return err
-			}
-			_, err = CreateData(db, TbEquipmentGroups, map[string]interface{}{
-				"equipment_id": e.id,
-				"group_id":     groupID,
-				"created_at":   now,
-			})
-			if err != nil {
-				return lang.InternalError(err)
-			}
+		_, err = CreateData(e.store.db, TbEquipmentGroups, map[string]interface{}{
+			"equipment_id": e.id,
+			"group_id":     groupID,
+			"created_at":   now,
+		})
+		if err != nil {
+			return lang.InternalError(err)
 		}
-		return nil
-	})
-	if err != nil {
-		return err.(error)
 	}
 	return nil
 }

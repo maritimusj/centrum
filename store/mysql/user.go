@@ -137,41 +137,35 @@ func (u *User) Update(profile model.Map) {
 }
 
 func (u *User) SetRoles(roles ...interface{}) error {
-	err := u.store.TransactionDo(func(db helper.DB) interface{} {
-		err := RemoveData(db, TbUserRoles, "user_id=?", u.id)
+	err := RemoveData(u.store.db, TbUserRoles, "user_id=?", u.id)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+
+	for _, role := range roles {
+		var roleID int64
+		switch v := role.(type) {
+		case int64:
+			roleID = v
+		case model.Role:
+			roleID = v.GetID()
+		default:
+			panic(errors.New("SetRoles: unknown roles"))
+		}
+		_, err := u.store.GetRole(roleID)
 		if err != nil {
 			return err
 		}
-
-		now := time.Now()
-
-		for _, role := range roles {
-			var roleID int64
-			switch v := role.(type) {
-			case int64:
-				roleID = v
-			case model.Role:
-				roleID = v.GetID()
-			default:
-				panic(errors.New("SetRoles: unknown roles"))
-			}
-			_, err := u.store.GetRole(roleID)
-			if err != nil {
-				return err
-			}
-			_, err = CreateData(db, TbUserRoles, map[string]interface{}{
-				"user_id":    u.id,
-				"role_id":    roleID,
-				"created_at": now,
-			})
-			if err != nil {
-				return lang.InternalError(err)
-			}
+		_, err = CreateData(u.store.db, TbUserRoles, map[string]interface{}{
+			"user_id":    u.id,
+			"role_id":    roleID,
+			"created_at": now,
+		})
+		if err != nil {
+			return lang.InternalError(err)
 		}
-		return nil
-	})
-	if err != nil {
-		return err.(error)
 	}
 	return nil
 }

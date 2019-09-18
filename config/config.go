@@ -15,6 +15,8 @@ type Config interface {
 	DBConnStr() string
 	JwtTokenKey() []byte
 	MaxTokenExpiration() time.Duration
+
+	DefaultOrganization() string
 	DefaultUserName() string
 
 	DefaultEffect() resource.Effect
@@ -45,6 +47,10 @@ func (c *config) SetLogLevel(level string) {
 
 func (c *config) DefaultEffect() resource.Effect {
 	return resource.Allow
+}
+
+func (c *config) DefaultOrganization() string {
+	return "default"
 }
 
 func (c *config) DefaultUserName() string {
