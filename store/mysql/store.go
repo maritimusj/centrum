@@ -13,8 +13,8 @@ import (
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/status"
 	"github.com/maritimusj/centrum/store"
+	"github.com/maritimusj/centrum/synchronized"
 	"github.com/maritimusj/centrum/util"
-	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -39,16 +39,11 @@ type mysqlStore struct {
 	db    *sql.DB
 	cache cache.Cache
 
-	lockerMap map[string]sync.Mutex
-	mu        sync.Mutex
-	wg        sync.WaitGroup
-	ctx       context.Context
+	ctx context.Context
 }
 
 func New() store.Store {
-	return &mysqlStore{
-		lockerMap: make(map[string]sync.Mutex),
-	}
+	return &mysqlStore{}
 }
 
 func parseOption(options ...helper.OptionFN) *helper.Option {
@@ -83,40 +78,6 @@ func (s *mysqlStore) TransactionDo(fn func(db helper.DB) interface{}) interface{
 	}
 
 	return res
-}
-
-func (s *mysqlStore) Synchronized(name string, fn func() interface{}) <-chan interface{} {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	v, ok := s.lockerMap[name]
-	if !ok {
-		v := sync.Mutex{}
-		s.lockerMap[name] = v
-	}
-
-	resultChan := make(chan interface{}, 1)
-	go func() {
-		v.Lock()
-		s.wg.Add(1)
-
-		defer func() {
-			close(resultChan)
-			s.wg.Done()
-			v.Unlock()
-		}()
-
-		select {
-		case <-s.ctx.Done():
-			resultChan <- s.ctx.Err()
-			return
-		default:
-			resultChan <- fn()
-			return
-		}
-	}()
-
-	return resultChan
 }
 
 func (s *mysqlStore) Open(ctx context.Context, option map[string]interface{}) error {
@@ -202,7 +163,7 @@ func (s *mysqlStore) getUser(db DB, id int64) (*User, error) {
 }
 
 func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
-	result := <-s.Synchronized(TbUsers, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbUsers, func() interface{} {
 		var userID int64
 		switch v := user.(type) {
 		case int64:
@@ -248,7 +209,7 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 }
 
 func (s *mysqlStore) CreateUser(name string, password []byte, role model.Role) (model.User, error) {
-	result := <-s.Synchronized(TbUsers, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbUsers, func() interface{} {
 		return s.TransactionDo(func(db helper.DB) interface{} {
 			passwordData, err := util.HashPassword(password)
 			if err != nil {
@@ -306,7 +267,7 @@ func (s *mysqlStore) RemoveUser(userID int64) error {
 		return err
 	}
 
-	result := <-s.Synchronized(TbUsers, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbUsers, func() interface{} {
 		return s.TransactionDo(func(db helper.DB) interface{} {
 			roles, err := user.GetRoles()
 			if err != nil {
@@ -440,7 +401,7 @@ func (s *mysqlStore) loadRole(id int64) (*Role, error) {
 }
 
 func (s *mysqlStore) GetRole(roleID int64) (model.Role, error) {
-	result := <-s.Synchronized(TbRoles, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbRoles, func() interface{} {
 		if role, err := s.cache.LoadRole(roleID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return lang.InternalError(err)
@@ -468,7 +429,7 @@ func (s *mysqlStore) GetRole(roleID int64) (model.Role, error) {
 }
 
 func (s *mysqlStore) createRole(db DB, title string) (model.Role, error) {
-	result := <-s.Synchronized(TbRoles, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbRoles, func() interface{} {
 		roleID, err := CreateData(s.db, TbRoles, map[string]interface{}{
 			"enable":     status.Enable,
 			"title":      title,
@@ -501,7 +462,7 @@ func (s *mysqlStore) CreateRole(title string) (model.Role, error) {
 }
 
 func (s *mysqlStore) RemoveRole(roleID int64) error {
-	result := <-s.Synchronized(TbRoles, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbRoles, func() interface{} {
 		return s.TransactionDo(func(db helper.DB) interface{} {
 			policies, _, err := s.GetPolicyList(nil, helper.Role(roleID))
 			if err != nil {
@@ -621,7 +582,7 @@ func (s *mysqlStore) loadPolicy(id int64) (model.Policy, error) {
 }
 
 func (s *mysqlStore) GetPolicy(policyID int64) (model.Policy, error) {
-	result := <-s.Synchronized(TbPolicies, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbPolicies, func() interface{} {
 		if role, err := s.cache.LoadPolicy(policyID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return lang.InternalError(err)
@@ -649,7 +610,7 @@ func (s *mysqlStore) GetPolicy(policyID int64) (model.Policy, error) {
 }
 
 func (s *mysqlStore) CreatePolicyIsNotExists(roleID int64, res resource.Resource, action resource.Action, defaultEffect resource.Effect) (model.Policy, error) {
-	result := <-s.Synchronized(TbPolicies, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbPolicies, func() interface{} {
 		var policyID int64
 		err := LoadData(s.db, TbPolicies, map[string]interface{}{
 			"id": &policyID,
@@ -686,7 +647,7 @@ func (s *mysqlStore) CreatePolicyIsNotExists(roleID int64, res resource.Resource
 }
 
 func (s *mysqlStore) CreatePolicy(roleID int64, res resource.Resource, action resource.Action, effect resource.Effect) (model.Policy, error) {
-	result := <-s.Synchronized(TbPolicies, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbPolicies, func() interface{} {
 		policyID, err := CreateData(s.db, TbPolicies, map[string]interface{}{
 			"enable":         status.Enable,
 			"role_id":        roleID,
@@ -719,7 +680,7 @@ func (s *mysqlStore) CreatePolicy(roleID int64, res resource.Resource, action re
 }
 
 func (s *mysqlStore) RemovePolicy(policyID int64) error {
-	result := <-s.Synchronized(TbPolicies, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbPolicies, func() interface{} {
 		err := RemoveData(s.db, TbPolicies, "id=?", policyID)
 		if err != nil {
 			return lang.InternalError(err)
@@ -821,7 +782,7 @@ func (s *mysqlStore) loadGroup(id int64) (model.Group, error) {
 }
 
 func (s *mysqlStore) GetGroup(groupID int64) (model.Group, error) {
-	result := <-s.Synchronized(TbGroups, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbGroups, func() interface{} {
 		if group, err := s.cache.LoadGroup(groupID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return err
@@ -848,7 +809,7 @@ func (s *mysqlStore) GetGroup(groupID int64) (model.Group, error) {
 }
 
 func (s *mysqlStore) CreateGroup(title string, desc string, parentID int64) (model.Group, error) {
-	result := <-s.Synchronized(TbGroups, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbGroups, func() interface{} {
 		data := map[string]interface{}{
 			"parent_id":  parentID,
 			"title":      title,
@@ -877,7 +838,7 @@ func (s *mysqlStore) CreateGroup(title string, desc string, parentID int64) (mod
 }
 
 func (s *mysqlStore) RemoveGroup(groupID int64) error {
-	result := <-s.Synchronized(TbGroups, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbGroups, func() interface{} {
 		err := RemoveData(s.db, TbGroups, "id=?", groupID)
 		if err != nil {
 			return err
@@ -1002,7 +963,7 @@ func (s *mysqlStore) loadDevice(id int64) (model.Device, error) {
 }
 
 func (s *mysqlStore) GetDevice(deviceID int64) (model.Device, error) {
-	result := <-s.Synchronized(TbDevices, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbDevices, func() interface{} {
 		if device, err := s.cache.LoadDevice(deviceID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return err
@@ -1029,7 +990,7 @@ func (s *mysqlStore) GetDevice(deviceID int64) (model.Device, error) {
 }
 
 func (s *mysqlStore) CreateDevice(title string, data map[string]interface{}) (model.Device, error) {
-	result := <-s.Synchronized(TbDevices, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbDevices, func() interface{} {
 		o, err := json.Marshal(data)
 		if err != nil {
 			return lang.InternalError(err)
@@ -1061,7 +1022,7 @@ func (s *mysqlStore) CreateDevice(title string, data map[string]interface{}) (mo
 }
 
 func (s *mysqlStore) RemoveDevice(deviceID int64) error {
-	result := <-s.Synchronized(TbDevices, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbDevices, func() interface{} {
 		err := RemoveData(s.db, TbDevices, "id=?", deviceID)
 		if err != nil {
 			return lang.InternalError(err)
@@ -1189,7 +1150,7 @@ func (s *mysqlStore) loadMeasure(id int64) (model.Measure, error) {
 }
 
 func (s *mysqlStore) GetMeasure(measureID int64) (model.Measure, error) {
-	result := <-s.Synchronized(TbMeasures, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbMeasures, func() interface{} {
 		if measure, err := s.cache.LoadMeasure(measureID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return lang.InternalError(err)
@@ -1217,7 +1178,7 @@ func (s *mysqlStore) GetMeasure(measureID int64) (model.Measure, error) {
 }
 
 func (s *mysqlStore) CreateMeasure(deviceID int64, title string, tag string, kind resource.MeasureKind) (model.Measure, error) {
-	result := <-s.Synchronized(TbMeasures, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbMeasures, func() interface{} {
 		data := map[string]interface{}{
 			"enable":     status.Enable,
 			"device_id":  deviceID,
@@ -1250,7 +1211,7 @@ func (s *mysqlStore) CreateMeasure(deviceID int64, title string, tag string, kin
 }
 
 func (s *mysqlStore) RemoveMeasure(measureID int64) error {
-	result := <-s.Synchronized(TbMeasures, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbMeasures, func() interface{} {
 		err := RemoveData(s.db, TbMeasures, "id=?", measureID)
 		if err != nil {
 			return err
@@ -1378,7 +1339,7 @@ func (s *mysqlStore) loadEquipment(id int64) (model.Equipment, error) {
 }
 
 func (s *mysqlStore) GetEquipment(equipmentID int64) (model.Equipment, error) {
-	result := <-s.Synchronized(TbEquipments, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbEquipments, func() interface{} {
 		if equipment, err := s.cache.LoadEquipment(equipmentID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return err
@@ -1408,7 +1369,7 @@ func (s *mysqlStore) GetEquipment(equipmentID int64) (model.Equipment, error) {
 }
 
 func (s *mysqlStore) CreateEquipment(title, desc string) (model.Equipment, error) {
-	result := <-s.Synchronized(TbEquipments, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbEquipments, func() interface{} {
 		equipmentID, err := CreateData(s.db, TbEquipments, map[string]interface{}{
 			"enable":     status.Enable,
 			"title":      title,
@@ -1437,7 +1398,7 @@ func (s *mysqlStore) CreateEquipment(title, desc string) (model.Equipment, error
 }
 
 func (s *mysqlStore) RemoveEquipment(equipmentID int64) error {
-	result := <-s.Synchronized(TbEquipments, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbEquipments, func() interface{} {
 		err := RemoveData(s.db, TbEquipments, "id=?", equipmentID)
 		if err != nil {
 			return err
@@ -1562,7 +1523,7 @@ func (s *mysqlStore) loadState(id int64) (model.State, error) {
 }
 
 func (s *mysqlStore) GetState(stateID int64) (model.State, error) {
-	result := <-s.Synchronized(TbStates, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbStates, func() interface{} {
 		if state, err := s.cache.LoadState(stateID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return lang.InternalError(err)
@@ -1590,7 +1551,7 @@ func (s *mysqlStore) GetState(stateID int64) (model.State, error) {
 }
 
 func (s *mysqlStore) CreateState(equipmentID, measureID int64, title, desc, script string) (model.State, error) {
-	result := <-s.Synchronized(TbStates, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbStates, func() interface{} {
 		data := map[string]interface{}{
 			"enable":       status.Enable,
 			"title":        title,
@@ -1623,7 +1584,7 @@ func (s *mysqlStore) CreateState(equipmentID, measureID int64, title, desc, scri
 }
 
 func (s *mysqlStore) RemoveState(stateID int64) error {
-	result := <-s.Synchronized(TbStates, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbStates, func() interface{} {
 		err := RemoveData(s.db, TbStates, "id=?", stateID)
 		if err != nil {
 			return err
@@ -1853,7 +1814,7 @@ func (s *mysqlStore) loadApiResource(resID int64) (model.ApiResource, error) {
 }
 
 func (s *mysqlStore) GetApiResource(res interface{}) (model.ApiResource, error) {
-	result := <-s.Synchronized(TbApiResources, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbApiResources, func() interface{} {
 		var resID int64
 		switch v := res.(type) {
 		case int64:
@@ -1970,7 +1931,7 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 }
 
 func (s *mysqlStore) InitApiResource() error {
-	result := <-s.Synchronized(TbApiResources, func() interface{} {
+	result := <-synchronized.Do(s.ctx, TbApiResources, func() interface{} {
 		return s.TransactionDo(func(db helper.DB) interface{} {
 			err := RemoveData(db, TbApiResources, "1")
 			if err != nil {

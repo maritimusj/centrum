@@ -86,14 +86,14 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 			},
 		})
 		if err != nil {
-			go	perm.AdminUser(ctx).Logger().WithFields(logrus.Fields{
-				"title": form.Title,
-				"connStr": form.ConnStr,
+			go perm.AdminUser(ctx).Logger().WithFields(logrus.Fields{
+				"title":    form.Title,
+				"connStr":  form.ConnStr,
 				"interval": form.Interval,
 			}).Info(lang.Str(lang.CreateDeviceFail, err))
 			return err
 		} else {
-			go	perm.AdminUser(ctx).Logger().WithFields(logrus.Fields(device.Brief())).Info(lang.Str(lang.CreateDeviceOk, device.Title()))
+			go perm.AdminUser(ctx).Logger().WithFields(logrus.Fields(device.Brief())).Info(lang.Str(lang.CreateDeviceOk, device.Title()))
 		}
 
 		return device.Simple()
@@ -127,9 +127,9 @@ func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 		}
 
 		var form struct {
-			Title   *string `json:"title"`
-			ConnStr *string `json:"params.connStr"`
-			Interval *int64 `json:"params.interval"`
+			Title    *string `json:"title"`
+			ConnStr  *string `json:"params.connStr"`
+			Interval *int64  `json:"params.interval"`
 		}
 
 		if err = ctx.ReadJSON(&form); err != nil {
@@ -160,10 +160,10 @@ func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 
 		err = device.Save()
 		if err != nil {
-			go	perm.AdminUser(ctx).Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceFail, device.Title(), err))
+			go perm.AdminUser(ctx).Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceFail, device.Title(), err))
 			return err
 		} else {
-			go	perm.AdminUser(ctx).Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceOk, device.Title()))
+			go perm.AdminUser(ctx).Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceOk, device.Title()))
 		}
 
 		return lang.Ok
@@ -183,10 +183,10 @@ func Delete(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 
 		err = device.Destroy()
 		if err != nil {
-			go	perm.AdminUser(ctx).Logger().Info(lang.Str(lang.DeleteDeviceFail, device.Title(), err))
+			go perm.AdminUser(ctx).Logger().Info(lang.Str(lang.DeleteDeviceFail, device.Title(), err))
 			return err
 		} else {
-			go	perm.AdminUser(ctx).Logger().Info(lang.Str(lang.DeleteDeviceOk, device.Title()))
+			go perm.AdminUser(ctx).Logger().Info(lang.Str(lang.DeleteDeviceOk, device.Title()))
 		}
 		return lang.Ok
 	})

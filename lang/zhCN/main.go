@@ -109,11 +109,11 @@ var (
 		lang.DefaultUserPasswordResetOk: "默认用户密码已重置！",
 		lang.LogDeletedByUser:           "管理 %s 清空日志！",
 
-		lang.CreateDeviceOk:"创建设备 %s 成功！",
-		lang.CreateDeviceFail:"创建设备失败：%s",
-		lang.UpdateDeviceOk: "更新设备 %s 成功！",
+		lang.CreateDeviceOk:   "创建设备 %s 成功！",
+		lang.CreateDeviceFail: "创建设备失败：%s",
+		lang.UpdateDeviceOk:   "更新设备 %s 成功！",
 		lang.UpdateDeviceFail: "更新设备 %s 失败：%s",
-		lang.DeleteDeviceOk: "删除设备 %s 成功！",
+		lang.DeleteDeviceOk:   "删除设备 %s 成功！",
 		lang.DeleteDeviceFail: "删除设备 %s 失败：%s",
 	}
 

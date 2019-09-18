@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/sirupsen/logrus"
+	"github.com/tidwall/gjson"
 	"time"
 )
 
@@ -11,6 +12,11 @@ type DBEntry interface {
 
 	Save() error
 	Destroy() error
+}
+
+type OptionEntry interface {
+	GetOption(path string) gjson.Result
+	SetOption(path string, value interface{}) error
 }
 
 type EnableEntry interface {
