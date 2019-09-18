@@ -50,11 +50,19 @@ func IsAllowed(ctx iris.Context, resource resource.Resource, action resource.Act
 	}
 
 	user := AdminUser(ctx)
-	if user != nil && user.IsEnabled() {
-		return user.IsAllow(resource, action)
+	if user == nil {
+		return false, lang.Error(lang.ErrInvalidUser)
 	}
 
-	return false, lang.Error(lang.ErrInvalidUser)
+	if resource.OrganizationID() != 0 && resource.OrganizationID() != user.OrganizationID() {
+		return false, lang.Error(lang.ErrNoPermission)
+	}
+
+	if !user.IsEnabled() {
+		return false, lang.Error(lang.ErrUserDisabled)
+	}
+
+	return user.IsAllow(resource, action)
 }
 
 func Deny(ctx iris.Context, res resource.Resource, action resource.Action) bool {
@@ -71,5 +79,6 @@ func Allow(ctx iris.Context, res resource.Resource, action resource.Action) bool
 		log.Trace("没找到策略，使用默认设置：resource title: ", res.ResourceTitle(), "id: ", res.ResourceID(), " class: ", res.ResourceClass())
 		return ctx.Values().Get(DefaultEffect).(resource.Effect) == resource.Allow
 	}
+
 	return false
 }

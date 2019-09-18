@@ -31,6 +31,14 @@ func NewMeasure(s *mysqlStore, id int64) *Measure {
 	}
 }
 
+func (m *Measure) OrganizationID() int64 {
+	device := m.Device()
+	if device != nil {
+		return device.OrganizationID()
+	}
+	return 0
+}
+
 func (m *Measure) ResourceClass() resource.Class {
 	return resource.Measure
 }

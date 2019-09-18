@@ -33,6 +33,14 @@ func NewState(s *mysqlStore, id int64) *State {
 	}
 }
 
+func (s *State) OrganizationID() int64 {
+	equipment := s.Equipment()
+	if equipment != nil {
+		return equipment.OrganizationID()
+	}
+	return 0
+}
+
 func (s *State) ResourceClass() resource.Class {
 	return resource.State
 }

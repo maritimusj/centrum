@@ -32,6 +32,10 @@ func (res *ApiResource) Desc() string {
 	return res.desc
 }
 
+func (res *ApiResource) OrganizationID() int64 {
+	return 0
+}
+
 func (res *ApiResource) ResourceID() int64 {
 	return res.id
 }

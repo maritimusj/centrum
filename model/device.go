@@ -15,7 +15,6 @@ type Device interface {
 
 	resource.Resource
 
-	OrganizationID() int64
 	Organization() (Organization, error)
 
 	Title() string
