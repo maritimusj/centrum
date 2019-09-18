@@ -180,6 +180,10 @@ func Update(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 					return lang.ErrNoPermission
 				}
 
+				if device.OrganizationID() != group.OrganizationID() {
+					return lang.ErrDeviceOrganizationDifferent
+				}
+
 				devices = append(devices, device)
 			}
 
@@ -198,6 +202,10 @@ func Update(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 
 				if perm.Deny(ctx, equipment, resource.Ctrl) {
 					return lang.ErrNoPermission
+				}
+
+				if equipment.OrganizationID() != group.OrganizationID() {
+					return lang.ErrEquipmentOrganizationDifferent
 				}
 
 				equipments = append(equipments, equipment)

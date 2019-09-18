@@ -4,6 +4,7 @@ import (
 	"flag"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/maritimusj/centrum/app"
+	"github.com/maritimusj/centrum/helper"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/maritimusj/centrum/lang"
@@ -57,11 +58,16 @@ func main() {
 	}
 
 	store := mysqlStore.Attach(db)
-	//初始化api资源
-
-	err = store.InitApiResource()
+	_, total, err := store.GetApiResourceList(helper.Limit(1))
 	if err != nil {
 		log.Fatal(err)
+	}
+	if total == 0 {
+		//初始化api资源
+		err = store.InitApiResource()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	//创建默认组织

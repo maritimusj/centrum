@@ -151,9 +151,10 @@ func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 		}
 
 		var form struct {
-			Title    *string `json:"title"`
-			ConnStr  *string `json:"params.connStr"`
-			Interval *int64  `json:"params.interval"`
+			Title    *string  `json:"title"`
+			ConnStr  *string  `json:"params.connStr"`
+			Interval *int64   `json:"params.interval"`
+			Groups   *[]int64 `json:"groups"`
 		}
 
 		if err = ctx.ReadJSON(&form); err != nil {
@@ -174,12 +175,24 @@ func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 			}
 			logFields["connStr"] = form.ConnStr
 		}
+
 		if form.Interval != nil {
 			err = device.SetOption("params.interval", form.Interval)
 			if err != nil {
 				return err
 			}
 			logFields["Interval"] = form.Interval
+		}
+
+		if form.Groups != nil && len(*form.Groups) > 0 {
+			var groups []interface{}
+			for _, g := range *form.Groups {
+				groups = append(groups, g)
+			}
+			err = device.SetGroups(groups...)
+			if err != nil {
+				return err
+			}
 		}
 
 		err = device.Save()

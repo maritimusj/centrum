@@ -198,18 +198,13 @@ func (s *mysqlStore) RemoveOrganization(id interface{}) error {
 	if err != nil {
 		return err
 	}
-	result := <-synchronized.Do(s.ctx, TbOrganization, func() interface{} {
-		err = RemoveData(s.db, TbOrganization, "id=?", org.GetID())
-		if err != nil {
-			return lang.InternalError(err)
-		}
 
-		s.cache.Remove(org)
-		return nil
-	})
-	if err, ok := result.(error); ok {
-		return err
+	err = RemoveData(s.db, TbOrganization, "id=?", org.GetID())
+	if err != nil {
+		return lang.InternalError(err)
 	}
+
+	s.cache.Remove(org)
 	return nil
 }
 
@@ -384,6 +379,23 @@ func (s *mysqlStore) CreateUser(org interface{}, name string, password []byte, r
 			if err != nil {
 				return err
 			}
+			apiRes := []string{
+				resource.MyProfileDetail,
+				resource.MyProfileUpdate,
+				resource.MyPerm,
+				resource.MyPermMulti,
+				resource.UserLogList,
+			}
+			for _, name := range apiRes {
+				res, err := s.GetApiResource(name)
+				if err != nil {
+					return err
+				}
+				_, err = role.SetPolicy(res, resource.Invoke, resource.Allow)
+				if err != nil {
+					return err
+				}
+			}
 		}
 
 		err = user.SetRoles(role)
@@ -410,46 +422,39 @@ func (s *mysqlStore) RemoveUser(userID int64) error {
 		return err
 	}
 
-	result := <-synchronized.Do(s.ctx, TbUsers, func() interface{} {
-		roles, err := user.GetRoles()
-		if err != nil {
-			return err
-		}
+	roles, err := user.GetRoles()
+	if err != nil {
+		return err
+	}
 
-		//删除默认创建的同名角色
-		for _, role := range roles {
-			if role.Title() == user.Name() {
-				users, total, err := role.GetUserList(helper.GetTotal(true))
+	//删除默认创建的同名角色
+	for _, role := range roles {
+		if role.Title() == user.Name() {
+			users, total, err := role.GetUserList(helper.GetTotal(true))
+			if err != nil {
+				return err
+			}
+			if total == 1 && users[0].Name() == user.Name() {
+				err = role.Destroy()
 				if err != nil {
 					return err
 				}
-				if total == 1 && users[0].Name() == user.Name() {
-					err = role.Destroy()
-					if err != nil {
-						return err
-					}
-				}
 			}
 		}
+	}
 
-		//清空其它角色关联
-		err = user.SetRoles()
-		if err != nil {
-			return err
-		}
-
-		err = RemoveData(s.db, TbUsers, "id=?", userID)
-		if err != nil {
-			return lang.InternalError(err)
-		}
-
-		s.cache.Remove(user)
-		return nil
-	})
-
-	if err, ok := result.(error); ok {
+	//清空其它角色关联
+	err = user.SetRoles()
+	if err != nil {
 		return err
 	}
+
+	err = RemoveData(s.db, TbUsers, "id=?", userID)
+	if err != nil {
+		return lang.InternalError(err)
+	}
+
+	s.cache.Remove(user)
 	return nil
 }
 
@@ -615,29 +620,22 @@ func (s *mysqlStore) CreateRole(org interface{}, title string) (model.Role, erro
 }
 
 func (s *mysqlStore) RemoveRole(roleID int64) error {
-	result := <-synchronized.Do(s.ctx, TbRoles, func() interface{} {
-		policies, _, err := s.GetPolicyList(nil, helper.Role(roleID))
+	policies, _, err := s.GetPolicyList(nil, helper.Role(roleID))
+	if err != nil {
+		return err
+	}
+	for _, p := range policies {
+		err = p.Destroy()
 		if err != nil {
 			return err
 		}
-		for _, p := range policies {
-			err = p.Destroy()
-			if err != nil {
-				return err
-			}
-		}
-
-		err = RemoveData(s.db, TbRoles, "id=?", roleID)
-		if err != nil {
-			return lang.InternalError(err)
-		}
-		s.cache.Remove(&Role{id: roleID})
-		return nil
-	})
-
-	if err, ok := result.(error); ok {
-		return err
 	}
+
+	err = RemoveData(s.db, TbRoles, "id=?", roleID)
+	if err != nil {
+		return lang.InternalError(err)
+	}
+	s.cache.Remove(&Role{id: roleID})
 	return nil
 }
 
@@ -766,47 +764,26 @@ func (s *mysqlStore) GetPolicy(policyID int64) (model.Policy, error) {
 	return result.(model.Policy), nil
 }
 
-func (s *mysqlStore) CreatePolicyIsNotExists(roleID int64, res resource.Resource, action resource.Action, defaultEffect resource.Effect) (model.Policy, error) {
-	result := <-synchronized.Do(s.ctx, TbPolicies, func() interface{} {
-		var policyID int64
-		err := LoadData(s.db, TbPolicies, map[string]interface{}{
-			"id": &policyID,
-		}, "role_id=? AND resource_class=? AND resource_id=? AND action=?", roleID, res.ResourceClass(), res.ResourceID(), action)
+func (s *mysqlStore) GetPolicyFrom(roleID int64, res resource.Resource, action resource.Action) (model.Policy, error) {
+	var policyID int64
+	err := LoadData(s.db, TbPolicies, map[string]interface{}{
+		"id": &policyID,
+	}, "role_id=? AND resource_class=? AND resource_id=? AND action=?", roleID, res.ResourceClass(), res.ResourceID(), action)
 
-		if err != nil {
-			if err != sql.ErrNoRows {
-				return lang.InternalError(err)
-			}
-			policyID, err = CreateData(s.db, TbPolicies, map[string]interface{}{
-				"role_id":        roleID,
-				"resource_class": res.ResourceClass(),
-				"resource_id":    res.ResourceID(),
-				"action":         action,
-				"effect":         defaultEffect,
-				"created_at":     time.Now(),
-			})
-			if err != nil {
-				return lang.InternalError(err)
-			}
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return nil, lang.InternalError(err)
 		}
-
-		policy, err := s.GetPolicy(policyID)
-		if err != nil {
-			return err
-		}
-		return policy
-	})
-
-	if err, ok := result.(error); ok {
-		return nil, err
+		return nil, lang.Error(lang.ErrPolicyNotFound)
 	}
-	return result.(model.Policy), nil
+
+	return s.GetPolicy(policyID)
+
 }
 
 func (s *mysqlStore) CreatePolicy(roleID int64, res resource.Resource, action resource.Action, effect resource.Effect) (model.Policy, error) {
 	result := <-synchronized.Do(s.ctx, TbPolicies, func() interface{} {
 		policyID, err := CreateData(s.db, TbPolicies, map[string]interface{}{
-			"enable":         status.Enable,
 			"role_id":        roleID,
 			"resource_class": res.ResourceClass(),
 			"resource_id":    res.ResourceID(),
@@ -837,18 +814,11 @@ func (s *mysqlStore) CreatePolicy(roleID int64, res resource.Resource, action re
 }
 
 func (s *mysqlStore) RemovePolicy(policyID int64) error {
-	result := <-synchronized.Do(s.ctx, TbPolicies, func() interface{} {
-		err := RemoveData(s.db, TbPolicies, "id=?", policyID)
-		if err != nil {
-			return lang.InternalError(err)
-		}
-		s.cache.Remove(&Policy{id: policyID})
-		return nil
-	})
-
-	if err, ok := result.(error); ok {
-		return err
+	err := RemoveData(s.db, TbPolicies, "id=?", policyID)
+	if err != nil {
+		return lang.InternalError(err)
 	}
+	s.cache.Remove(&Policy{id: policyID})
 	return nil
 }
 
@@ -1002,19 +972,12 @@ func (s *mysqlStore) CreateGroup(org interface{}, title string, desc string, par
 }
 
 func (s *mysqlStore) RemoveGroup(groupID int64) error {
-	result := <-synchronized.Do(s.ctx, TbGroups, func() interface{} {
-		err := RemoveData(s.db, TbGroups, "id=?", groupID)
-		if err != nil {
-			return err
-		}
-
-		s.cache.Remove(&Group{id: groupID})
-		return nil
-	})
-
-	if err, ok := result.(error); ok {
+	err := RemoveData(s.db, TbGroups, "id=?", groupID)
+	if err != nil {
 		return err
 	}
+
+	s.cache.Remove(&Group{id: groupID})
 	return nil
 }
 
@@ -1198,19 +1161,12 @@ func (s *mysqlStore) CreateDevice(org interface{}, title string, data map[string
 }
 
 func (s *mysqlStore) RemoveDevice(deviceID int64) error {
-	result := <-synchronized.Do(s.ctx, TbDevices, func() interface{} {
-		err := RemoveData(s.db, TbDevices, "id=?", deviceID)
-		if err != nil {
-			return lang.InternalError(err)
-		}
-
-		s.cache.Remove(&Device{id: deviceID})
-		return nil
-	})
-
-	if err, ok := result.(error); ok {
-		return err
+	err := RemoveData(s.db, TbDevices, "id=?", deviceID)
+	if err != nil {
+		return lang.InternalError(err)
 	}
+
+	s.cache.Remove(&Device{id: deviceID})
 	return nil
 }
 
@@ -1392,17 +1348,11 @@ func (s *mysqlStore) CreateMeasure(deviceID int64, title string, tag string, kin
 }
 
 func (s *mysqlStore) RemoveMeasure(measureID int64) error {
-	result := <-synchronized.Do(s.ctx, TbMeasures, func() interface{} {
-		err := RemoveData(s.db, TbMeasures, "id=?", measureID)
-		if err != nil {
-			return err
-		}
-		s.cache.Remove(&Measure{id: measureID})
-		return nil
-	})
-	if err, ok := result.(error); ok {
+	err := RemoveData(s.db, TbMeasures, "id=?", measureID)
+	if err != nil {
 		return err
 	}
+	s.cache.Remove(&Measure{id: measureID})
 	return nil
 }
 
@@ -1586,18 +1536,11 @@ func (s *mysqlStore) CreateEquipment(org interface{}, title, desc string) (model
 }
 
 func (s *mysqlStore) RemoveEquipment(equipmentID int64) error {
-	result := <-synchronized.Do(s.ctx, TbEquipments, func() interface{} {
-		err := RemoveData(s.db, TbEquipments, "id=?", equipmentID)
-		if err != nil {
-			return err
-		}
-		s.cache.Remove(&Equipment{id: equipmentID})
-		return nil
-	})
-
-	if err, ok := result.(error); ok {
+	err := RemoveData(s.db, TbEquipments, "id=?", equipmentID)
+	if err != nil {
 		return err
 	}
+	s.cache.Remove(&Equipment{id: equipmentID})
 	return nil
 }
 
@@ -1777,18 +1720,11 @@ func (s *mysqlStore) CreateState(equipmentID, measureID int64, title, desc, scri
 }
 
 func (s *mysqlStore) RemoveState(stateID int64) error {
-	result := <-synchronized.Do(s.ctx, TbStates, func() interface{} {
-		err := RemoveData(s.db, TbStates, "id=?", stateID)
-		if err != nil {
-			return err
-		}
-		s.cache.Remove(&State{id: stateID})
-		return nil
-	})
-
-	if err, ok := result.(error); ok {
+	err := RemoveData(s.db, TbStates, "id=?", stateID)
+	if err != nil {
 		return err
 	}
+	s.cache.Remove(&State{id: stateID})
 	return nil
 }
 
@@ -2057,7 +1993,7 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 	option := parseOption(options...)
 
 	var (
-		fromSQL = "FROM " + TbApiResources + " WHERE 1"
+		fromSQL = "FROM " + TbApiResources + " WHERE title != ''"
 	)
 
 	var params []interface{}
@@ -2101,10 +2037,10 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 	}()
 
 	var result []model.ApiResource
-	var stateID int64
+	var resID int64
 
 	for rows.Next() {
-		err = rows.Scan(&stateID)
+		err = rows.Scan(&resID)
 		if err != nil {
 			if err != sql.ErrNoRows {
 				return nil, 0, lang.InternalError(err)
@@ -2112,7 +2048,7 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 			return []model.ApiResource{}, total, nil
 		}
 
-		res, err := s.GetApiResource(stateID)
+		res, err := s.GetApiResource(resID)
 		if err != nil {
 			return nil, 0, err
 		}

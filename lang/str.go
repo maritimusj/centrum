@@ -23,6 +23,27 @@ const (
 	LogFatal
 	LogPanic
 
+	ResourceMyProfileDetailTitle
+	ResourceMyProfileDetailDesc
+	ResourceMyProfileUpdateTitle
+	ResourceMyProfileUpdateDesc
+	ResourceMyPermTitle
+	ResourceMyPermDesc
+	ResourceMyPermMultiTitle
+	ResourceMyPermMultiDesc
+	ResourceUserLogListTitle
+	ResourceUserLogListDesc
+	ResourceUserLogDeleteTitle
+	ResourceUserLogDeleteDesc
+	ResourceDeviceLogListTitle
+	ResourceDeviceLogListDesc
+	ResourceDeviceLogDeleteTitle
+	ResourceDeviceLogDeleteDesc
+	ResourceEquipmentLogListTitle
+	ResourceEquipmentLogListDesc
+	ResourceEquipmentLogDeleteTitle
+	ResourceEquipmentLogDeleteDesc
+
 	ResourceUserListTitle
 	ResourceUserListDesc
 	ResourceUserCreateTitle
@@ -150,6 +171,8 @@ const (
 	ErrMeasureNotFound
 	ErrEquipmentNotFound
 	ErrStateNotFound
+	ErrDeviceOrganizationDifferent
+	ErrEquipmentOrganizationDifferent
 )
 
 var (
@@ -170,6 +193,17 @@ func load() {
 
 func ApiResourcesMap() [][3]string {
 	return [][3]string{
+		{resource.MyProfileDetail, Str(ResourceMyProfileDetailTitle), Str(ResourceMyProfileDetailDesc)},
+		{resource.MyProfileUpdate, Str(ResourceMyProfileUpdateTitle), Str(ResourceMyProfileUpdateDesc)},
+		{resource.MyPerm, Str(ResourceMyPermTitle), Str(ResourceMyPermDesc)},
+		{resource.MyPermMulti, Str(ResourceMyPermMultiTitle), Str(ResourceMyPermMultiDesc)},
+		{resource.UserLogList, Str(ResourceUserLogListTitle), Str(ResourceUserLogListDesc)},
+		{resource.UserLogDelete, Str(ResourceUserLogDeleteTitle), Str(ResourceUserLogDeleteDesc)},
+		{resource.DeviceLogList, Str(ResourceDeviceLogListTitle), Str(ResourceDeviceLogListDesc)},
+		{resource.DeviceLogDelete, Str(ResourceDeviceLogDeleteTitle), Str(ResourceDeviceLogDeleteDesc)},
+		{resource.EquipmentLogList, Str(ResourceEquipmentLogListTitle), Str(ResourceEquipmentLogListDesc)},
+		{resource.EquipmentLogDelete, Str(ResourceEquipmentLogDeleteTitle), Str(ResourceEquipmentLogDeleteDesc)},
+
 		{resource.UserList, Str(ResourceUserListTitle), Str(ResourceUserListDesc)},
 		{resource.UserCreate, Str(ResourceUserCreateTitle), Str(ResourceUserCreateDesc)},
 		{resource.UserUpdate, Str(ResourceUserUpdateTitle), Str(ResourceUserUpdateDesc)},

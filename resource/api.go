@@ -1,6 +1,18 @@
 package resource
 
 const (
+	MyProfileDetail = "my.profile.detail"
+	MyProfileUpdate = "my.profile.update"
+	MyPerm        = "my.perm"
+	MyPermMulti   = "my.perm.multi"
+
+	UserLogList        = "user.log.list"
+	UserLogDelete      = "user.log.delete"
+	DeviceLogList      = "device.log.list"
+	DeviceLogDelete    = "device.log.delete"
+	EquipmentLogList   = "equip.log.list"
+	EquipmentLogDelete = "equip.log.delete"
+
 	ResourceList   = "resource.list"
 	ResourceDetail = "resource.detail"
 
@@ -46,6 +58,7 @@ const (
 	StateUpdate = "state.update"
 	StateDelete = "state.delete"
 
-	LogList   = "log.list"
-	LogDelete = "log.delete"
+	LogLevelList = "log.level.list"
+	LogList      = "log.list"
+	LogDelete    = "log.delete"
 )

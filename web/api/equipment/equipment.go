@@ -135,17 +135,32 @@ func Update(equipmentID int64, ctx iris.Context, s store.Store) hero.Result {
 		}
 
 		var form struct {
-			Title *string `json:"title"`
-			Desc  *string `json:"desc"`
+			Title  *string  `json:"title"`
+			Desc   *string  `json:"desc"`
+			Groups *[]int64 `json:"groups"`
 		}
+
 		if err = ctx.ReadJSON(&form); err != nil {
 			return lang.ErrInvalidRequestData
 		}
+
 		if form.Title != nil {
 			equipment.SetTitle(*form.Title)
 		}
+
 		if form.Desc != nil {
 			equipment.SetDesc(*form.Desc)
+		}
+
+		if form.Groups != nil && len(*form.Groups) > 0 {
+			var groups []interface{}
+			for _, g := range *form.Groups {
+				groups = append(groups, g)
+			}
+			err = equipment.SetGroups(groups...)
+			if err != nil {
+				return err
+			}
 		}
 
 		err = equipment.Save()

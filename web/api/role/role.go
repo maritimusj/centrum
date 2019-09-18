@@ -1,10 +1,8 @@
 package role
 
 import (
-	"fmt"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/kr/pretty"
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
@@ -125,8 +123,6 @@ func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		fmt.Printf("%# v", pretty.Formatter(form))
-
 		if len(form.Policies) > 0 {
 			for _, p := range form.Policies {
 				res, err := s.GetResource(resource.Class(p.ResourceClass), p.ResourceID)
@@ -141,14 +137,14 @@ func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 					}
 				}
 				if p.View != nil {
-					effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
+					effect := util.If(*p.View, resource.Allow, resource.Deny).(resource.Effect)
 					_, err = role.SetPolicy(res, resource.View, effect)
 					if err != nil {
 						return err
 					}
 				}
 				if p.Ctrl != nil {
-					effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
+					effect := util.If(*p.Ctrl, resource.Allow, resource.Deny).(resource.Effect)
 					_, err = role.SetPolicy(res, resource.Ctrl, effect)
 					if err != nil {
 						return err
@@ -169,7 +165,7 @@ func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Delete(roleID int64, s store.Store) hero.Result {
+func Delete(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 	return response.Wrap(func() interface{} {
 		role, err := s.GetRole(roleID)
 		if err != nil {

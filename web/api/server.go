@@ -57,11 +57,12 @@ func (server *server) Start(cfg config.Config) error {
 
 			//我的
 			p.PartyFunc("/my", func(p router.Party) {
-				p.Get("/profile", hero.Handler(my.Detail))
-				p.Put("/profile", hero.Handler(my.Update))
+				p.Get("/profile", hero.Handler(my.Detail)).Name = ResourceDef.MyProfileDetail
+				p.Put("/profile", hero.Handler(my.Update)).Name = ResourceDef.MyProfileUpdate
+
 				//请求当前用户对于某个资源的权限情况
-				p.Get("/perm/{class:string}", hero.Handler(my.Perm))
-				p.Post("/perm/{class:string}", hero.Handler(my.MultiPerm))
+				p.Get("/perm/{class:string}", hero.Handler(my.Perm)).Name = ResourceDef.MyPerm
+				p.Post("/perm/{class:string}", hero.Handler(my.MultiPerm)).Name = ResourceDef.MyPermMulti
 			})
 
 			//资源
@@ -104,8 +105,8 @@ func (server *server) Start(cfg config.Config) error {
 				}
 
 				//日志
-				p.Get("/{id:int64}/log", hero.Handler(user.LogList))
-				p.Delete("/{id:int64}/log", hero.Handler(user.LogDelete))
+				p.Get("/{id:int64}/log", hero.Handler(user.LogList)).Name = ResourceDef.UserLogList
+				p.Delete("/{id:int64}/log", hero.Handler(user.LogDelete)).Name = ResourceDef.UserLogDelete
 			})
 
 			//设备分组
@@ -130,8 +131,8 @@ func (server *server) Start(cfg config.Config) error {
 				p.Post("/{id:int64}/measure", hero.Handler(device.CreateMeasure)).Name = ResourceDef.MeasureCreate
 
 				//日志
-				p.Get("/{id:int64}/log", hero.Handler(device.LogList))
-				p.Delete("/{id:int64}/log", hero.Handler(device.LogDelete))
+				p.Get("/{id:int64}/log", hero.Handler(device.LogList)).Name = ResourceDef.DeviceLogList
+				p.Delete("/{id:int64}/log", hero.Handler(device.LogDelete)).Name = ResourceDef.DeviceLogDelete
 			})
 			//物理点位
 			p.PartyFunc("/measure", func(p router.Party) {
@@ -152,8 +153,8 @@ func (server *server) Start(cfg config.Config) error {
 				p.Post("/{id:int64}/state", hero.Handler(equipment.CreateState)).Name = ResourceDef.StateCreate
 
 				//日志
-				p.Get("/{id:int64}/log", hero.Handler(equipment.LogList))
-				p.Delete("/{id:int64}/log", hero.Handler(equipment.LogDelete))
+				p.Get("/{id:int64}/log", hero.Handler(equipment.LogList)).Name = ResourceDef.EquipmentLogList
+				p.Delete("/{id:int64}/log", hero.Handler(equipment.LogDelete)).Name = ResourceDef.EquipmentLogDelete
 			})
 
 			//自定义点位
@@ -164,7 +165,7 @@ func (server *server) Start(cfg config.Config) error {
 			})
 
 			//日志等级
-			p.Get("/log/level", hero.Handler(log.Level))
+			p.Get("/log/level", hero.Handler(log.Level)).Name = ResourceDef.LogLevelList
 			//系统日志
 			p.PartyFunc("/syslog", func(p router.Party) {
 				p.Get("/", hero.Handler(log.List)).Name = ResourceDef.LogList

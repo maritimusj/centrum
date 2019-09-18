@@ -23,7 +23,7 @@ type Store interface {
 	GetRoleList(options ...helper.OptionFN) ([]model.Role, int64, error)
 
 	GetPolicy(roleID int64) (model.Policy, error)
-	CreatePolicyIsNotExists(roleID int64, res resource.Resource, action resource.Action, defaultEffect resource.Effect) (model.Policy, error)
+	GetPolicyFrom(roleID int64, res resource.Resource, action resource.Action) (model.Policy, error)
 	RemovePolicy(policyID int64) error
 	GetPolicyList(res resource.Resource, options ...helper.OptionFN) ([]model.Policy, int64, error)
 

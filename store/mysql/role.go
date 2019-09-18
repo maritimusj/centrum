@@ -101,7 +101,19 @@ func (r *Role) GetUserList(options ...helper.OptionFN) ([]model.User, int64, err
 }
 
 func (r *Role) SetPolicy(res resource.Resource, action resource.Action, effect resource.Effect) (model.Policy, error) {
-	policy, err := r.store.CreatePolicyIsNotExists(r.id, res, action, effect)
+	policy, err := r.store.GetPolicyFrom(r.id, res, action)
+	if err != nil {
+		if err != lang.Error(lang.ErrPolicyNotFound) {
+			return nil, err
+		}
+
+		policy, err = r.store.CreatePolicy(r.id, res, action, effect)
+		if err != nil {
+			return nil, err
+		}
+	}
+	policy.SetEffect(effect)
+	err = policy.Save()
 	if err != nil {
 		return nil, err
 	}

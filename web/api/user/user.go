@@ -1,18 +1,18 @@
 package user
 
 import (
-	"fmt"
+	"github.com/maritimusj/centrum/db"
 	"github.com/maritimusj/centrum/logStore"
+	"github.com/maritimusj/centrum/resource"
+	mysqlStore "github.com/maritimusj/centrum/store/mysql"
 	"github.com/maritimusj/centrum/web/api/web"
 
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/kr/pretty"
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
-	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/status"
 	"github.com/maritimusj/centrum/store"
 	"github.com/maritimusj/centrum/util"
@@ -59,7 +59,7 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	})
 }
 
-func Create(ctx iris.Context, s store.Store, validate *validator.Validate, cfg config.Config) hero.Result {
+func Create(ctx iris.Context, tx db.WithTransaction, validate *validator.Validate, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
 			OrgID    int64  `json:"org"`
@@ -76,40 +76,44 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate, cfg c
 			return lang.ErrInvalidRequestData
 		}
 
-		if _, err := s.GetUser(form.Username); err != lang.Error(lang.ErrUserNotFound) {
-			return lang.ErrUserExists
-		}
+		return tx.TransactionDo(func(db db.DB) interface{} {
+			s := mysqlStore.Attach(db)
 
-		var role model.Role
-		var err error
-		if form.RoleID != nil {
-			role, err = s.GetRole(*form.RoleID)
+			if _, err := s.GetUser(form.Username); err != lang.Error(lang.ErrUserNotFound) {
+				return lang.ErrUserExists
+			}
+
+			var role model.Role
+			var err error
+			if form.RoleID != nil {
+				role, err = s.GetRole(*form.RoleID)
+				if err != nil {
+					return err
+				}
+			}
+
+			if cfg.IsRoleEnabled() && role == nil {
+				return lang.ErrRoleNotFound
+			}
+
+			var org interface{}
+			if perm.IsDefaultAdminUser(ctx) {
+				if form.OrgID > 0 {
+					org = form.OrgID
+				} else {
+					org = cfg.DefaultOrganization()
+				}
+			} else {
+				org = perm.AdminUser(ctx).OrganizationID()
+			}
+
+			user, err := s.CreateUser(org, form.Username, []byte(form.Password), role)
 			if err != nil {
 				return err
 			}
-		}
 
-		if cfg.IsRoleEnabled() && role == nil {
-			return lang.ErrRoleNotFound
-		}
-
-		var org interface{}
-		if perm.IsDefaultAdminUser(ctx) {
-			if form.OrgID > 0 {
-				org = form.OrgID
-			} else {
-				org = cfg.DefaultOrganization()
-			}
-		} else {
-			org = perm.AdminUser(ctx).OrganizationID()
-		}
-
-		user, err := s.CreateUser(org, form.Username, []byte(form.Password), role)
-		if err != nil {
-			return err
-		}
-
-		return user.Simple()
+			return user.Simple()
+		})
 	})
 }
 
@@ -236,57 +240,49 @@ func UpdatePerm(userID int64, ctx iris.Context, s store.Store, cfg config.Config
 			return err
 		}
 
+		type P struct {
+			ResourceClass int   `json:"class"`
+			ResourceID    int64 `json:"id"`
+			Invoke        *bool `json:"invoke"`
+			View          *bool `json:"view"`
+			Ctrl          *bool `json:"ctrl"`
+		}
+		var form struct {
+			Policies []P `json:"policies"`
+		}
+		if err = ctx.ReadJSON(&form); err != nil {
+			return lang.ErrInvalidRequestData
+		}
+
 		update := func(role model.Role) interface{} {
-			type P struct {
-				ResourceClass int   `json:"class"`
-				ResourceID    int64 `json:"id"`
-				Invoke        *bool  `json:"invoke"`
-				View          *bool  `json:"view"`
-				Ctrl          *bool  `json:"ctrl"`
-			}
-			var form struct {
-				Policies []P `json:"policies"`
-			}
-			if err = ctx.ReadJSON(&form); err != nil {
-				return lang.ErrInvalidRequestData
-			}
-
-			fmt.Printf("%# v", pretty.Formatter(form))
-
-			if len(form.Policies) > 0 {
-				for _, p := range form.Policies {
-					res, err := s.GetResource(resource.Class(p.ResourceClass), p.ResourceID)
+			for _, p := range form.Policies {
+				res, err := s.GetResource(resource.Class(p.ResourceClass), p.ResourceID)
+				if err != nil {
+					return err
+				}
+				if p.Invoke != nil {
+					effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
+					_, err = role.SetPolicy(res, resource.Invoke, effect)
 					if err != nil {
 						return err
 					}
-					if p.Invoke != nil {
-						effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
-						_, err = role.SetPolicy(res, resource.Invoke,  effect)
-						if err != nil {
-							return err
-						}
+				}
+				if p.View != nil {
+					effect := util.If(*p.View, resource.Allow, resource.Deny).(resource.Effect)
+					_, err = role.SetPolicy(res, resource.View, effect)
+					if err != nil {
+						return err
 					}
-					if p.View != nil {
-						effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
-						_, err = role.SetPolicy(res, resource.View,  effect)
-						if err != nil {
-							return err
-						}
-					}
-					if p.Ctrl != nil {
-						effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
-						_, err = role.SetPolicy(res, resource.Ctrl,  effect)
-						if err != nil {
-							return err
-						}
+				}
+				if p.Ctrl != nil {
+					effect := util.If(*p.Ctrl, resource.Allow, resource.Deny).(resource.Effect)
+					_, err = role.SetPolicy(res, resource.Ctrl, effect)
+					if err != nil {
+						return err
 					}
 				}
 			}
 
-			err = role.Save()
-			if err != nil {
-				return err
-			}
 			return lang.Ok
 		}
 

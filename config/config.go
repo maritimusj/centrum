@@ -46,7 +46,7 @@ func (c *config) SetLogLevel(level string) {
 }
 
 func (c *config) DefaultEffect() resource.Effect {
-	return resource.Allow
+	return resource.Deny
 }
 
 func (c *config) DefaultOrganization() string {

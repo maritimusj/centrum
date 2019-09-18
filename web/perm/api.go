@@ -8,8 +8,8 @@ import (
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/store"
+	"github.com/maritimusj/centrum/util"
 	"github.com/maritimusj/centrum/web/response"
-	log "github.com/sirupsen/logrus"
 )
 
 func Check(ctx iris.Context, store store.Store, cfg config.Config) hero.Result {
@@ -22,23 +22,21 @@ func Check(ctx iris.Context, store store.Store, cfg config.Config) hero.Result {
 		router := ctx.GetCurrentRoute()
 		res, err := store.GetApiResource(router.Name())
 		if err != nil {
-			if err == lang.Error(lang.ErrApiResourceNotFound) && cfg.DefaultEffect() == resource.Allow {
-				log.Tracef("没找到API资源，user: %s, router: %s 默认通过！", admin.Name(), router.Name())
-				return nil
+			if err != lang.Error(lang.ErrApiResourceNotFound) {
+				return err
 			}
-			return err
+			return util.If(cfg.DefaultEffect() == resource.Allow, nil, lang.Error(lang.ErrNoPermission))
 		}
 
 		allowed, err := admin.IsAllow(res, resource.Invoke)
-		if allowed {
-			return nil
+		if err != nil {
+			if err != lang.Error(lang.ErrPolicyNotFound) {
+				return err
+			}
+			return util.If(cfg.DefaultEffect() == resource.Allow, nil, lang.Error(lang.ErrNoPermission))
 		}
 
-		if err == lang.Error(lang.ErrPolicyNotFound) && cfg.DefaultEffect() == resource.Allow {
-			log.Tracef("没找到策略，user: %s, router: %s 默认通过！", admin.Name(), router.Name())
-			return nil
-		}
-		return lang.Error(lang.ErrNoPermission)
+		return util.If(allowed, nil, lang.Error(lang.ErrNoPermission))
 	})
 
 	if result != nil {
