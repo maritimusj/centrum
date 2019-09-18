@@ -9,6 +9,7 @@ type Option struct {
 	Offset        int64
 	Kind          resource.MeasureKind
 	Class         resource.Class
+	OrgID         int64
 	ParentID      *int64
 	RoleID        *int64
 	UserID        *int64
@@ -58,6 +59,12 @@ func Kind(kind resource.MeasureKind) OptionFN {
 func Class(class resource.Class) OptionFN {
 	return func(i *Option) {
 		i.Class = class
+	}
+}
+
+func Organization(orgID int64) OptionFN {
+	return func(i *Option) {
+		i.OrgID = orgID
 	}
 }
 

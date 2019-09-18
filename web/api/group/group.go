@@ -16,12 +16,22 @@ import (
 
 func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
+		var params []helper.OptionFN
+		var orgID int64
+		if perm.IsDefaultAdminUser(ctx) {
+			if ctx.URLParamExists("org") {
+				orgID = ctx.URLParamInt64Default("org", 0)
+			}
+		} else {
+			orgID = perm.AdminUser(ctx).OrganizationID()
+		}
+		if orgID > 0 {
+			params = append(params, helper.Organization(orgID))
+		}
+
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
-
-		var params = []helper.OptionFN{
-			helper.Page(page, pageSize),
-		}
+		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
 		if keyword != "" {
@@ -63,9 +73,10 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	})
 }
 
-func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.Result {
+func Create(ctx iris.Context, s store.Store, cfg config.Config, validate *validator.Validate) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
+			OrgID         int64  `json:"org"`
 			Title         string `json:"title" validate:"required"`
 			Desc          string `json:"desc"`
 			ParentGroupID int64  `json:"parent" validate:"min=0"`
@@ -86,7 +97,18 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 			}
 		}
 
-		group, err := s.CreateGroup(form.Title, form.Desc, form.ParentGroupID)
+		var org interface{}
+		if perm.IsDefaultAdminUser(ctx) {
+			if form.OrgID > 0 {
+				org = form.OrgID
+			} else {
+				org = cfg.DefaultOrganization()
+			}
+		} else {
+			org = perm.AdminUser(ctx).OrganizationID()
+		}
+
+		group, err := s.CreateGroup(org, form.Title, form.Desc, form.ParentGroupID)
 		if err != nil {
 			return err
 		}

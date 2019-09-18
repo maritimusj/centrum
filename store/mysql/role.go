@@ -11,7 +11,9 @@ import (
 )
 
 type Role struct {
-	id        int64
+	id    int64
+	orgID int64
+
 	enable    int8
 	title     string
 	createdAt time.Time
@@ -26,6 +28,14 @@ func NewRole(s *mysqlStore, id int64) *Role {
 		dirty: dirty.New(),
 		store: s,
 	}
+}
+
+func (r *Role) OrganizationID() int64 {
+	return r.orgID
+}
+
+func (r *Role) Organization() (model.Organization, error) {
+	return r.store.GetOrganization(r.orgID)
 }
 
 func (r *Role) GetID() int64 {

@@ -16,7 +16,9 @@ import (
 )
 
 type Device struct {
-	id     int64
+	id    int64
+	orgID int64
+
 	enable int8
 
 	title     string
@@ -33,6 +35,14 @@ func NewDDevice(store *mysqlStore, id int64) *Device {
 		dirty: dirty.New(),
 		store: store,
 	}
+}
+
+func (d *Device) OrganizationID() int64 {
+	return d.orgID
+}
+
+func (d *Device) Organization() (model.Organization, error) {
+	return d.store.GetOrganization(d.orgID)
 }
 
 func (d *Device) LogUID() string {

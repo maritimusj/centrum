@@ -17,7 +17,9 @@ import (
 )
 
 type User struct {
-	id     int64
+	id    int64
+	orgID int64
+
 	enable int8
 
 	name      string
@@ -45,6 +47,14 @@ func (u *User) LogUID() string {
 
 func (u *User) Logger() *log.Entry {
 	return log.WithField("src", u.LogUID())
+}
+
+func (u *User) OrganizationID() int64 {
+	return u.orgID
+}
+
+func (u *User) Organization() (model.Organization, error) {
+	return u.store.GetOrganization(u.orgID)
 }
 
 func (u *User) GetID() int64 {

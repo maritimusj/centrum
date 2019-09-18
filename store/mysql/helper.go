@@ -6,12 +6,31 @@ import (
 	"fmt"
 	"github.com/maritimusj/centrum/db"
 	"github.com/maritimusj/centrum/lang"
+	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/util"
 	log "github.com/sirupsen/logrus"
 	"strings"
 )
 
-func getOrganizationByName(db db.DB, name string) (int64, error) {
+func getOrganizationID(db db.DB, org interface{}) (int64, error) {
+	switch v := org.(type) {
+	case int64:
+		if exists, err := IsDataExists(db, TbOrganization, "id=?", v); err != nil {
+			return 0, lang.InternalError(err)
+		} else if exists {
+			return v, nil
+		}
+	case string:
+		return getOrganizationIDByName(db, v)
+	case model.Organization:
+		if v != nil {
+			return v.GetID(), nil
+		}
+	}
+	return 0, lang.Error(lang.ErrOrganizationNotFound)
+}
+
+func getOrganizationIDByName(db db.DB, name string) (int64, error) {
 	var orgID int64
 	err := LoadData(db, TbOrganization, map[string]interface{}{
 		"id": &orgID,

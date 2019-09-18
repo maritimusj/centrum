@@ -11,6 +11,9 @@ type User interface {
 	LogEntry
 	Profile
 
+	OrganizationID() int64
+	Organization() (Organization, error)
+
 	Name() string
 	Title() string
 	Mobile() string

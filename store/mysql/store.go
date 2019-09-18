@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/cache"
 	"github.com/maritimusj/centrum/cache/memCache"
@@ -18,7 +20,6 @@ import (
 	"github.com/maritimusj/centrum/store"
 	"github.com/maritimusj/centrum/synchronized"
 	"github.com/maritimusj/centrum/util"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -104,7 +105,7 @@ func (s *mysqlStore) loadOrganization(db db.DB, id int64) (*Organization, error)
 		"enable":     &org.enable,
 		"name":       &org.name,
 		"title":      &org.title,
-		"extra":      &org.extra,
+		"extra?":     &org.extra,
 		"created_at": &org.createdAt,
 	}, "id=?", id)
 	if err != nil {
@@ -125,7 +126,7 @@ func (s *mysqlStore) GetOrganization(id interface{}) (model.Organization, error)
 		case float64:
 			orgID = int64(v)
 		case string:
-			id, err := getOrganizationByName(s.db, v)
+			id, err := getOrganizationIDByName(s.db, v)
 			if err != nil {
 				return err
 			}
@@ -281,6 +282,7 @@ func (s *mysqlStore) GetOrganizationList(options ...helper.OptionFN) ([]model.Or
 func (s *mysqlStore) loadUser(db db.DB, id int64) (*User, error) {
 	var user = NewUser(s, id)
 	err := LoadData(db, TbUsers, map[string]interface{}{
+		"org_id":     &user.orgID,
 		"enable":     &user.enable,
 		"name":       &user.name,
 		"title":      &user.title,
@@ -344,13 +346,20 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 	return result.(model.User), nil
 }
 
-func (s *mysqlStore) CreateUser(name string, password []byte, role model.Role) (model.User, error) {
+func (s *mysqlStore) CreateUser(org interface{}, name string, password []byte, role model.Role) (model.User, error) {
 	result := <-synchronized.Do(s.ctx, TbUsers, func() interface{} {
+		orgID, err := getOrganizationID(s.db, org)
+		if err != nil {
+			return err
+		}
+
 		passwordData, err := util.HashPassword(password)
 		if err != nil {
 			return lang.InternalError(err)
 		}
+
 		userID, err := CreateData(s.db, TbUsers, map[string]interface{}{
+			"org_id":     orgID,
 			"enable":     status.Enable,
 			"name":       name,
 			"password":   passwordData,
@@ -371,7 +380,7 @@ func (s *mysqlStore) CreateUser(name string, password []byte, role model.Role) (
 
 		//未指定角色则创建同名角色
 		if role == nil {
-			role, err = s.createRole(s.db, name)
+			role, err = s.createRole(s.db, org, name)
 			if err != nil {
 				return err
 			}
@@ -453,6 +462,12 @@ func (s *mysqlStore) GetUserList(options ...helper.OptionFN) ([]model.User, int6
 	)
 
 	var params []interface{}
+
+	if option.OrgID > 0 {
+		where += " AND u.org_id=?"
+		params = append(params, option.OrgID)
+	}
+
 	if option.RoleID != nil && *option.RoleID > 0 {
 		from += " LEFT JOIN " + TbUserRoles + " r ON u.id=r.user_id"
 		where += " AND r.role_id=?"
@@ -519,6 +534,7 @@ func (s *mysqlStore) GetUserList(options ...helper.OptionFN) ([]model.User, int6
 func (s *mysqlStore) loadRole(id int64) (*Role, error) {
 	var role = NewRole(s, id)
 	err := LoadData(s.db, TbRoles, map[string]interface{}{
+		"org_id":     &role.orgID,
 		"enable":     &role.enable,
 		"title":      &role.title,
 		"created_at": &role.createdAt,
@@ -560,9 +576,14 @@ func (s *mysqlStore) GetRole(roleID int64) (model.Role, error) {
 	return result.(model.Role), nil
 }
 
-func (s *mysqlStore) createRole(db db.DB, title string) (model.Role, error) {
+func (s *mysqlStore) createRole(db db.DB, org interface{}, title string) (model.Role, error) {
 	result := <-synchronized.Do(s.ctx, TbRoles, func() interface{} {
+		orgID, err := getOrganizationID(db, org)
+		if err != nil {
+			return err
+		}
 		roleID, err := CreateData(s.db, TbRoles, map[string]interface{}{
+			"org_id":     orgID,
 			"enable":     status.Enable,
 			"title":      title,
 			"created_at": time.Now(),
@@ -589,8 +610,8 @@ func (s *mysqlStore) createRole(db db.DB, title string) (model.Role, error) {
 	return result.(model.Role), nil
 }
 
-func (s *mysqlStore) CreateRole(title string) (model.Role, error) {
-	return s.createRole(s.db, title)
+func (s *mysqlStore) CreateRole(org interface{}, title string) (model.Role, error) {
+	return s.createRole(s.db, org, title)
 }
 
 func (s *mysqlStore) RemoveRole(roleID int64) error {
@@ -627,11 +648,17 @@ func (s *mysqlStore) GetRoleList(options ...helper.OptionFN) ([]model.Role, int6
 	)
 
 	var params []interface{}
+
 	if option.UserID != nil {
 		fromSQL += " INNER JOIN " + TbUserRoles + " u ON r.id=u.role_id WHERE u.user_id=?"
 		params = append(params, *option.UserID)
 	} else {
 		fromSQL += " WHERE 1"
+	}
+
+	if option.OrgID > 0 {
+		fromSQL += " AND r.org_id=?"
+		params = append(params, option.OrgID)
 	}
 
 	if option.Keyword != "" {
@@ -833,6 +860,7 @@ func (s *mysqlStore) GetPolicyList(res resource.Resource, options ...helper.Opti
 	)
 
 	var params []interface{}
+
 	if option.RoleID != nil {
 		fromSQL += " AND role_id=?"
 		params = append(params, *option.RoleID)
@@ -896,6 +924,7 @@ func (s *mysqlStore) loadGroup(id int64) (model.Group, error) {
 	var group = NewGroup(s, id)
 
 	err := LoadData(s.db, TbGroups, map[string]interface{}{
+		"org_id":     &group.orgID,
 		"parent_id":  &group.parentID,
 		"title":      &group.title,
 		"desc?":      &group.desc,
@@ -938,9 +967,14 @@ func (s *mysqlStore) GetGroup(groupID int64) (model.Group, error) {
 	return result.(model.Group), nil
 }
 
-func (s *mysqlStore) CreateGroup(title string, desc string, parentID int64) (model.Group, error) {
+func (s *mysqlStore) CreateGroup(org interface{}, title string, desc string, parentID int64) (model.Group, error) {
 	result := <-synchronized.Do(s.ctx, TbGroups, func() interface{} {
+		orgID, err := getOrganizationID(s.db, org)
+		if err != nil {
+			return err
+		}
 		data := map[string]interface{}{
+			"org_id":     orgID,
 			"parent_id":  parentID,
 			"title":      title,
 			"desc":       desc,
@@ -992,6 +1026,11 @@ func (s *mysqlStore) GetGroupList(options ...helper.OptionFN) ([]model.Group, in
 	)
 
 	var params []interface{}
+
+	if option.OrgID > 0 {
+		where += " AND g.org_id=?"
+		params = append(params, option.OrgID)
+	}
 
 	if option.UserID != nil {
 		userID := *option.UserID
@@ -1077,6 +1116,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 func (s *mysqlStore) loadDevice(id int64) (model.Device, error) {
 	var device = NewDDevice(s, id)
 	err := LoadData(s.db, TbDevices, map[string]interface{}{
+		"org_id":     &device.orgID,
 		"enable":     &device.enable,
 		"title":      &device.title,
 		"options?":   &device.options,
@@ -1119,14 +1159,20 @@ func (s *mysqlStore) GetDevice(deviceID int64) (model.Device, error) {
 	return result.(model.Device), nil
 }
 
-func (s *mysqlStore) CreateDevice(title string, data map[string]interface{}) (model.Device, error) {
+func (s *mysqlStore) CreateDevice(org interface{}, title string, data map[string]interface{}) (model.Device, error) {
 	result := <-synchronized.Do(s.ctx, TbDevices, func() interface{} {
+		orgID, err := getOrganizationID(s.db, org)
+		if err != nil {
+			return err
+		}
+
 		o, err := json.Marshal(data)
 		if err != nil {
 			return lang.InternalError(err)
 		}
 
 		deviceID, err := CreateData(s.db, TbDevices, map[string]interface{}{
+			"org_id":     orgID,
 			"enable":     status.Enable,
 			"title":      title,
 			"options":    o,
@@ -1176,6 +1222,11 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 	)
 
 	var params []interface{}
+
+	if option.OrgID > 0 {
+		where += " AND d.org_id=?"
+		params = append(params, option.OrgID)
+	}
 
 	if option.UserID != nil {
 		userID := *option.UserID
@@ -1454,6 +1505,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 func (s *mysqlStore) loadEquipment(id int64) (model.Equipment, error) {
 	var equipment = NewEquipment(s, id)
 	err := LoadData(s.db, TbEquipments, map[string]interface{}{
+		"org_id":     &equipment.orgID,
 		"enable":     &equipment.enable,
 		"title":      &equipment.title,
 		"desc":       &equipment.desc,
@@ -1498,10 +1550,16 @@ func (s *mysqlStore) GetEquipment(equipmentID int64) (model.Equipment, error) {
 	return result.(model.Equipment), nil
 }
 
-func (s *mysqlStore) CreateEquipment(title, desc string) (model.Equipment, error) {
+func (s *mysqlStore) CreateEquipment(org interface{}, title, desc string) (model.Equipment, error) {
 	result := <-synchronized.Do(s.ctx, TbEquipments, func() interface{} {
+		orgID, err := getOrganizationID(s.db, org)
+		if err != nil {
+			return err
+		}
+
 		equipmentID, err := CreateData(s.db, TbEquipments, map[string]interface{}{
 			"enable":     status.Enable,
+			"org_id":     orgID,
 			"title":      title,
 			"desc":       desc,
 			"created_at": time.Now(),
@@ -1551,6 +1609,11 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 	)
 
 	var params []interface{}
+
+	if option.OrgID > 0 {
+		where += " AND e.org_id=?"
+		params = append(params, option.OrgID)
+	}
 
 	if option.UserID != nil {
 		userID := *option.UserID

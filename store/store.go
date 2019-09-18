@@ -13,12 +13,12 @@ type Store interface {
 	GetOrganizationList(options ...helper.OptionFN) ([]model.Organization, int64, error)
 
 	GetUser(user interface{}) (model.User, error)
-	CreateUser(name string, password []byte, role model.Role) (model.User, error)
+	CreateUser(org interface{}, name string, password []byte, role model.Role) (model.User, error)
 	RemoveUser(userID int64) error
 	GetUserList(options ...helper.OptionFN) ([]model.User, int64, error)
 
 	GetRole(roleID int64) (model.Role, error)
-	CreateRole(title string) (model.Role, error)
+	CreateRole(org interface{}, title string) (model.Role, error)
 	RemoveRole(roleID int64) error
 	GetRoleList(options ...helper.OptionFN) ([]model.Role, int64, error)
 
@@ -28,12 +28,12 @@ type Store interface {
 	GetPolicyList(res resource.Resource, options ...helper.OptionFN) ([]model.Policy, int64, error)
 
 	GetGroup(groupID int64) (model.Group, error)
-	CreateGroup(title, desc string, parentID int64) (model.Group, error)
+	CreateGroup(org interface{}, title, desc string, parentID int64) (model.Group, error)
 	RemoveGroup(groupID int64) error
 	GetGroupList(options ...helper.OptionFN) ([]model.Group, int64, error)
 
 	GetDevice(deviceID int64) (model.Device, error)
-	CreateDevice(title string, data map[string]interface{}) (model.Device, error)
+	CreateDevice(org interface{}, title string, data map[string]interface{}) (model.Device, error)
 	RemoveDevice(deviceID int64) error
 	GetDeviceList(options ...helper.OptionFN) ([]model.Device, int64, error)
 
@@ -43,7 +43,7 @@ type Store interface {
 	GetMeasureList(options ...helper.OptionFN) ([]model.Measure, int64, error)
 
 	GetEquipment(equipmentID int64) (model.Equipment, error)
-	CreateEquipment(title, desc string) (model.Equipment, error)
+	CreateEquipment(org interface{}, title, desc string) (model.Equipment, error)
 	RemoveEquipment(equipmentID int64) error
 	GetEquipmentList(options ...helper.OptionFN) ([]model.Equipment, int64, error)
 

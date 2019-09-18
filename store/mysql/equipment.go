@@ -14,7 +14,9 @@ import (
 )
 
 type Equipment struct {
-	id        int64
+	id    int64
+	orgID int64
+
 	enable    int8
 	title     string
 	desc      string
@@ -30,6 +32,14 @@ func NewEquipment(s *mysqlStore, id int64) *Equipment {
 		dirty: dirty.New(),
 		store: s,
 	}
+}
+
+func (e *Equipment) OrganizationID() int64 {
+	return e.orgID
+}
+
+func (e *Equipment) Organization() (model.Organization, error) {
+	return e.store.GetOrganization(e.orgID)
 }
 
 func (e *Equipment) LogUID() string {

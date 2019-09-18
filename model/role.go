@@ -11,6 +11,9 @@ type Role interface {
 	EnableEntry
 	Profile
 
+	OrganizationID() int64
+	Organization() (Organization, error)
+
 	Title() string
 	SetTitle(title string)
 

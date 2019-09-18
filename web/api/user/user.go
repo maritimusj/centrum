@@ -23,11 +23,27 @@ import (
 
 func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
+		var params []helper.OptionFN
+		var orgID int64
+		if perm.IsDefaultAdminUser(ctx) {
+			if ctx.URLParamExists("org") {
+				orgID = ctx.URLParamInt64Default("org", 0)
+			}
+		} else {
+			orgID = perm.AdminUser(ctx).OrganizationID()
+		}
+		if orgID > 0 {
+			params = append(params, helper.Organization(orgID))
+		}
+
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
-		keyword := ctx.URLParam("keyword")
+		params = append(params, helper.Page(page, pageSize))
 
-		users, total, err := s.GetUserList(helper.Keyword(keyword), helper.Page(page, pageSize))
+		keyword := ctx.URLParam("keyword")
+		params = append(params, helper.Keyword(keyword))
+
+		users, total, err := s.GetUserList(params...)
 		if err != nil {
 			return err
 		}
@@ -46,6 +62,7 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 func Create(ctx iris.Context, s store.Store, validate *validator.Validate, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
+			OrgID    int64  `json:"org"`
 			Username string `json:"username" validate:"required"`
 			Password string `json:"password" validate:"required"`
 			RoleID   *int64 `json:"role"`
@@ -76,7 +93,18 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate, cfg c
 			return lang.ErrRoleNotFound
 		}
 
-		user, err := s.CreateUser(form.Username, []byte(form.Password), role)
+		var org interface{}
+		if perm.IsDefaultAdminUser(ctx) {
+			if form.OrgID > 0 {
+				org = form.OrgID
+			} else {
+				org = cfg.DefaultOrganization()
+			}
+		} else {
+			org = perm.AdminUser(ctx).OrganizationID()
+		}
+
+		user, err := s.CreateUser(org, form.Username, []byte(form.Password), role)
 		if err != nil {
 			return err
 		}

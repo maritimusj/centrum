@@ -12,7 +12,9 @@ import (
 )
 
 type Group struct {
-	id        int64
+	id    int64
+	orgID int64
+
 	parentID  int64
 	title     string
 	desc      string
@@ -44,6 +46,14 @@ func (g *Group) ResourceTitle() string {
 
 func (g *Group) ResourceDesc() string {
 	return g.desc
+}
+
+func (g *Group) OrganizationID() int64 {
+	return g.orgID
+}
+
+func (g *Group) Organization() (model.Organization, error) {
+	return g.store.GetOrganization(g.orgID)
 }
 
 func (g *Group) GetID() int64 {

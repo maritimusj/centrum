@@ -12,6 +12,9 @@ type Group interface {
 
 	resource.Resource
 
+	OrganizationID() int64
+	Organization() (Organization, error)
+
 	Parent() Group
 	SetParent(group interface{})
 

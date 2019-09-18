@@ -89,7 +89,7 @@ func main() {
 		if err != lang.Error(lang.ErrUserNotFound) {
 			log.Fatal(err)
 		}
-		_, err := store.CreateUser(defaultUserName, []byte(defaultUserName), nil)
+		_, err := store.CreateUser(defaultOrg, defaultUserName, []byte(defaultUserName), nil)
 		if err != nil {
 			log.Fatal(err)
 		}
