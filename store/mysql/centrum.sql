@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 80017
 File Encoding         : 65001
 
-Date: 2019-09-16 10:38:20
+Date: 2019-09-18 13:43:29
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -45,6 +45,7 @@ CREATE TABLE `device_groups` (
 DROP TABLE IF EXISTS `devices`;
 CREATE TABLE `devices` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `org_id` int(10) unsigned NOT NULL DEFAULT '0',
   `enable` tinyint(4) NOT NULL DEFAULT '0',
   `title` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `options` json NOT NULL,
@@ -69,6 +70,7 @@ CREATE TABLE `equipment_groups` (
 DROP TABLE IF EXISTS `equipments`;
 CREATE TABLE `equipments` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `org_id` int(10) unsigned NOT NULL DEFAULT '0',
   `enable` tinyint(4) NOT NULL DEFAULT '0',
   `title` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `desc` text COLLATE utf8mb4_general_ci NOT NULL,
@@ -82,11 +84,12 @@ CREATE TABLE `equipments` (
 DROP TABLE IF EXISTS `groups`;
 CREATE TABLE `groups` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `org_id` int(10) unsigned NOT NULL DEFAULT '0',
   `parent_id` int(10) unsigned NOT NULL DEFAULT '0',
   `title` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `desc` text COLLATE utf8mb4_general_ci NOT NULL,
   `created_at` datetime NOT NULL ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`,`parent_id`)
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ----------------------------
@@ -102,6 +105,21 @@ CREATE TABLE `measures` (
   `kind` tinyint(4) NOT NULL,
   `created_at` datetime NOT NULL,
   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- ----------------------------
+-- Table structure for organizations
+-- ----------------------------
+DROP TABLE IF EXISTS `organizations`;
+CREATE TABLE `organizations` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `enable` tinyint(4) NOT NULL DEFAULT '0',
+  `name` varchar(128) COLLATE utf8mb4_general_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `extra` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ----------------------------
@@ -126,6 +144,7 @@ CREATE TABLE `policies` (
 DROP TABLE IF EXISTS `roles`;
 CREATE TABLE `roles` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `org_id` int(10) unsigned NOT NULL DEFAULT '0',
   `enable` tinyint(4) NOT NULL,
   `title` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `created_at` datetime NOT NULL,
@@ -165,6 +184,7 @@ CREATE TABLE `user_roles` (
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `org_id` int(10) unsigned NOT NULL DEFAULT '0',
   `enable` tinyint(4) NOT NULL,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
@@ -173,5 +193,5 @@ CREATE TABLE `users` (
   `email` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `created_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
+  UNIQUE KEY `name` (`name`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
