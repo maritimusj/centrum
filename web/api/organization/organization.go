@@ -137,7 +137,7 @@ func Update(orgID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Delete(orgID int64, ctx iris.Context, s store.Store) hero.Result {
+func Delete(orgID int64, ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
 		if !perm.IsDefaultAdminUser(ctx) {
 			return lang.ErrNoPermission
@@ -146,6 +146,10 @@ func Delete(orgID int64, ctx iris.Context, s store.Store) hero.Result {
 		org, err := s.GetOrganization(orgID)
 		if err != nil {
 			return err
+		}
+
+		if org.Name() == cfg.DefaultOrganization() {
+			return lang.ErrFailedRemoveDefaultOrganization
 		}
 
 		err = org.Destroy()

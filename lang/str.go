@@ -135,6 +135,7 @@ const (
 	ErrUnknownRole
 	ErrOrganizationNotFound
 	ErrOrganizationExists
+	ErrFailedRemoveDefaultOrganization
 	ErrUserNotFound
 	ErrUserExists
 	ErrFailedDisableDefaultUser
