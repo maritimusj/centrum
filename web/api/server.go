@@ -9,6 +9,7 @@ import (
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/web/api/log"
 	"github.com/maritimusj/centrum/web/api/my"
+	"github.com/maritimusj/centrum/web/api/organization"
 	"github.com/maritimusj/centrum/web/api/web"
 	"github.com/maritimusj/centrum/web/perm"
 	"gopkg.in/go-playground/validator.v9"
@@ -68,6 +69,15 @@ func (server *server) Start(ctx context.Context, cfg config.Config) error {
 			p.PartyFunc("/resource", func(p router.Party) {
 				p.Get("/", hero.Handler(resource.GroupList)).Name = ResourceDef.ResourceList
 				p.Get("/{groupID:int}/", hero.Handler(resource.List)).Name = ResourceDef.ResourceDetail
+			})
+
+			//组织
+			p.PartyFunc("/org", func(p router.Party) {
+				p.Get("/", hero.Handler(organization.List))
+				p.Post("/", hero.Handler(organization.Create))
+				p.Get("/{id:int64}", hero.Handler(organization.Detail))
+				p.Put("/{id:int64}", hero.Handler(organization.Update))
+				p.Delete("/{id:int64}", hero.Handler(organization.Delete))
 			})
 
 			//角色

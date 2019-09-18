@@ -11,6 +11,11 @@ type Store interface {
 	Open(context context.Context, option map[string]interface{}) error
 	Close()
 
+	GetOrganization(org interface{}) (model.Organization, error)
+	CreateOrganization(name string, title string) (model.Organization, error)
+	RemoveOrganization(org interface{}) error
+	GetOrganizationList(options ...helper.OptionFN) ([]model.Organization, int64, error)
+
 	GetUser(user interface{}) (model.User, error)
 	CreateUser(name string, password []byte, role model.Role) (model.User, error)
 	RemoveUser(userID int64) error

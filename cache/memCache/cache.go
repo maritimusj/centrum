@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	PrefixOrg         = "0."
 	PrefixUser        = "1."
 	PrefixRole        = "2."
 	prefixPolicy      = "3."
@@ -37,6 +38,9 @@ func getKey(obj interface{}) string {
 	var pref string
 	var id int64
 	switch v := obj.(type) {
+	case model.Organization:
+		pref = PrefixOrg
+		id = v.GetID()
 	case model.User:
 		pref = PrefixUser
 		id = v.GetID()
@@ -77,6 +81,15 @@ func (c *cache) Save(obj interface{}) error {
 
 func (c *cache) Remove(obj interface{}) {
 	c.client.Delete(getKey(obj))
+}
+
+func (c *cache) LoadOrganization(id int64) (model.Organization, error) {
+	if v, ok := c.client.Get(PrefixOrg + strconv.FormatInt(id, 10)); ok {
+		if u, ok := v.(model.Organization); ok {
+			return u, nil
+		}
+	}
+	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
 func (c *cache) LoadUser(id int64) (model.User, error) {

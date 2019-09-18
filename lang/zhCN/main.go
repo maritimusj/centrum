@@ -109,6 +109,11 @@ var (
 		lang.DefaultUserPasswordResetOk: "默认用户密码已重置！",
 		lang.LogDeletedByUser:           "管理 %s 清空日志！",
 
+		lang.CreateOrgOk:   "创建组织 %s(%s) 成功！",
+		lang.CreateOrgFail: "创建组织 %s(%s) 失败：%s",
+		lang.DeleteOrgOk:   "删除组织 %s(%s) 成功！",
+		lang.DeleteOrgFail: "删除组织 %s(%s) 失败：%s",
+
 		lang.CreateDeviceOk:   "创建设备 %s 成功！",
 		lang.CreateDeviceFail: "创建设备失败：%s",
 		lang.UpdateDeviceOk:   "更新设备 %s 成功！",
@@ -127,6 +132,8 @@ var (
 		lang.ErrTokenExpired:              "请先登录！",
 		lang.ErrNoPermission:              "没有权限",
 		lang.ErrCacheNotFound:             "缓存中没有数据！",
+		lang.ErrOrganizationNotFound:      "组织不存在！",
+		lang.ErrOrganizationExists:        "组织已存在！",
 		lang.ErrInvalidUser:               "当前用户不可用或者登录超时！",
 		lang.ErrUserDisabled:              "用户已经被禁用！",
 		lang.ErrPasswordWrong:             "密码不正确！",

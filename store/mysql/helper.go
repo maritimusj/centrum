@@ -16,6 +16,20 @@ type DB interface {
 	QueryRow(query string, args ...interface{}) *sql.Row
 }
 
+func getOrganizationByName(db DB, name string) (int64, error) {
+	var orgID int64
+	err := LoadData(db, TbOrganization, map[string]interface{}{
+		"id": &orgID,
+	}, "name=?", name)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return 0, lang.InternalError(err)
+		}
+		return 0, lang.Error(lang.ErrOrganizationNotFound)
+	}
+	return orgID, nil
+}
+
 func getUserIDByName(db DB, name string) (int64, error) {
 	var userID int64
 	err := LoadData(db, TbUsers, map[string]interface{}{

@@ -21,6 +21,7 @@ import (
 )
 
 const (
+	TbOrganization    = "`organizations`"
 	TbUsers           = "`users`"
 	TbRoles           = "`roles`"
 	TbUserRoles       = "`user_roles`"
@@ -141,7 +142,189 @@ func (s *mysqlStore) GetResourceGroupList() []interface{} {
 	}
 }
 
-func (s *mysqlStore) getUser(db DB, id int64) (*User, error) {
+func (s *mysqlStore) loadOrganization(db DB, id int64) (*Organization, error) {
+	var org = NewOrganization(s, id)
+	err := LoadData(db, TbOrganization, map[string]interface{}{
+		"enable":     &org.enable,
+		"name":       &org.name,
+		"title":      &org.title,
+		"extra":      &org.extra,
+		"created_at": &org.createdAt,
+	}, "id=?", id)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return nil, lang.InternalError(err)
+		}
+		return nil, lang.Error(lang.ErrOrganizationNotFound)
+	}
+	return org, nil
+}
+
+func (s *mysqlStore) GetOrganization(id interface{}) (model.Organization, error) {
+	result := <-synchronized.Do(s.ctx, TbOrganization, func() interface{} {
+		var orgID int64
+		switch v := id.(type) {
+		case int64:
+			orgID = v
+		case float64:
+			orgID = int64(v)
+		case string:
+			id, err := getOrganizationByName(s.db, v)
+			if err != nil {
+				return err
+			}
+			orgID = id
+		default:
+			panic(errors.New("GetOrganization: unknown organization"))
+		}
+
+		org, err := s.cache.LoadOrganization(orgID)
+		if err != nil {
+			if err != lang.Error(lang.ErrCacheNotFound) {
+				return err
+			}
+		} else {
+			return org
+		}
+
+		org, err = s.loadOrganization(s.db, orgID)
+		if err != nil {
+			return err
+		}
+
+		err = s.cache.Save(org)
+		if err != nil {
+			return err
+		}
+		return org
+	})
+
+	if err, ok := result.(error); ok {
+		return nil, err
+	}
+	return result.(model.Organization), nil
+}
+
+func (s *mysqlStore) CreateOrganization(name string, title string) (model.Organization, error) {
+	result := <-synchronized.Do(s.ctx, TbOrganization, func() interface{} {
+		orgID, err := CreateData(s.db, TbOrganization, map[string]interface{}{
+			"enable":     status.Enable,
+			"name":       name,
+			"title":      title,
+			"extra":      `{}`,
+			"created_at": time.Now(),
+		})
+		if err != nil {
+			return err
+		}
+
+		org, err := s.loadOrganization(s.db, orgID)
+		if err != nil {
+			return err
+		}
+
+		err = s.cache.Save(org)
+		if err != nil {
+			return err
+		}
+		return org
+	})
+
+	if err, ok := result.(error); ok {
+		return nil, err
+	}
+	return result.(model.Organization), nil
+}
+
+func (s *mysqlStore) RemoveOrganization(id interface{}) error {
+	org, err := s.GetOrganization(id)
+	if err != nil {
+		return err
+	}
+	result := <-synchronized.Do(s.ctx, TbOrganization, func() interface{} {
+		return s.TransactionDo(func(db helper.DB) interface{} {
+			err = RemoveData(db, TbOrganization, "id=?", org.GetID())
+			if err != nil {
+				return lang.InternalError(err)
+			}
+
+			s.cache.Remove(org)
+			return nil
+		})
+	})
+	if err, ok := result.(error); ok {
+		return err
+	}
+	return nil
+}
+
+func (s *mysqlStore) GetOrganizationList(options ...helper.OptionFN) ([]model.Organization, int64, error) {
+	option := parseOption(options...)
+
+	var (
+		from  = "FROM " + TbOrganization + " o"
+		where = " WHERE 1"
+	)
+
+	var params []interface{}
+	if option.Keyword != "" {
+		where += " AND (o.name REGEXP ? OR o.title REGEXP ?)"
+		params = append(params, option.Keyword, option.Keyword)
+	}
+
+	var total int64
+	if err := s.db.QueryRow("SELECT COUNT(DISTINCT o.id) "+from+where, params...).Scan(&total); err != nil {
+		return nil, 0, lang.InternalError(err)
+	}
+
+	if total == 0 {
+		return []model.Organization{}, 0, nil
+	}
+
+	where += " ORDER BY o.id ASC"
+
+	if option.Limit > 0 {
+		where += " LIMIT ?"
+		params = append(params, option.Limit)
+	}
+
+	if option.Offset > 0 {
+		where += " OFFSET ?"
+		params = append(params, option.Offset)
+	}
+
+	rows, err := s.db.Query("SELECT DISTINCT o.id "+from+where, params...)
+	if err != nil {
+		return nil, 0, lang.InternalError(err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var result []model.Organization
+	var userID int64
+
+	for rows.Next() {
+		err = rows.Scan(&userID)
+		if err != nil {
+			if err != sql.ErrNoRows {
+				return nil, 0, lang.InternalError(err)
+			}
+			return []model.Organization{}, total, nil
+		}
+
+		org, err := s.GetOrganization(userID)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		result = append(result, org)
+	}
+
+	return result, total, nil
+}
+
+func (s *mysqlStore) loadUser(db DB, id int64) (*User, error) {
 	var user = NewUser(s, id)
 	err := LoadData(db, TbUsers, map[string]interface{}{
 		"enable":     &user.enable,
@@ -179,16 +362,16 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 		default:
 			panic(errors.New("GetUser: unknown user"))
 		}
+
 		if user, err := s.cache.LoadUser(userID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return err
 			}
 		} else {
-			log.Tracef("GetUser from cache: %d:%s", user.GetID(), user.Name())
 			return user
 		}
 
-		user, err := s.getUser(s.db, userID)
+		user, err := s.loadUser(s.db, userID)
 		if err != nil {
 			return err
 		}
@@ -197,7 +380,6 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 		if err != nil {
 			return err
 		}
-
 		return user
 	})
 
@@ -229,7 +411,7 @@ func (s *mysqlStore) CreateUser(name string, password []byte, role model.Role) (
 				return lang.InternalError(err)
 			}
 
-			user, err := s.getUser(db, userID)
+			user, err := s.loadUser(db, userID)
 			if err != nil {
 				return err
 			}
@@ -301,7 +483,7 @@ func (s *mysqlStore) RemoveUser(userID int64) error {
 				return lang.InternalError(err)
 			}
 
-			s.cache.Remove(&User{id: userID})
+			s.cache.Remove(user)
 			return nil
 		})
 	})

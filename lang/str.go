@@ -102,6 +102,11 @@ const (
 	DefaultUserPasswordResetOk
 	LogDeletedByUser
 
+	CreateOrgOk
+	CreateOrgFail
+	DeleteOrgOk
+	DeleteOrgFail
+
 	CreateDeviceOk
 	CreateDeviceFail
 	UpdateDeviceOk
@@ -128,6 +133,8 @@ const (
 	ErrInvalidResourceClassID
 	ErrApiResourceNotFound
 	ErrUnknownRole
+	ErrOrganizationNotFound
+	ErrOrganizationExists
 	ErrUserNotFound
 	ErrUserExists
 	ErrFailedDisableDefaultUser
