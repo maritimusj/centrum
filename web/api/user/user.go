@@ -224,75 +224,79 @@ func Delete(userID int64, ctx iris.Context, s store.Store, cfg config.Config) he
 	})
 }
 
-func UpdatePerm(userID int64, ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
+func UpdatePerm(userID int64, ctx iris.Context, tx db.WithTransaction, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
-		user, err := s.GetUser(userID)
-		if err != nil {
-			return err
-		}
+		return tx.TransactionDo(func(db db.DB) interface{} {
+			s := mysqlStore.Attach(db)
 
-		if user.Name() == cfg.DefaultUserName() {
-			return lang.ErrFailedEditDefaultUserPerm
-		}
+			user, err := s.GetUser(userID)
+			if err != nil {
+				return err
+			}
 
-		roles, err := user.GetRoles()
-		if err != nil {
-			return err
-		}
+			if user.Name() == cfg.DefaultUserName() {
+				return lang.ErrFailedEditDefaultUserPerm
+			}
 
-		type P struct {
-			ResourceClass int   `json:"class"`
-			ResourceID    int64 `json:"id"`
-			Invoke        *bool `json:"invoke"`
-			View          *bool `json:"view"`
-			Ctrl          *bool `json:"ctrl"`
-		}
-		var form struct {
-			Policies []P `json:"policies"`
-		}
-		if err = ctx.ReadJSON(&form); err != nil {
-			return lang.ErrInvalidRequestData
-		}
+			roles, err := user.GetRoles()
+			if err != nil {
+				return err
+			}
 
-		update := func(role model.Role) interface{} {
-			for _, p := range form.Policies {
-				res, err := s.GetResource(resource.Class(p.ResourceClass), p.ResourceID)
-				if err != nil {
-					return err
-				}
-				if p.Invoke != nil {
-					effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
-					_, err = role.SetPolicy(res, resource.Invoke, effect)
+			type P struct {
+				ResourceClass int   `json:"class"`
+				ResourceID    int64 `json:"id"`
+				Invoke        *bool `json:"invoke"`
+				View          *bool `json:"view"`
+				Ctrl          *bool `json:"ctrl"`
+			}
+			var form struct {
+				Policies []P `json:"policies"`
+			}
+			if err = ctx.ReadJSON(&form); err != nil {
+				return lang.ErrInvalidRequestData
+			}
+
+			update := func(role model.Role) interface{} {
+				for _, p := range form.Policies {
+					res, err := s.GetResource(resource.Class(p.ResourceClass), p.ResourceID)
 					if err != nil {
 						return err
 					}
-				}
-				if p.View != nil {
-					effect := util.If(*p.View, resource.Allow, resource.Deny).(resource.Effect)
-					_, err = role.SetPolicy(res, resource.View, effect)
-					if err != nil {
-						return err
+					if p.Invoke != nil {
+						effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
+						_, err = role.SetPolicy(res, resource.Invoke, effect)
+						if err != nil {
+							return err
+						}
+					}
+					if p.View != nil {
+						effect := util.If(*p.View, resource.Allow, resource.Deny).(resource.Effect)
+						_, err = role.SetPolicy(res, resource.View, effect)
+						if err != nil {
+							return err
+						}
+					}
+					if p.Ctrl != nil {
+						effect := util.If(*p.Ctrl, resource.Allow, resource.Deny).(resource.Effect)
+						_, err = role.SetPolicy(res, resource.Ctrl, effect)
+						if err != nil {
+							return err
+						}
 					}
 				}
-				if p.Ctrl != nil {
-					effect := util.If(*p.Ctrl, resource.Allow, resource.Deny).(resource.Effect)
-					_, err = role.SetPolicy(res, resource.Ctrl, effect)
-					if err != nil {
-						return err
-					}
+
+				return lang.Ok
+			}
+
+			for _, role := range roles {
+				if role.Title() == user.Name() {
+					return update(role)
 				}
 			}
 
-			return lang.Ok
-		}
-
-		for _, role := range roles {
-			if role.Title() == user.Name() {
-				return update(role)
-			}
-		}
-
-		return lang.ErrRoleNotFound
+			return lang.ErrRoleNotFound
+		})
 	})
 }
 

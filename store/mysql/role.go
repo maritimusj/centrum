@@ -112,11 +112,14 @@ func (r *Role) SetPolicy(res resource.Resource, action resource.Action, effect r
 			return nil, err
 		}
 	}
+
 	policy.SetEffect(effect)
+
 	err = policy.Save()
 	if err != nil {
 		return nil, err
 	}
+
 	return policy, nil
 }
 

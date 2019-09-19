@@ -28,6 +28,9 @@ func (m *mysqlDB) TransactionDo(fn func(db db.DB) interface{}) interface{} {
 
 	res := fn(tx)
 	if res != nil {
+		if errCode, ok := res.(lang.ErrorCode); ok && errCode != lang.Ok {
+			return lang.Error(errCode)
+		}
 		if err, ok := res.(error); ok {
 			return err
 		}
