@@ -58,8 +58,7 @@ func (s *State) ResourceDesc() string {
 	return s.desc
 }
 
-
-func (s *State) GetChildrenResources(options ...helper.OptionFN)([]model.Resource, int64, error) {
+func (s *State) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
 	panic("implement me")
 }
 

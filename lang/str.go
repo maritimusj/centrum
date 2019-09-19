@@ -173,6 +173,7 @@ const (
 	ErrStateNotFound
 	ErrDeviceOrganizationDifferent
 	ErrEquipmentOrganizationDifferent
+	ErrRecursiveDetected
 )
 
 var (

@@ -100,7 +100,14 @@ func (r *Role) GetUserList(options ...helper.OptionFN) ([]model.User, int64, err
 	return r.store.GetUserList(helper.Role(r.GetID()))
 }
 
-func (r *Role) SetPolicy(res model.Resource, action resource.Action, effect resource.Effect) (model.Policy, error) {
+func (r *Role) SetPolicy(res model.Resource, action resource.Action, effect resource.Effect, recursiveMap map[model.Resource]struct{}) (model.Policy, error) {
+	if recursiveMap != nil {
+		if _, ok := recursiveMap[res]; ok {
+			return nil, lang.Error(lang.ErrRecursiveDetected)
+		}
+		recursiveMap[res] = struct{}{}
+	}
+
 	policy, err := r.store.GetPolicyFrom(r.id, res, action)
 	if err != nil {
 		if err != lang.Error(lang.ErrPolicyNotFound) {
@@ -113,8 +120,22 @@ func (r *Role) SetPolicy(res model.Resource, action resource.Action, effect reso
 		}
 	}
 
-	policy.SetEffect(effect)
+	if recursiveMap != nil {
+		//递归设置所有子资源的权限
+		children, _, err := res.GetChildrenResources()
+		if err != nil {
+			return nil, err
+		}
 
+		for _, res := range children {
+			_, err = r.SetPolicy(res, action, effect, recursiveMap)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	policy.SetEffect(effect)
 	err = policy.Save()
 	if err != nil {
 		return nil, err

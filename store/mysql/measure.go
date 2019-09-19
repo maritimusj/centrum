@@ -56,7 +56,7 @@ func (m *Measure) ResourceDesc() string {
 	return m.title
 }
 
-func (m *Measure) GetChildrenResources(options ...helper.OptionFN)([]model.Resource, int64, error) {
+func (m *Measure) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
 	panic("implement me")
 }
 

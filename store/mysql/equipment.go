@@ -66,7 +66,7 @@ func (e *Equipment) ResourceDesc() string {
 	return e.desc
 }
 
-func (e *Equipment) GetChildrenResources(options ...helper.OptionFN)([]model.Resource, int64, error) {
+func (e *Equipment) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
 	panic("implement me")
 }
 

@@ -16,7 +16,8 @@ type Role interface {
 	Title() string
 	SetTitle(title string)
 
-	SetPolicy(res Resource, action resource.Action, effect resource.Effect) (Policy, error)
+	//设置指定资源的对于指定action的effect，传入recursiveMap则对子资源进行递归设置，recursiveMap为nil则只设置当前资源
+	SetPolicy(res Resource, action resource.Action, effect resource.Effect, recursiveMap map[Resource]struct{}) (Policy, error)
 
 	//对于每个资源，都应该返回一组Policy，表示对该资源的访问权限
 	GetPolicy(res Resource) (map[resource.Action]Policy, error)

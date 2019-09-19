@@ -44,5 +44,5 @@ type Resource interface {
 	ResourceID() int64
 	ResourceTitle() string
 	ResourceDesc() string
-	GetChildrenResources(options ...helper.OptionFN)([]Resource, int64, error)
+	GetChildrenResources(options ...helper.OptionFN) ([]Resource, int64, error)
 }

@@ -3,8 +3,8 @@ package resource
 const (
 	MyProfileDetail = "my.profile.detail"
 	MyProfileUpdate = "my.profile.update"
-	MyPerm        = "my.perm"
-	MyPermMulti   = "my.perm.multi"
+	MyPerm          = "my.perm"
+	MyPermMulti     = "my.perm.multi"
 
 	UserLogList        = "user.log.list"
 	UserLogDelete      = "user.log.delete"

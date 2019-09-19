@@ -265,21 +265,21 @@ func UpdatePerm(userID int64, ctx iris.Context, tx db.WithTransaction, cfg confi
 					}
 					if p.Invoke != nil {
 						effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
-						_, err = role.SetPolicy(res, resource.Invoke, effect)
+						_, err = role.SetPolicy(res, resource.Invoke, effect, make(map[model.Resource]struct{}))
 						if err != nil {
 							return err
 						}
 					}
 					if p.View != nil {
 						effect := util.If(*p.View, resource.Allow, resource.Deny).(resource.Effect)
-						_, err = role.SetPolicy(res, resource.View, effect)
+						_, err = role.SetPolicy(res, resource.View, effect, make(map[model.Resource]struct{}))
 						if err != nil {
 							return err
 						}
 					}
 					if p.Ctrl != nil {
 						effect := util.If(*p.Ctrl, resource.Allow, resource.Deny).(resource.Effect)
-						_, err = role.SetPolicy(res, resource.Ctrl, effect)
+						_, err = role.SetPolicy(res, resource.Ctrl, effect, make(map[model.Resource]struct{}))
 						if err != nil {
 							return err
 						}
