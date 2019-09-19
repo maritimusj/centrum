@@ -3,12 +3,13 @@ package mysqlStore
 import (
 	"database/sql"
 	"errors"
+	"time"
+
 	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
-	"time"
 )
 
 type Group struct {
@@ -33,7 +34,7 @@ func NewGroup(s *mysqlStore, id int64) *Group {
 }
 
 func (g *Group) OrganizationID() int64 {
-return g.orgID
+	return g.orgID
 }
 
 func (g *Group) ResourceClass() resource.Class {
@@ -52,7 +53,7 @@ func (g *Group) ResourceDesc() string {
 	return g.desc
 }
 
-func (g *Group) GetChildrenResources(options ...helper.OptionFN)([]model.Resource, int64, error) {
+func (g *Group) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
 	panic("implement me")
 }
 
