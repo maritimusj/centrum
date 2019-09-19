@@ -764,7 +764,7 @@ func (s *mysqlStore) GetPolicy(policyID int64) (model.Policy, error) {
 	return result.(model.Policy), nil
 }
 
-func (s *mysqlStore) GetPolicyFrom(roleID int64, res resource.Resource, action resource.Action) (model.Policy, error) {
+func (s *mysqlStore) GetPolicyFrom(roleID int64, res model.Resource, action resource.Action) (model.Policy, error) {
 	var policyID int64
 	err := LoadData(s.db, TbPolicies, map[string]interface{}{
 		"id": &policyID,
@@ -781,7 +781,7 @@ func (s *mysqlStore) GetPolicyFrom(roleID int64, res resource.Resource, action r
 
 }
 
-func (s *mysqlStore) CreatePolicy(roleID int64, res resource.Resource, action resource.Action, effect resource.Effect) (model.Policy, error) {
+func (s *mysqlStore) CreatePolicy(roleID int64, res model.Resource, action resource.Action, effect resource.Effect) (model.Policy, error) {
 	result := <-synchronized.Do(s.ctx, TbPolicies, func() interface{} {
 		policyID, err := CreateData(s.db, TbPolicies, map[string]interface{}{
 			"role_id":        roleID,
@@ -822,7 +822,7 @@ func (s *mysqlStore) RemovePolicy(policyID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetPolicyList(res resource.Resource, options ...helper.OptionFN) ([]model.Policy, int64, error) {
+func (s *mysqlStore) GetPolicyList(res model.Resource, options ...helper.OptionFN) ([]model.Policy, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -1824,8 +1824,8 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	return result, total, nil
 }
 
-func (s *mysqlStore) GetResourceList(class resource.Class, options ...helper.OptionFN) ([]resource.Resource, int64, error) {
-	var result []resource.Resource
+func (s *mysqlStore) GetResourceList(class resource.Class, options ...helper.OptionFN) ([]model.Resource, int64, error) {
+	var result []model.Resource
 	switch class {
 	case resource.Api:
 		res, total, err := s.GetApiResourceList(options...)
@@ -1886,7 +1886,7 @@ func (s *mysqlStore) GetResourceList(class resource.Class, options ...helper.Opt
 	}
 }
 
-func (s *mysqlStore) GetResource(class resource.Class, resourceID int64) (resource.Resource, error) {
+func (s *mysqlStore) GetResource(class resource.Class, resourceID int64) (model.Resource, error) {
 	switch class {
 	case resource.Api:
 		res, err := s.GetApiResource(resourceID)

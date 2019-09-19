@@ -202,7 +202,7 @@ func (u *User) Save() error {
 	return nil
 }
 
-func (u *User) IsAllow(res resource.Resource, action resource.Action) (bool, error) {
+func (u *User) IsAllow(res model.Resource, action resource.Action) (bool, error) {
 	roles, err := u.GetRoles()
 	if err != nil {
 		return false, err

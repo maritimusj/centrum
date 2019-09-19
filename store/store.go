@@ -23,9 +23,9 @@ type Store interface {
 	GetRoleList(options ...helper.OptionFN) ([]model.Role, int64, error)
 
 	GetPolicy(roleID int64) (model.Policy, error)
-	GetPolicyFrom(roleID int64, res resource.Resource, action resource.Action) (model.Policy, error)
+	GetPolicyFrom(roleID int64, res model.Resource, action resource.Action) (model.Policy, error)
 	RemovePolicy(policyID int64) error
-	GetPolicyList(res resource.Resource, options ...helper.OptionFN) ([]model.Policy, int64, error)
+	GetPolicyList(res model.Resource, options ...helper.OptionFN) ([]model.Policy, int64, error)
 
 	GetGroup(groupID int64) (model.Group, error)
 	CreateGroup(org interface{}, title, desc string, parentID int64) (model.Group, error)
@@ -53,8 +53,8 @@ type Store interface {
 	GetStateList(options ...helper.OptionFN) ([]model.State, int64, error)
 
 	GetResourceGroupList() []interface{}
-	GetResourceList(class resource.Class, options ...helper.OptionFN) ([]resource.Resource, int64, error)
-	GetResource(class resource.Class, resourceID int64) (resource.Resource, error)
+	GetResourceList(class resource.Class, options ...helper.OptionFN) ([]model.Resource, int64, error)
+	GetResource(class resource.Class, resourceID int64) (model.Resource, error)
 
 	GetApiResourceList(options ...helper.OptionFN) ([]model.ApiResource, int64, error)
 	GetApiResource(res interface{}) (model.ApiResource, error)

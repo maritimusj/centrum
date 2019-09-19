@@ -57,7 +57,7 @@ func (p *Policy) Role() model.Role {
 	return role
 }
 
-func (p *Policy) Resource() resource.Resource {
+func (p *Policy) Resource() model.Resource {
 	res, _ := p.store.GetResource(p.resourceClass, p.resourceID)
 	return res
 }

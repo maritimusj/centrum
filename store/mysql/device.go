@@ -69,6 +69,10 @@ func (d *Device) ResourceDesc() string {
 	return d.title
 }
 
+func (d *Device) GetChildrenResources(options ...helper.OptionFN)([]model.Resource, int64, error) {
+	panic("implement me")
+}
+
 func (d *Device) GetID() int64 {
 	return d.id
 }

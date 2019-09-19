@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/maritimusj/centrum/helper"
-	"github.com/maritimusj/centrum/resource"
 )
 
 //设备分组
@@ -10,7 +9,7 @@ type Group interface {
 	DBEntry
 	Profile
 
-	resource.Resource
+	Resource
 
 	Organization() (Organization, error)
 

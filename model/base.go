@@ -1,6 +1,8 @@
 package model
 
 import (
+	"github.com/maritimusj/centrum/helper"
+	"github.com/maritimusj/centrum/resource"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"time"
@@ -34,4 +36,13 @@ type Profile interface {
 type LogEntry interface {
 	LogUID() string
 	Logger() *logrus.Entry
+}
+
+type Resource interface {
+	OrganizationID() int64
+	ResourceClass() resource.Class
+	ResourceID() int64
+	ResourceTitle() string
+	ResourceDesc() string
+	GetChildrenResources(options ...helper.OptionFN)([]Resource, int64, error)
 }

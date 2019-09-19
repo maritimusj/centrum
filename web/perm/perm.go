@@ -44,7 +44,7 @@ func MustAdminOk(ctx iris.Context, fn func(admin model.User) interface{}) interf
 	return util.If(ok, result, lang.Error(lang.ErrInvalidUser))
 }
 
-func IsAllowed(ctx iris.Context, resource resource.Resource, action resource.Action) (bool, error) {
+func IsAllowed(ctx iris.Context, resource model.Resource, action resource.Action) (bool, error) {
 	if IsDefaultAdminUser(ctx) {
 		return true, nil
 	}
@@ -65,11 +65,11 @@ func IsAllowed(ctx iris.Context, resource resource.Resource, action resource.Act
 	return user.IsAllow(resource, action)
 }
 
-func Deny(ctx iris.Context, res resource.Resource, action resource.Action) bool {
+func Deny(ctx iris.Context, res model.Resource, action resource.Action) bool {
 	return !Allow(ctx, res, action)
 }
 
-func Allow(ctx iris.Context, res resource.Resource, action resource.Action) bool {
+func Allow(ctx iris.Context, res model.Resource, action resource.Action) bool {
 	allowed, err := IsAllowed(ctx, res, action)
 	if allowed {
 		return true

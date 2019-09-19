@@ -1,6 +1,8 @@
 package mysqlStore
 
 import (
+	"github.com/maritimusj/centrum/helper"
+	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
 )
 
@@ -50,4 +52,9 @@ func (res *ApiResource) ResourceTitle() string {
 
 func (res *ApiResource) ResourceDesc() string {
 	return res.desc
+}
+
+
+func (res *ApiResource) GetChildrenResources(options ...helper.OptionFN)([]model.Resource, int64, error) {
+	panic("implement me")
 }

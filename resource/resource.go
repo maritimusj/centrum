@@ -76,11 +76,3 @@ func IsValidClass(class interface{}) bool {
 	}
 	return false
 }
-
-type Resource interface {
-	OrganizationID() int64
-	ResourceClass() Class
-	ResourceID() int64
-	ResourceTitle() string
-	ResourceDesc() string
-}

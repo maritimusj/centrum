@@ -11,7 +11,7 @@ type Policy interface {
 
 	SetEffect(effect resource.Effect)
 
-	Resource() resource.Resource
+	Resource() Resource
 	Action() resource.Action
 	Effect() resource.Effect
 }

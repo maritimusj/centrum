@@ -8,7 +8,7 @@ type Measure interface {
 	EnableEntry
 	Profile
 
-	resource.Resource
+	Resource
 
 	Device() Device
 

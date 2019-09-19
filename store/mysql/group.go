@@ -32,6 +32,10 @@ func NewGroup(s *mysqlStore, id int64) *Group {
 	}
 }
 
+func (g *Group) OrganizationID() int64 {
+return g.orgID
+}
+
 func (g *Group) ResourceClass() resource.Class {
 	return resource.Group
 }
@@ -48,8 +52,8 @@ func (g *Group) ResourceDesc() string {
 	return g.desc
 }
 
-func (g *Group) OrganizationID() int64 {
-	return g.orgID
+func (g *Group) GetChildrenResources(options ...helper.OptionFN)([]model.Resource, int64, error) {
+	panic("implement me")
 }
 
 func (g *Group) Organization() (model.Organization, error) {

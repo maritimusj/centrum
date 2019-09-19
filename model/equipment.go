@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/maritimusj/centrum/helper"
-	"github.com/maritimusj/centrum/resource"
 )
 
 //虚拟设备
@@ -12,7 +11,7 @@ type Equipment interface {
 	LogEntry
 	Profile
 
-	resource.Resource
+	Resource
 
 	Organization() (Organization, error)
 

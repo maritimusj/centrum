@@ -64,7 +64,7 @@ func Update(ctx iris.Context) hero.Result {
 
 func Perm(class string, ctx iris.Context, s store.Store) hero.Result {
 	return response.Wrap(func() interface{} {
-		var res resource.Resource
+		var res model.Resource
 		var err error
 		switch class {
 		case "api":

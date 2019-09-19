@@ -100,7 +100,7 @@ func (r *Role) GetUserList(options ...helper.OptionFN) ([]model.User, int64, err
 	return r.store.GetUserList(helper.Role(r.GetID()))
 }
 
-func (r *Role) SetPolicy(res resource.Resource, action resource.Action, effect resource.Effect) (model.Policy, error) {
+func (r *Role) SetPolicy(res model.Resource, action resource.Action, effect resource.Effect) (model.Policy, error) {
 	policy, err := r.store.GetPolicyFrom(r.id, res, action)
 	if err != nil {
 		if err != lang.Error(lang.ErrPolicyNotFound) {
@@ -123,7 +123,7 @@ func (r *Role) SetPolicy(res resource.Resource, action resource.Action, effect r
 	return policy, nil
 }
 
-func (r *Role) GetPolicy(res resource.Resource) (map[resource.Action]model.Policy, error) {
+func (r *Role) GetPolicy(res model.Resource) (map[resource.Action]model.Policy, error) {
 	policies, _, err := r.store.GetPolicyList(res, helper.Role(r.id))
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func (r *Role) GetPolicy(res resource.Resource) (map[resource.Action]model.Polic
 	return result, nil
 }
 
-func (r *Role) IsAllow(res resource.Resource, action resource.Action) (bool, error) {
+func (r *Role) IsAllow(res model.Resource, action resource.Action) (bool, error) {
 	pm, err := r.GetPolicy(res)
 	if err != nil {
 		return false, err

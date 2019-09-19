@@ -13,7 +13,7 @@ type Device interface {
 	LogEntry
 	Profile
 
-	resource.Resource
+	Resource
 
 	Organization() (Organization, error)
 

@@ -2,6 +2,7 @@ package mysqlStore
 
 import (
 	"github.com/maritimusj/centrum/dirty"
+	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
@@ -55,6 +56,11 @@ func (s *State) ResourceTitle() string {
 
 func (s *State) ResourceDesc() string {
 	return s.desc
+}
+
+
+func (s *State) GetChildrenResources(options ...helper.OptionFN)([]model.Resource, int64, error) {
+	panic("implement me")
 }
 
 func (s *State) GetID() int64 {
