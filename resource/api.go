@@ -79,7 +79,7 @@ var (
 		ResourceDetail,
 	}
 
-	OrganizationAdmin = append(Guest, []string{
+	OrganizationAdmin = append(Guest,
 		UserLogList,
 		UserLogDelete,
 		DeviceLogList,
@@ -135,13 +135,13 @@ var (
 		LogLevelList,
 		LogList,
 		LogDelete,
-	}...)
+	)
 
-	SystemAdmin = append(OrganizationAdmin, []string{
+	SystemAdmin = append(OrganizationAdmin,
 		OrganizationCreate,
 		OrganizationList,
 		OrganizationDetail,
 		OrganizationUpdate,
 		OrganizationDelete,
-	}...)
+	)
 )
