@@ -65,14 +65,13 @@ func InitLog(levelStr string) error {
 	Cfg.SetLogLevel(levelStr)
 
 	//日志仓库
-	logDBStore := logStore.New()
-	err = logDBStore.Open(Ctx, Cfg.LogFileName())
+	err = LogDBStore.Open(Ctx, Cfg.LogFileName())
 	if err != nil {
 		return err
 	}
 
 	log.SetFormatter(&log.JSONFormatter{})
-	log.AddHook(logDBStore)
+	log.AddHook(LogDBStore)
 	log.SetLevel(level)
 
 	return nil

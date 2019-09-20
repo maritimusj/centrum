@@ -48,7 +48,6 @@ func (p *Policy) Save() error {
 			return lang.InternalError(err)
 		}
 	}
-
 	return nil
 }
 

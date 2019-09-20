@@ -169,7 +169,7 @@ var (
 		lang.Ok:                                 "成功！",
 		lang.ErrUnknown:                         "未知错误！",
 		lang.ErrUnknownLang:                     "未知语言区域！",
-		lang.ErrInternal:                        "系统错误: %s",
+		lang.ErrInternal:                        "系统错误: %s，文件：%s，行：%d",
 		lang.ErrInvalidConnStr:                  "数据库连接参数不正确！",
 		lang.ErrInvalidRequestData:              "不正确的请求数据！",
 		lang.ErrTokenExpired:                    "请先登录！",

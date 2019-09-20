@@ -3,6 +3,7 @@ package lang
 import (
 	"errors"
 	"fmt"
+	"runtime"
 )
 
 var (
@@ -42,5 +43,6 @@ func Error(code ErrorCode, params ...interface{}) error {
 }
 
 func InternalError(err error) error {
-	return Error(ErrInternal, err)
+	_, file, line, _ := runtime.Caller(1)
+	return Error(ErrInternal, err, file, line)
 }

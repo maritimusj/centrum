@@ -55,5 +55,5 @@ func (res *ApiResource) ResourceDesc() string {
 }
 
 func (res *ApiResource) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
-	panic("implement me")
+	return []model.Resource{}, 0, nil
 }

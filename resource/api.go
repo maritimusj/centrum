@@ -75,6 +75,8 @@ var (
 		MyProfileUpdate,
 		MyPerm,
 		MyPermMulti,
+		ResourceList,
+		ResourceDetail,
 	}
 
 	OrganizationAdmin = append(Guest, []string{

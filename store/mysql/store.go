@@ -283,7 +283,7 @@ func (s *mysqlStore) GetOrganizationList(options ...helper.OptionFN) ([]model.Or
 		_ = rows.Close()
 	}()
 
-	var result []model.Organization
+	var ids []int64
 	var userID int64
 
 	for rows.Next() {
@@ -295,7 +295,12 @@ func (s *mysqlStore) GetOrganizationList(options ...helper.OptionFN) ([]model.Or
 			return []model.Organization{}, total, nil
 		}
 
-		org, err := s.GetOrganization(userID)
+		ids = append(ids, userID)
+	}
+
+	var result []model.Organization
+	for _, id := range ids {
+		org, err := s.GetOrganization(id)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -494,7 +499,7 @@ func (s *mysqlStore) GetUserList(options ...helper.OptionFN) ([]model.User, int6
 		_ = rows.Close()
 	}()
 
-	var result []model.User
+	var ids []int64
 	var userID int64
 
 	for rows.Next() {
@@ -505,13 +510,17 @@ func (s *mysqlStore) GetUserList(options ...helper.OptionFN) ([]model.User, int6
 			}
 			return []model.User{}, total, nil
 		}
+		ids = append(ids, userID)
+	}
 
-		role, err := s.GetUser(userID)
+	var result []model.User
+	for _, id := range ids {
+		user, err := s.GetUser(id)
 		if err != nil {
 			return nil, 0, err
 		}
 
-		result = append(result, role)
+		result = append(result, user)
 	}
 
 	return result, total, nil
@@ -685,7 +694,7 @@ func (s *mysqlStore) GetRoleList(options ...helper.OptionFN) ([]model.Role, int6
 		_ = rows.Close()
 	}()
 
-	var result []model.Role
+	var ids []int64
 	var roleID int64
 
 	for rows.Next() {
@@ -697,11 +706,15 @@ func (s *mysqlStore) GetRoleList(options ...helper.OptionFN) ([]model.Role, int6
 			return []model.Role{}, total, nil
 		}
 
-		role, err := s.GetRole(roleID)
+		ids = append(ids, roleID)
+	}
+
+	var result []model.Role
+	for _, id := range ids {
+		role, err := s.GetRole(id)
 		if err != nil {
 			return nil, 0, err
 		}
-
 		result = append(result, role)
 	}
 
@@ -859,7 +872,7 @@ func (s *mysqlStore) GetPolicyList(res model.Resource, options ...helper.OptionF
 		_ = rows.Close()
 	}()
 
-	var result []model.Policy
+	var ids []int64
 	var policyID int64
 
 	for rows.Next() {
@@ -870,14 +883,18 @@ func (s *mysqlStore) GetPolicyList(res model.Resource, options ...helper.OptionF
 			}
 			return []model.Policy{}, total, nil
 		}
+		ids = append(ids, policyID)
+	}
 
-		role, err := s.GetPolicy(policyID)
+	var result []model.Policy
+	for _, id := range ids {
+		policy, err := s.GetPolicy(id)
 		if err != nil {
 			return nil, 0, err
 		}
-
-		result = append(result, role)
+		result = append(result, policy)
 	}
+
 	return result, total, nil
 }
 
@@ -1044,7 +1061,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		_ = rows.Close()
 	}()
 
-	var result []model.Group
+	var ids []int64
 	var groupID int64
 
 	for rows.Next() {
@@ -1055,8 +1072,12 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 			}
 			return []model.Group{}, total, nil
 		}
+		ids = append(ids, groupID)
+	}
 
-		group, err := s.GetGroup(groupID)
+	var result []model.Group
+	for _, id := range ids {
+		group, err := s.GetGroup(id)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -1235,7 +1256,7 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 		_ = rows.Close()
 	}()
 
-	var result []model.Device
+	var ids []int64
 	var deviceID int64
 
 	for rows.Next() {
@@ -1246,8 +1267,12 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 			}
 			return []model.Device{}, total, nil
 		}
+		ids = append(ids, deviceID)
+	}
 
-		device, err := s.GetDevice(deviceID)
+	var result []model.Device
+	for _, id := range ids {
+		device, err := s.GetDevice(id)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -1420,7 +1445,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		_ = rows.Close()
 	}()
 
-	var result []model.Measure
+	var ids []int64
 	var measureID int64
 
 	for rows.Next() {
@@ -1431,8 +1456,12 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 			}
 			return []model.Measure{}, total, nil
 		}
+		ids = append(ids, measureID)
+	}
 
-		measure, err := s.GetMeasure(measureID)
+	var result []model.Measure
+	for _, id := range ids {
+		measure, err := s.GetMeasure(id)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -1605,11 +1634,11 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 		_ = rows.Close()
 	}()
 
-	var result []model.Equipment
-	var roleID int64
+	var ids []int64
+	var equipmentID int64
 
 	for rows.Next() {
-		err = rows.Scan(&roleID)
+		err = rows.Scan(&equipmentID)
 		if err != nil {
 			if err != sql.ErrNoRows {
 				return nil, 0, lang.InternalError(err)
@@ -1617,12 +1646,17 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 			return []model.Equipment{}, total, nil
 		}
 
-		role, err := s.GetEquipment(roleID)
+		ids = append(ids, equipmentID)
+	}
+
+	var result []model.Equipment
+	for _, id := range ids {
+		equipment, err := s.GetEquipment(id)
 		if err != nil {
 			return nil, 0, err
 		}
 
-		result = append(result, role)
+		result = append(result, equipment)
 	}
 
 	return result, total, nil
