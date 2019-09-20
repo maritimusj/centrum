@@ -1,5 +1,0 @@
-package policy
-
-func List() {
-
-}
