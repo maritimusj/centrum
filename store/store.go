@@ -1,6 +1,7 @@
 package store
 
 import (
+	"github.com/kataras/iris"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
@@ -15,7 +16,7 @@ type Store interface {
 
 	IsUserExists(user interface{}) (bool, error)
 	GetUser(user interface{}) (model.User, error)
-	CreateUser(org interface{}, name string, password []byte, roles... interface{}) (model.User, error)
+	CreateUser(org interface{}, name string, password []byte, roles ...interface{}) (model.User, error)
 	RemoveUser(user interface{}) error
 	GetUserList(options ...helper.OptionFN) ([]model.User, int64, error)
 
@@ -64,4 +65,6 @@ type Store interface {
 	InitApiResource() error
 
 	InitDefaultRoles(org interface{}) error
+
+	MustGetUserFromContext(ctx iris.Context) model.User
 }

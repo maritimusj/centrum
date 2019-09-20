@@ -3,34 +3,35 @@ package group
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
-	"github.com/maritimusj/centrum/store"
-	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
 	"gopkg.in/go-playground/validator.v9"
 )
 
-func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
+func List(ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		var params []helper.OptionFN
 		var orgID int64
-		if perm.IsDefaultAdminUser(ctx) {
+		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)
 			}
 		} else {
-			orgID = perm.AdminUser(ctx).OrganizationID()
+			orgID = admin.OrganizationID()
 		}
 		if orgID > 0 {
 			params = append(params, helper.Organization(orgID))
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
@@ -47,9 +48,9 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 			params = append(params, helper.Parent(parentGroupID))
 		}
 
-		if !perm.IsDefaultAdminUser(ctx) {
-			params = append(params, helper.User(perm.AdminUser(ctx).GetID()))
-			params = append(params, helper.DefaultEffect(cfg.DefaultEffect()))
+		if !app.IsDefaultAdminUser(admin) {
+			params = append(params, helper.User(admin.GetID()))
+			params = append(params, helper.DefaultEffect(app.Cfg.DefaultEffect()))
 		}
 
 		groups, total, err := s.GetGroupList(params...)
@@ -61,7 +62,7 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 			brief := group.Brief()
 			brief["perm"] = iris.Map{
 				"view": true,
-				"ctrl": perm.Allow(ctx, group, resource.Ctrl),
+				"ctrl": app.Allow(admin, group, resource.Ctrl),
 			}
 			result = append(result, brief)
 		}
@@ -73,7 +74,10 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	})
 }
 
-func Create(ctx iris.Context, s store.Store, cfg config.Config, validate *validator.Validate) hero.Result {
+func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		var form struct {
 			OrgID         int64  `json:"org"`
@@ -98,14 +102,14 @@ func Create(ctx iris.Context, s store.Store, cfg config.Config, validate *valida
 		}
 
 		var org interface{}
-		if perm.IsDefaultAdminUser(ctx) {
+		if app.IsDefaultAdminUser(admin) {
 			if form.OrgID > 0 {
 				org = form.OrgID
 			} else {
-				org = cfg.DefaultOrganization()
+				org = app.Cfg.DefaultOrganization()
 			}
 		} else {
-			org = perm.AdminUser(ctx).OrganizationID()
+			org = admin.OrganizationID()
 		}
 
 		group, err := s.CreateGroup(org, form.Title, form.Desc, form.ParentGroupID)
@@ -117,14 +121,17 @@ func Create(ctx iris.Context, s store.Store, cfg config.Config, validate *valida
 	})
 }
 
-func Detail(groupID int64, ctx iris.Context, s store.Store) hero.Result {
+func Detail(groupID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		group, err := s.GetGroup(groupID)
+		group, err := app.Store().GetGroup(groupID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, group, resource.View) {
+		if !app.Allow(admin, group, resource.View) {
 			return lang.ErrNoPermission
 		}
 
@@ -132,14 +139,17 @@ func Detail(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Update(groupID int64, ctx iris.Context, s store.Store) hero.Result {
+func Update(groupID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		group, err := s.GetGroup(groupID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, group, resource.Ctrl) {
+		if app.Allow(admin, group, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
 
@@ -176,7 +186,7 @@ func Update(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 					return err
 				}
 
-				if perm.Deny(ctx, device, resource.Ctrl) {
+				if !app.Allow(admin, device, resource.Ctrl) {
 					return lang.ErrNoPermission
 				}
 
@@ -200,7 +210,7 @@ func Update(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 					return err
 				}
 
-				if perm.Deny(ctx, equipment, resource.Ctrl) {
+				if !app.Allow(admin, equipment, resource.Ctrl) {
 					return lang.ErrNoPermission
 				}
 
@@ -223,14 +233,17 @@ func Update(groupID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Delete(groupID int64, ctx iris.Context, s store.Store) hero.Result {
+func Delete(groupID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		group, err := s.GetGroup(groupID)
+		group, err := app.Store().GetGroup(groupID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, group, resource.Ctrl) {
+		if !app.Allow(admin, group, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
 

@@ -192,6 +192,10 @@ func (u *User) Save() error {
 }
 
 func (u *User) IsAllow(res model.Resource, action resource.Action) (bool, error) {
+	if res.OrganizationID() > 0 && res.OrganizationID() != u.OrganizationID() {
+		return false, lang.Error(lang.ErrOrganizationDifferent)
+	}
+
 	roles, err := u.GetRoles()
 	if err != nil {
 		return false, err

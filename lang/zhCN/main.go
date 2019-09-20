@@ -176,6 +176,7 @@ var (
 		lang.ErrNoPermission:                    "没有权限",
 		lang.ErrCacheNotFound:                   "缓存中没有数据！",
 		lang.ErrOrganizationNotFound:            "组织机构不存在！",
+		lang.ErrOrganizationDifferent:           "不同的组织机构！",
 		lang.ErrOrganizationExists:              "组织机构已存在！",
 		lang.ErrFailedRemoveDefaultOrganization: "不能删除默认的组织机构！",
 		lang.ErrInvalidUser:                     "当前用户不可用或者登录超时！",

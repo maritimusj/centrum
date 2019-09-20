@@ -52,8 +52,8 @@ func (server *server) Start(cfg config.Config) error {
 		p.Post("/login", hero.Handler(web.Login))
 
 		p.PartyFunc("/", func(p router.Party) {
-			web.RequireToken(p, cfg)
-			p.Use(hero.Handler(perm.Check))
+			web.RequireToken(p)
+			p.Use(hero.Handler(perm.CheckApiPerm))
 
 			//我的
 			p.PartyFunc("/my", func(p router.Party) {

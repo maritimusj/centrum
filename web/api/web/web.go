@@ -5,11 +5,8 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/logStore"
-	"github.com/maritimusj/centrum/store"
-	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
 	"time"
 
@@ -17,13 +14,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func RequireToken(p iris.Party, cfg config.Config) {
+func RequireToken(p iris.Party) {
 	jwtHandler := jwtMiddleware.New(jwtMiddleware.Config{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
-			return cfg.JwtTokenKey(), nil
+			return app.Cfg.JwtTokenKey(), nil
 		},
-		Extractor: func(c iris.Context) (string, error) {
-			return c.GetHeader("token"), nil
+		Extractor: func(ctx iris.Context) (string, error) {
+			return ctx.GetHeader("token"), nil
 		},
 		SigningMethod: jwt.SigningMethodHS512,
 	})
@@ -32,22 +29,18 @@ func RequireToken(p iris.Party, cfg config.Config) {
 	p.Use(hero.Handler(CheckUser))
 }
 
-func CheckUser(c iris.Context, store store.Store, cfg config.Config) {
-	data := c.Values().Get("jwt").(*jwt.Token).Claims.(jwt.MapClaims)
-	user, err := store.GetUser(data["sub"].(float64))
-	if err != nil {
-		c.StatusCode(iris.StatusForbidden)
+func CheckUser(ctx iris.Context) {
+	data := ctx.Values().Get("jwt").(*jwt.Token).Claims.(jwt.MapClaims)
+	user, err := app.Store().GetUser(data["sub"].(float64))
+	if err == nil && user.IsEnabled() {
+		ctx.Values().Set("__userID__", user.GetID())
+		ctx.Next()
 	} else {
-		c.Values().Set(perm.DefaultEffect, cfg.DefaultEffect())
-		c.Values().Set(perm.AdminUserKey, user)
-		if user.Name() == cfg.DefaultUserName() {
-			c.Values().Set(perm.DefaultAdminUserKey, true)
-		}
-		c.Next()
+		ctx.StatusCode(iris.StatusForbidden)
 	}
 }
 
-func Login(ctx iris.Context, store store.Store, cfg config.Config) hero.Result {
+func Login(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
 			Username string `form:"username" validate:"required"`
@@ -58,7 +51,7 @@ func Login(ctx iris.Context, store store.Store, cfg config.Config) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		user, err := store.GetUser(form.Username)
+		user, err := app.Store().GetUser(form.Username)
 		if err != nil {
 			return err
 		}
@@ -72,10 +65,10 @@ func Login(ctx iris.Context, store store.Store, cfg config.Config) hero.Result {
 		claims := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
 			"sub": user.GetID(),
 			"iat": time.Now().Unix(),
-			"exp": time.Now().Add(cfg.MaxTokenExpiration()).Unix(),
+			"exp": time.Now().Add(app.Cfg.MaxTokenExpiration()).Unix(),
 		})
 
-		token, err := claims.SignedString(cfg.JwtTokenKey())
+		token, err := claims.SignedString(app.Cfg.JwtTokenKey())
 		if err != nil {
 			return lang.InternalError(err)
 		}
@@ -85,14 +78,14 @@ func Login(ctx iris.Context, store store.Store, cfg config.Config) hero.Result {
 	})
 }
 
-func GetLogList(src string, ctx iris.Context, store logStore.Store, cfg config.Config) interface{} {
+func GetLogList(ctx iris.Context, src string) interface{} {
 	level := ctx.URLParam("level")
 	start := ctx.URLParamInt64Default("start", 0)
 	page := ctx.URLParamInt64Default("page", 1)
-	pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
+	pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
 
 	x := uint64(start)
-	logs, total, err := store.Get(src, level, &x, uint64((page-1)*pageSize), uint64(pageSize))
+	logs, total, err := app.LogDBStore.Get(src, level, &x, uint64((page-1)*pageSize), uint64(pageSize))
 	if err != nil {
 		return err
 	}
@@ -115,19 +108,22 @@ func GetLogList(src string, ctx iris.Context, store logStore.Store, cfg config.C
 		}
 	}
 	return iris.Map{
-		"stats": store.Stats(),
+		"stats": app.LogDBStore.Stats(),
 		"start": x,
 		"total": total,
 		"list":  result,
 	}
 }
 
-func DeleteLog(src string, ctx iris.Context, store logStore.Store) interface{} {
-	err := store.Delete(src)
+func DeleteLog(ctx iris.Context, src string) interface{} {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
+	err := app.LogDBStore.Delete(src)
 	if err != nil {
 		return err
 	}
 
-	log.Info(lang.Str(lang.LogDeletedByUser, perm.AdminUser(ctx).Name()))
+	log.Info(lang.Str(lang.LogDeletedByUser, admin.Name()))
 	return lang.Ok
 }

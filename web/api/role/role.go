@@ -3,34 +3,35 @@ package role
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
-	"github.com/maritimusj/centrum/store"
 	"github.com/maritimusj/centrum/util"
-	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
 )
 
-func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
+func List(ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		var params []helper.OptionFN
 		var orgID int64
-		if perm.IsDefaultAdminUser(ctx) {
+		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)
 			}
 		} else {
-			orgID = perm.AdminUser(ctx).OrganizationID()
+			orgID = admin.OrganizationID()
 		}
 		if orgID > 0 {
 			params = append(params, helper.Organization(orgID))
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
@@ -43,7 +44,7 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 			params = append(params, helper.User(userID))
 		}
 
-		roles, total, err := s.GetRoleList(params...)
+		roles, total, err := app.Store().GetRoleList(params...)
 		if err != nil {
 			return err
 		}
@@ -59,7 +60,10 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	})
 }
 
-func Create(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
+func Create(ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		var form struct {
 			OrgID int64  `json:"org"`
@@ -77,14 +81,14 @@ func Create(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 			return lang.ErrRoleExists
 		}
 		var org interface{}
-		if perm.IsDefaultAdminUser(ctx) {
+		if app.IsDefaultAdminUser(admin) {
 			if form.OrgID > 0 {
 				org = form.OrgID
 			} else {
-				org = cfg.DefaultOrganization()
+				org = app.Cfg.DefaultOrganization()
 			}
 		} else {
-			org = perm.AdminUser(ctx).OrganizationID()
+			org = admin.OrganizationID()
 		}
 
 		role, err := s.CreateRole(org, form.Name, form.Title)
@@ -95,9 +99,9 @@ func Create(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	})
 }
 
-func Detail(roleID int64, s store.Store) hero.Result {
+func Detail(roleID int64) hero.Result {
 	return response.Wrap(func() interface{} {
-		role, err := s.GetRole(roleID)
+		role, err := app.Store().GetRole(roleID)
 		if err != nil {
 			return err
 		}
@@ -105,7 +109,9 @@ func Detail(roleID int64, s store.Store) hero.Result {
 	})
 }
 
-func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
+func Update(roleID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+
 	return response.Wrap(func() interface{} {
 		role, err := s.GetRole(roleID)
 		if err != nil {
@@ -171,7 +177,9 @@ func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Delete(roleID int64, ctx iris.Context, s store.Store) hero.Result {
+func Delete(roleID int64) hero.Result {
+	s := app.Store()
+
 	return response.Wrap(func() interface{} {
 		role, err := s.GetRole(roleID)
 		if err != nil {

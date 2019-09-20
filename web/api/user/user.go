@@ -1,43 +1,46 @@
 package user
 
 import (
-	"github.com/maritimusj/centrum/db"
-	"github.com/maritimusj/centrum/logStore"
+	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/resource"
-	mysqlStore "github.com/maritimusj/centrum/store/mysql"
+	"github.com/maritimusj/centrum/store"
 	"github.com/maritimusj/centrum/web/api/web"
 
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/status"
-	"github.com/maritimusj/centrum/store"
 	"github.com/maritimusj/centrum/util"
-	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
 	"gopkg.in/go-playground/validator.v9"
 )
 
-func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
+func List(ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
+
+		println("get")
 		var params []helper.OptionFN
 		var orgID int64
-		if perm.IsDefaultAdminUser(ctx) {
+
+		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)
 			}
 		} else {
-			orgID = perm.AdminUser(ctx).OrganizationID()
+			orgID = admin.OrganizationID()
 		}
+
 		if orgID > 0 {
 			params = append(params, helper.Organization(orgID))
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
@@ -59,7 +62,7 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	})
 }
 
-func Create(ctx iris.Context, tx db.WithTransaction, validate *validator.Validate, cfg config.Config) hero.Result {
+func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
 			OrgID    int64  `json:"org"`
@@ -76,8 +79,8 @@ func Create(ctx iris.Context, tx db.WithTransaction, validate *validator.Validat
 			return lang.ErrInvalidRequestData
 		}
 
-		return tx.TransactionDo(func(db db.DB) interface{} {
-			s := mysqlStore.Attach(db)
+		return app.TransactionDo(func(s store.Store) interface{} {
+			admin := s.MustGetUserFromContext(ctx)
 
 			if exists, err := s.IsUserExists(form.Username); err != nil {
 				return err
@@ -88,7 +91,7 @@ func Create(ctx iris.Context, tx db.WithTransaction, validate *validator.Validat
 			var roles []interface{}
 			var err error
 
-			if cfg.IsRoleEnabled() {
+			if app.Cfg.IsRoleEnabled() {
 				if form.RoleID != nil {
 					role, err := s.GetRole(*form.RoleID)
 					if err != nil {
@@ -103,7 +106,7 @@ func Create(ctx iris.Context, tx db.WithTransaction, validate *validator.Validat
 			} else {
 				roles = append(roles, lang.RoleGuestName)
 				//创建用户同名的role
-				role, err := s.CreateRole(cfg.DefaultOrganization(), form.Username, form.Username)
+				role, err := s.CreateRole(app.Cfg.DefaultOrganization(), form.Username, form.Username)
 				if err != nil {
 					return err
 				}
@@ -111,14 +114,14 @@ func Create(ctx iris.Context, tx db.WithTransaction, validate *validator.Validat
 			}
 
 			var org interface{}
-			if perm.IsDefaultAdminUser(ctx) {
+			if app.IsDefaultAdminUser(admin) {
 				if form.OrgID > 0 {
 					org = form.OrgID
 				} else {
-					org = cfg.DefaultOrganization()
+					org = app.Cfg.DefaultOrganization()
 				}
 			} else {
-				org = perm.AdminUser(ctx).OrganizationID()
+				org = admin.OrganizationID()
 			}
 
 			user, err := s.CreateUser(org, form.Username, []byte(form.Password), roles...)
@@ -131,109 +134,115 @@ func Create(ctx iris.Context, tx db.WithTransaction, validate *validator.Validat
 	})
 }
 
-func Detail(userID int64, s store.Store) hero.Result {
+func Detail(userID int64) hero.Result {
 	return response.Wrap(func() interface{} {
-		user, err := s.GetUser(userID)
-		if err != nil {
-			return err
-		}
-		return user.Detail()
-	})
-}
-
-func Update(userID int64, ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
-	return response.Wrap(func() interface{} {
-		user, err := s.GetUser(userID)
-		if err != nil {
-			return err
-		}
-
-		if user.Name() == cfg.DefaultUserName() && perm.AdminUser(ctx).Name() != cfg.DefaultUserName() {
-			return lang.ErrNoPermission
-		}
-
-		var form struct {
-			Enable   *bool   `json:"enable"`
-			Password *string `json:"password"`
-			Title    *string `json:"title"`
-			Mobile   *string `json:"mobile"`
-			Email    *string `json:"email"`
-			Roles    []int64 `json:"roles"`
-		}
-
-		err = ctx.ReadJSON(&form)
-		if err != nil {
-			return lang.ErrInvalidRequestData
-		}
-
-		if cfg.IsRoleEnabled() && form.Roles != nil {
-			roles := make([]interface{}, 0, len(form.Roles))
-			for _, role := range form.Roles {
-				roles = append(roles, role)
-			}
-			err = user.SetRoles(roles...)
+		return app.TransactionDo(func(s store.Store) interface{} {
+			user, err := s.GetUser(userID)
 			if err != nil {
 				return err
 			}
-		}
-
-		if form.Password != nil && *form.Password != "" {
-			user.ResetPassword(*form.Password)
-		}
-
-		var data = model.Map{}
-		if form.Enable != nil {
-			if false == *form.Enable {
-				if user.Name() == cfg.DefaultUserName() {
-					return lang.ErrFailedDisableDefaultUser
-				}
-				if user.Name() == perm.AdminUser(ctx).Name() {
-					return lang.ErrFailedDisableUserSelf
-				}
-			}
-			data["enable"] = util.If(*form.Enable, status.Enable, status.Disable)
-		}
-		if form.Title != nil {
-			data["title"] = *form.Title
-		}
-		if form.Mobile != nil {
-			data["mobile"] = *form.Mobile
-		}
-		if form.Email != nil {
-			data["email"] = *form.Email
-		}
-
-		if len(data) > 0 {
-			user.Update(data)
-		}
-
-		err = user.Save()
-		if err != nil {
-			return err
-		}
-		return lang.Ok
+			return user.Detail()
+		})
 	})
 }
 
-func Delete(userID int64, ctx iris.Context, tx db.WithTransaction, cfg config.Config) hero.Result {
+func Update(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		return tx.TransactionDo(func(db db.DB) interface{} {
-			s := mysqlStore.Attach(db)
+		return app.TransactionDo(func(s store.Store) interface{} {
+			admin := s.MustGetUserFromContext(ctx)
 
 			user, err := s.GetUser(userID)
 			if err != nil {
 				return err
 			}
 
-			if user.Name() == cfg.DefaultUserName() {
+			if app.IsDefaultAdminUser(user) && !app.IsDefaultAdminUser(admin) {
+				return lang.ErrNoPermission
+			}
+
+			var form struct {
+				Enable   *bool   `json:"enable"`
+				Password *string `json:"password"`
+				Title    *string `json:"title"`
+				Mobile   *string `json:"mobile"`
+				Email    *string `json:"email"`
+				Roles    []int64 `json:"roles"`
+			}
+
+			err = ctx.ReadJSON(&form)
+			if err != nil {
+				return lang.ErrInvalidRequestData
+			}
+
+			if app.Cfg.IsRoleEnabled() && form.Roles != nil {
+				roles := make([]interface{}, 0, len(form.Roles))
+				for _, role := range form.Roles {
+					roles = append(roles, role)
+				}
+				err = user.SetRoles(roles...)
+				if err != nil {
+					return err
+				}
+			}
+
+			if form.Password != nil && *form.Password != "" {
+				user.ResetPassword(*form.Password)
+			}
+
+			var data = model.Map{}
+			if form.Enable != nil {
+				if false == *form.Enable {
+					if app.IsDefaultAdminUser(user) {
+						return lang.ErrFailedDisableDefaultUser
+					}
+					if user.Name() == admin.Name() {
+						return lang.ErrFailedDisableUserSelf
+					}
+				}
+				data["enable"] = util.If(*form.Enable, status.Enable, status.Disable)
+			}
+			if form.Title != nil {
+				data["title"] = *form.Title
+			}
+			if form.Mobile != nil {
+				data["mobile"] = *form.Mobile
+			}
+			if form.Email != nil {
+				data["email"] = *form.Email
+			}
+
+			if len(data) > 0 {
+				user.Update(data)
+			}
+
+			err = user.Save()
+			if err != nil {
+				return err
+			}
+			return lang.Ok
+		})
+	})
+}
+
+func Delete(userID int64, ctx iris.Context) hero.Result {
+	return response.Wrap(func() interface{} {
+		return app.TransactionDo(func(s store.Store) interface{} {
+			admin := s.MustGetUserFromContext(ctx)
+
+			user, err := s.GetUser(userID)
+			if err != nil {
+				return err
+			}
+
+			if app.IsDefaultAdminUser(user) {
 				return lang.ErrFailedRemoveDefaultUser
 			}
 
-			if user.Name() == perm.AdminUser(ctx).Name() {
+			if user.Name() == admin.Name() {
 				return lang.ErrFailedRemoveUserSelf
 			}
 
-			if !cfg.IsRoleEnabled() {
+			if !app.Cfg.IsRoleEnabled() {
 				role, err := s.GetRole(user.Name())
 				if err != nil {
 					return err
@@ -254,17 +263,15 @@ func Delete(userID int64, ctx iris.Context, tx db.WithTransaction, cfg config.Co
 	})
 }
 
-func UpdatePerm(userID int64, ctx iris.Context, tx db.WithTransaction, cfg config.Config) hero.Result {
+func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		return tx.TransactionDo(func(db db.DB) interface{} {
-			s := mysqlStore.Attach(db)
-
+		return app.TransactionDo(func(s store.Store) interface{} {
 			user, err := s.GetUser(userID)
 			if err != nil {
 				return err
 			}
 
-			if user.Name() == cfg.DefaultUserName() {
+			if app.IsDefaultAdminUser(user) {
 				return lang.ErrFailedEditDefaultUserPerm
 			}
 
@@ -330,28 +337,31 @@ func UpdatePerm(userID int64, ctx iris.Context, tx db.WithTransaction, cfg confi
 	})
 }
 
-func LogList(userID int64, ctx iris.Context, s store.Store, store logStore.Store, cfg config.Config) hero.Result {
+func LogList(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		user, err := s.GetUser(userID)
+		user, err := app.Store().GetUser(userID)
 		if err != nil {
 			return err
 		}
 
-		return web.GetLogList(user.LogUID(), ctx, store, cfg)
+		return web.GetLogList(ctx, user.LogUID())
 	})
 }
 
-func LogDelete(userID int64, ctx iris.Context, s store.Store, store logStore.Store, cfg config.Config) hero.Result {
+func LogDelete(userID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		user, err := s.GetUser(userID)
+		user, err := app.Store().GetUser(userID)
 		if err != nil {
 			return err
 		}
 
-		if perm.AdminUser(ctx).Name() != cfg.DefaultUserName() {
+		if !app.IsDefaultAdminUser(admin) {
 			return lang.ErrNoPermission
 		}
 
-		return web.DeleteLog(user.LogUID(), ctx, store)
+		return web.DeleteLog(ctx, user.LogUID())
 	})
 }

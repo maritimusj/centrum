@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kataras/iris"
 	"time"
 
-	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/cache"
 	"github.com/maritimusj/centrum/cache/memCache"
 	"github.com/maritimusj/centrum/db"
@@ -46,17 +46,29 @@ type mysqlStore struct {
 	ctx   context.Context
 }
 
+func (s *mysqlStore) MustGetUserFromContext(ctx iris.Context) model.User {
+	userID := ctx.Values().GetInt64Default("__userID__", 0)
+	if userID > 0 {
+		user, err := s.GetUser(userID)
+		if err != nil {
+			panic(err)
+		}
+		return user
+	}
+	panic(lang.Error(lang.ErrInvalidUser))
+}
+
 func New() store.Store {
 	return &mysqlStore{
 		cache: memCache.New(),
 	}
 }
 
-func Attach(db db.DB) store.Store {
+func Attach(ctx context.Context, db db.DB) store.Store {
 	return &mysqlStore{
 		db:    db,
-		cache: memCache.DefaultCache,
-		ctx:   app.Ctx,
+		cache: memCache.New(),
+		ctx:   ctx,
 	}
 }
 
@@ -2017,7 +2029,6 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 	defer func() {
 		_ = rows.Close()
 	}()
-
 
 	var resID int64
 	var ids []int64

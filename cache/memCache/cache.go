@@ -34,10 +34,6 @@ func New() *cache {
 	return &cache{client: goCache.New(6*time.Minute, 10*time.Minute)}
 }
 
-var (
-	DefaultCache = New()
-)
-
 func getKey(obj interface{}) string {
 	var pref string
 	var id int64

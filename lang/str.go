@@ -177,6 +177,7 @@ const (
 	ErrApiResourceNotFound
 	ErrUnknownRole
 	ErrOrganizationNotFound
+	ErrOrganizationDifferent
 	ErrOrganizationExists
 	ErrFailedRemoveDefaultOrganization
 	ErrUserNotFound

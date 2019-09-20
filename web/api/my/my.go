@@ -3,23 +3,27 @@ package my
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
+	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
-	"github.com/maritimusj/centrum/store"
-	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
 	"strconv"
 )
 
 func Detail(ctx iris.Context) hero.Result {
+	s := app.Store()
+	my := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		my := perm.AdminUser(ctx)
 		return my.Detail()
 	})
 }
 
 func Update(ctx iris.Context) hero.Result {
+	s := app.Store()
+	my := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		var form struct {
 			Password *string `json:"password"`
@@ -32,8 +36,6 @@ func Update(ctx iris.Context) hero.Result {
 		if err != nil {
 			return lang.ErrInvalidRequestData
 		}
-
-		my := perm.AdminUser(ctx)
 
 		if form.Password != nil && *form.Password != "" {
 			my.ResetPassword(*form.Password)
@@ -62,7 +64,10 @@ func Update(ctx iris.Context) hero.Result {
 	})
 }
 
-func Perm(class string, ctx iris.Context, s store.Store) hero.Result {
+func Perm(class string, ctx iris.Context) hero.Result {
+	s := app.Store()
+	my := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		var res model.Resource
 		var err error
@@ -94,17 +99,20 @@ func Perm(class string, ctx iris.Context, s store.Store) hero.Result {
 
 		if class == "api" {
 			return iris.Map{
-				"invoke": perm.Allow(ctx, res, resource.Invoke),
+				"invoke": app.Allow(my, res, resource.Invoke),
 			}
 		}
 		return iris.Map{
-			"view": perm.Allow(ctx, res, resource.View),
-			"ctrl": perm.Allow(ctx, res, resource.Ctrl),
+			"view": app.Allow(my, res, resource.View),
+			"ctrl": app.Allow(my, res, resource.Ctrl),
 		}
 	})
 }
 
-func MultiPerm(class string, ctx iris.Context, s store.Store) hero.Result {
+func MultiPerm(class string, ctx iris.Context) hero.Result {
+	s := app.Store()
+	my := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		var form struct {
 			Names []string `json:"names"`
@@ -123,7 +131,7 @@ func MultiPerm(class string, ctx iris.Context, s store.Store) hero.Result {
 				if err != nil {
 					return err
 				}
-				perms[name] = perm.Allow(ctx, res, resource.Invoke)
+				perms[name] = app.Allow(my, res, resource.Invoke)
 			}
 			return perms
 		case "group", "device", "measure", "equipment", "state":
@@ -133,8 +141,8 @@ func MultiPerm(class string, ctx iris.Context, s store.Store) hero.Result {
 					return err
 				}
 				perms[strconv.FormatInt(id, 10)] = iris.Map{
-					"view": perm.Allow(ctx, res, resource.View),
-					"ctrl": perm.Allow(ctx, res, resource.Ctrl),
+					"view": app.Allow(my, res, resource.View),
+					"ctrl": app.Allow(my, res, resource.Ctrl),
 				}
 			}
 		default:

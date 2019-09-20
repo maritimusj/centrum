@@ -3,25 +3,26 @@ package resource
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
-	"github.com/maritimusj/centrum/store"
 	"github.com/maritimusj/centrum/web/response"
 )
 
-func GroupList(store store.Store) hero.Result {
+func GroupList() hero.Result {
 	return response.Wrap(func() interface{} {
-		return store.GetResourceGroupList()
+		return app.Store().GetResourceGroupList()
 	})
 }
 
-func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
+func List(classID int, ctx iris.Context) hero.Result {
+	s := app.Store()
+
 	return response.Wrap(func() interface{} {
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
 		keyword := ctx.URLParam("keyword")
 		roleID := ctx.URLParamInt64Default("role", 0)
 		userID := ctx.URLParamInt64Default("user", 0)
@@ -104,18 +105,18 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 					if v, ok := policies[resource.Invoke]; ok {
 						perm["invoke"] = v.Effect() == resource.Allow
 					} else {
-						perm["invoke"] = cfg.DefaultEffect() == resource.Allow
+						perm["invoke"] = app.Cfg.DefaultEffect() == resource.Allow
 					}
 				} else {
 					if v, ok := policies[resource.View]; ok {
 						perm["view"] = v.Effect() == resource.Allow
 					} else {
-						perm["view"] = cfg.DefaultEffect()
+						perm["view"] = app.Cfg.DefaultEffect()
 					}
 					if v, ok := policies[resource.Ctrl]; ok {
 						perm["ctrl"] = v.Effect() == resource.Allow
 					} else {
-						perm["ctrl"] = cfg.DefaultEffect() == resource.Allow
+						perm["ctrl"] = app.Cfg.DefaultEffect() == resource.Allow
 					}
 				}
 				entry["perm"] = perm
@@ -126,7 +127,7 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 					if err != nil {
 						switch err {
 						case lang.Error(lang.ErrPolicyNotFound):
-							perm["invoke"] = cfg.DefaultEffect() == resource.Allow
+							perm["invoke"] = app.Cfg.DefaultEffect() == resource.Allow
 						default:
 							perm["invoke"] = false
 						}
@@ -138,7 +139,7 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 					if err != nil {
 						switch err {
 						case lang.Error(lang.ErrPolicyNotFound):
-							perm["view"] = cfg.DefaultEffect() == resource.Allow
+							perm["view"] = app.Cfg.DefaultEffect() == resource.Allow
 						default:
 							perm["view"] = false
 						}
@@ -149,7 +150,7 @@ func List(classID int, ctx iris.Context, s store.Store, cfg config.Config) hero.
 					if err != nil {
 						switch err {
 						case lang.Error(lang.ErrPolicyNotFound):
-							perm["ctrl"] = cfg.DefaultEffect() == resource.Allow
+							perm["ctrl"] = app.Cfg.DefaultEffect() == resource.Allow
 						default:
 							perm["ctrl"] = false
 						}

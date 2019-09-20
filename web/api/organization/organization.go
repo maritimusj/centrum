@@ -3,25 +3,26 @@ package organization
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/model"
-	"github.com/maritimusj/centrum/store"
-	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/go-playground/validator.v9"
 )
 
-func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
+func List(ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		if !perm.IsDefaultAdminUser(ctx) {
+		if !app.IsDefaultAdminUser(admin) {
 			return lang.ErrNoPermission
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
 
 		var params = []helper.OptionFN{
 			helper.Page(page, pageSize),
@@ -32,7 +33,7 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 			params = append(params, helper.Keyword(keyword))
 		}
 
-		organizations, total, err := s.GetOrganizationList(params...)
+		organizations, total, err := app.Store().GetOrganizationList(params...)
 		if err != nil {
 			return err
 		}
@@ -50,9 +51,12 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	})
 }
 
-func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.Result {
+func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		if !perm.IsDefaultAdminUser(ctx) {
+		if !app.IsDefaultAdminUser(admin) {
 			return lang.ErrNoPermission
 		}
 
@@ -77,26 +81,29 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 
 		org, err := s.CreateOrganization(form.Name, form.Title)
 		if err != nil {
-			go perm.AdminUser(ctx).Logger().WithFields(logrus.Fields{
+			go admin.Logger().WithFields(logrus.Fields{
 				"name":  form.Name,
 				"title": form.Title,
 			}).Info(lang.Str(lang.CreateOrgFail, form.Name, form.Title, err))
 			return err
 		} else {
-			go perm.AdminUser(ctx).Logger().WithFields(logrus.Fields(org.Brief())).Info(lang.Str(lang.CreateOrgOk, org.Title(), org.Name()))
+			go admin.Logger().WithFields(logrus.Fields(org.Brief())).Info(lang.Str(lang.CreateOrgOk, org.Title(), org.Name()))
 		}
 
 		return org.Simple()
 	})
 }
 
-func Detail(orgID int64, ctx iris.Context, s store.Store) hero.Result {
+func Detail(orgID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		if !perm.IsDefaultAdminUser(ctx) {
+		if !app.IsDefaultAdminUser(admin) {
 			return lang.ErrNoPermission
 		}
 
-		org, err := s.GetOrganization(orgID)
+		org, err := app.Store().GetOrganization(orgID)
 		if err != nil {
 			return err
 		}
@@ -105,13 +112,16 @@ func Detail(orgID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Update(orgID int64, ctx iris.Context, s store.Store) hero.Result {
+func Update(orgID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		if !perm.IsDefaultAdminUser(ctx) {
+		if !app.IsDefaultAdminUser(admin) {
 			return lang.ErrNoPermission
 		}
 
-		org, err := s.GetOrganization(orgID)
+		org, err := app.Store().GetOrganization(orgID)
 		if err != nil {
 			return err
 		}
@@ -139,18 +149,21 @@ func Update(orgID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Delete(orgID int64, ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
+func Delete(orgID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		if !perm.IsDefaultAdminUser(ctx) {
+		if !app.IsDefaultAdminUser(admin) {
 			return lang.ErrNoPermission
 		}
 
-		org, err := s.GetOrganization(orgID)
+		org, err := app.Store().GetOrganization(orgID)
 		if err != nil {
 			return err
 		}
 
-		if org.Name() == cfg.DefaultOrganization() {
+		if org.Name() == app.Cfg.DefaultOrganization() {
 			return lang.ErrFailedRemoveDefaultOrganization
 		}
 

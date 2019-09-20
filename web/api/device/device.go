@@ -3,39 +3,38 @@ package device
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/config"
-	"github.com/maritimusj/centrum/db"
+	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/logStore"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/store"
-	mysqlStore "github.com/maritimusj/centrum/store/mysql"
 	"github.com/maritimusj/centrum/web/api/web"
-	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/go-playground/validator.v9"
 )
 
-func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
+func List(ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		var params []helper.OptionFN
 		var orgID int64
-		if perm.IsDefaultAdminUser(ctx) {
+		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)
 			}
 		} else {
-			orgID = perm.AdminUser(ctx).OrganizationID()
+			orgID = admin.OrganizationID()
 		}
 		if orgID > 0 {
 			params = append(params, helper.Organization(orgID))
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
@@ -48,9 +47,9 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 			params = append(params, helper.Group(groupID))
 		}
 
-		if !perm.IsDefaultAdminUser(ctx) {
-			params = append(params, helper.User(perm.AdminUser(ctx).GetID()))
-			params = append(params, helper.DefaultEffect(cfg.DefaultEffect()))
+		if !app.IsDefaultAdminUser(admin) {
+			params = append(params, helper.User(admin.GetID()))
+			params = append(params, helper.DefaultEffect(app.Cfg.DefaultEffect()))
 		}
 
 		devices, total, err := s.GetDeviceList(params...)
@@ -63,7 +62,7 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 			brief := device.Brief()
 			brief["perm"] = iris.Map{
 				"view": true,
-				"ctrl": perm.Allow(ctx, device, resource.Ctrl),
+				"ctrl": app.Allow(admin, device, resource.Ctrl),
 			}
 			result = append(result, brief)
 		}
@@ -75,7 +74,10 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	})
 }
 
-func Create(ctx iris.Context, s store.Store, cfg config.Config, validate *validator.Validate) hero.Result {
+func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		var form struct {
 			OrgID    int64  `json:"org"`
@@ -93,45 +95,48 @@ func Create(ctx iris.Context, s store.Store, cfg config.Config, validate *valida
 		}
 
 		var org interface{}
-		if perm.IsDefaultAdminUser(ctx) {
+		if app.IsDefaultAdminUser(admin) {
 			if form.OrgID > 0 {
 				org = form.OrgID
 			} else {
-				org = cfg.DefaultOrganization()
+				org = app.Cfg.DefaultOrganization()
 			}
 		} else {
-			org = perm.AdminUser(ctx).OrganizationID()
+			org = admin.OrganizationID()
 		}
 
-		device, err := s.CreateDevice(org, form.Title, map[string]interface{}{
+		device, err := app.Store().CreateDevice(org, form.Title, map[string]interface{}{
 			"params": map[string]interface{}{
 				"connStr":  form.ConnStr,
 				"interval": form.Interval,
 			},
 		})
 		if err != nil {
-			go perm.AdminUser(ctx).Logger().WithFields(logrus.Fields{
+			go admin.Logger().WithFields(logrus.Fields{
 				"title":    form.Title,
 				"connStr":  form.ConnStr,
 				"interval": form.Interval,
 			}).Info(lang.Str(lang.CreateDeviceFail, err))
 			return err
 		} else {
-			go perm.AdminUser(ctx).Logger().WithFields(logrus.Fields(device.Brief())).Info(lang.Str(lang.CreateDeviceOk, device.Title()))
+			go admin.Logger().WithFields(logrus.Fields(device.Brief())).Info(lang.Str(lang.CreateDeviceOk, device.Title()))
 		}
 
 		return device.Simple()
 	})
 }
 
-func Detail(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
+func Detail(deviceID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		device, err := s.GetDevice(deviceID)
+		device, err := app.Store().GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, device, resource.View) {
+		if !app.Allow(admin, device, resource.View) {
 			return lang.ErrNoPermission
 		}
 
@@ -139,14 +144,17 @@ func Detail(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
+func Update(deviceID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		device, err := s.GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, device, resource.Ctrl) {
+		if !app.Allow(admin, device, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
 
@@ -197,36 +205,36 @@ func Update(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 
 		err = device.Save()
 		if err != nil {
-			go perm.AdminUser(ctx).Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceFail, device.Title(), err))
+			go admin.Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceFail, device.Title(), err))
 			return err
 		} else {
-			go perm.AdminUser(ctx).Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceOk, device.Title()))
+			go admin.Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceOk, device.Title()))
 		}
 
 		return lang.Ok
 	})
 }
 
-func Delete(deviceID int64, ctx iris.Context, tx db.WithTransaction) hero.Result {
+func Delete(deviceID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		return tx.TransactionDo(func(db db.DB) interface{} {
-			s := mysqlStore.Attach(db)
+		return app.TransactionDo(func(s store.Store) interface{} {
+			admin := s.MustGetUserFromContext(ctx)
 
 			device, err := s.GetDevice(deviceID)
 			if err != nil {
 				return err
 			}
 
-			if perm.Deny(ctx, device, resource.Ctrl) {
+			if !app.Allow(admin, device, resource.Ctrl) {
 				return lang.ErrNoPermission
 			}
 
 			err = device.Destroy()
 			if err != nil {
-				go perm.AdminUser(ctx).Logger().Info(lang.Str(lang.DeleteDeviceFail, device.Title(), err))
+				go admin.Logger().Info(lang.Str(lang.DeleteDeviceFail, device.Title(), err))
 				return err
 			} else {
-				go perm.AdminUser(ctx).Logger().Info(lang.Str(lang.DeleteDeviceOk, device.Title()))
+				go admin.Logger().Info(lang.Str(lang.DeleteDeviceOk, device.Title()))
 			}
 
 			return lang.Ok
@@ -234,19 +242,22 @@ func Delete(deviceID int64, ctx iris.Context, tx db.WithTransaction) hero.Result
 	})
 }
 
-func MeasureList(deviceID int64, ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
+func MeasureList(deviceID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		device, err := s.GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, device, resource.View) {
+		if !app.Allow(admin, device, resource.View) {
 			return lang.ErrNoPermission
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
 		kind := ctx.URLParamIntDefault("kind", int(resource.AllKind))
 
 		var params = []helper.OptionFN{
@@ -260,9 +271,9 @@ func MeasureList(deviceID int64, ctx iris.Context, s store.Store, cfg config.Con
 			params = append(params, helper.Keyword(keyword))
 		}
 
-		if !perm.IsDefaultAdminUser(ctx) {
-			params = append(params, helper.User(perm.AdminUser(ctx).GetID()))
-			params = append(params, helper.DefaultEffect(cfg.DefaultEffect()))
+		if !app.IsDefaultAdminUser(admin) {
+			params = append(params, helper.User(admin.GetID()))
+			params = append(params, helper.DefaultEffect(app.Cfg.DefaultEffect()))
 		}
 
 		measures, total, err := s.GetMeasureList(params...)
@@ -275,7 +286,7 @@ func MeasureList(deviceID int64, ctx iris.Context, s store.Store, cfg config.Con
 			brief := measure.Brief()
 			brief["perm"] = iris.Map{
 				"view": true,
-				"ctrl": perm.Allow(ctx, measure, resource.Ctrl),
+				"ctrl": app.Allow(admin, measure, resource.Ctrl),
 			}
 			result = append(result, brief)
 		}
@@ -287,14 +298,17 @@ func MeasureList(deviceID int64, ctx iris.Context, s store.Store, cfg config.Con
 	})
 }
 
-func CreateMeasure(deviceID int64, ctx iris.Context, s store.Store, validate *validator.Validate) hero.Result {
+func CreateMeasure(deviceID int64, ctx iris.Context, validate *validator.Validate) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		device, err := s.GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, device, resource.Ctrl) {
+		if !app.Allow(admin, device, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
 
@@ -321,14 +335,17 @@ func CreateMeasure(deviceID int64, ctx iris.Context, s store.Store, validate *va
 	})
 }
 
-func MeasureDetail(measureID int64, ctx iris.Context, s store.Store) hero.Result {
+func MeasureDetail(measureID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		measure, err := s.GetMeasure(measureID)
+		measure, err := app.Store().GetMeasure(measureID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, measure, resource.View) {
+		if !app.Allow(admin, measure, resource.View) {
 			return lang.ErrNoPermission
 		}
 
@@ -336,14 +353,17 @@ func MeasureDetail(measureID int64, ctx iris.Context, s store.Store) hero.Result
 	})
 }
 
-func DeleteMeasure(measureID int64, ctx iris.Context, s store.Store) hero.Result {
+func DeleteMeasure(measureID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		measure, err := s.GetMeasure(measureID)
+		measure, err := app.Store().GetMeasure(measureID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, measure, resource.View) {
+		if !app.Allow(admin, measure, resource.View) {
 			return lang.ErrNoPermission
 		}
 
@@ -355,32 +375,38 @@ func DeleteMeasure(measureID int64, ctx iris.Context, s store.Store) hero.Result
 	})
 }
 
-func LogList(deviceID int64, ctx iris.Context, s store.Store, store logStore.Store, cfg config.Config) hero.Result {
+func LogList(deviceID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		device, err := s.GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, device, resource.View) {
+		if !app.Allow(admin, device, resource.View) {
 			return lang.ErrNoPermission
 		}
 
-		return web.GetLogList(device.LogUID(), ctx, store, cfg)
+		return web.GetLogList(ctx, device.LogUID())
 	})
 }
 
-func LogDelete(deviceID int64, ctx iris.Context, s store.Store, store logStore.Store) hero.Result {
+func LogDelete(deviceID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		device, err := s.GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, device, resource.Ctrl) {
+		if !app.Allow(admin, device, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
 
-		return web.DeleteLog(device.LogUID(), ctx, store)
+		return web.DeleteLog(ctx, device.LogUID())
 	})
 }

@@ -3,36 +3,36 @@ package equipment
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/logStore"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
-	"github.com/maritimusj/centrum/store"
 	"github.com/maritimusj/centrum/web/api/web"
-	"github.com/maritimusj/centrum/web/perm"
 	"github.com/maritimusj/centrum/web/response"
 	"gopkg.in/go-playground/validator.v9"
 )
 
-func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
+func List(ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		var params []helper.OptionFN
 		var orgID int64
-		if perm.IsDefaultAdminUser(ctx) {
+		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)
 			}
 		} else {
-			orgID = perm.AdminUser(ctx).OrganizationID()
+			orgID = admin.OrganizationID()
 		}
 		if orgID > 0 {
 			params = append(params, helper.Organization(orgID))
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
@@ -45,12 +45,12 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 			params = append(params, helper.Group(groupID))
 		}
 
-		if !perm.IsDefaultAdminUser(ctx) {
-			params = append(params, helper.DefaultEffect(cfg.DefaultEffect()))
-			params = append(params, helper.User(perm.AdminUser(ctx).GetID()))
+		if !app.IsDefaultAdminUser(admin) {
+			params = append(params, helper.DefaultEffect(app.Cfg.DefaultEffect()))
+			params = append(params, helper.User(admin.GetID()))
 		}
 
-		equipments, total, err := s.GetEquipmentList(params...)
+		equipments, total, err := app.Store().GetEquipmentList(params...)
 		if err != nil {
 			return err
 		}
@@ -60,7 +60,7 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 			brief := equipment.Brief()
 			brief["perm"] = iris.Map{
 				"view": true,
-				"ctrl": perm.Allow(ctx, equipment, resource.Ctrl),
+				"ctrl": app.Allow(admin, equipment, resource.Ctrl),
 			}
 			result = append(result, brief)
 		}
@@ -72,7 +72,10 @@ func List(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	})
 }
 
-func Create(ctx iris.Context, s store.Store, cfg config.Config, validate *validator.Validate) hero.Result {
+func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		var form struct {
 			OrgID int64  `json:"org"`
@@ -89,17 +92,17 @@ func Create(ctx iris.Context, s store.Store, cfg config.Config, validate *valida
 		}
 
 		var org interface{}
-		if perm.IsDefaultAdminUser(ctx) {
+		if app.IsDefaultAdminUser(admin) {
 			if form.OrgID > 0 {
 				org = form.OrgID
 			} else {
-				org = cfg.DefaultOrganization()
+				org = app.Cfg.DefaultOrganization()
 			}
 		} else {
-			org = perm.AdminUser(ctx).OrganizationID()
+			org = admin.OrganizationID()
 		}
 
-		equipment, err := s.CreateEquipment(org, form.Title, form.Desc)
+		equipment, err := app.Store().CreateEquipment(org, form.Title, form.Desc)
 		if err != nil {
 			return err
 		}
@@ -108,14 +111,17 @@ func Create(ctx iris.Context, s store.Store, cfg config.Config, validate *valida
 	})
 }
 
-func Detail(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
+func Detail(deviceID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		equipment, err := s.GetEquipment(deviceID)
+		equipment, err := app.Store().GetEquipment(deviceID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, equipment, resource.View) {
+		if !app.Allow(admin, equipment, resource.View) {
 			return lang.ErrNoPermission
 		}
 
@@ -123,14 +129,17 @@ func Detail(deviceID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Update(equipmentID int64, ctx iris.Context, s store.Store) hero.Result {
+func Update(equipmentID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		equipment, err := s.GetEquipment(equipmentID)
+		equipment, err := app.Store().GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, equipment, resource.Ctrl) {
+		if !app.Allow(admin, equipment, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
 
@@ -171,14 +180,17 @@ func Update(equipmentID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func Delete(equipmentID int64, ctx iris.Context, s store.Store) hero.Result {
+func Delete(equipmentID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		equipment, err := s.GetEquipment(equipmentID)
+		equipment, err := app.Store().GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, equipment, resource.Ctrl) {
+		if !app.Allow(admin, equipment, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
 
@@ -190,19 +202,22 @@ func Delete(equipmentID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func StateList(equipmentID int64, ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
+func StateList(equipmentID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
 		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, equipment, resource.View) {
+		if !app.Allow(admin, equipment, resource.View) {
 			return lang.ErrNoPermission
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
 		kind := ctx.URLParamIntDefault("kind", int(resource.AllKind))
 
 		var params = []helper.OptionFN{
@@ -211,9 +226,9 @@ func StateList(equipmentID int64, ctx iris.Context, s store.Store, cfg config.Co
 			helper.Equipment(equipment.GetID()),
 		}
 
-		if !perm.IsDefaultAdminUser(ctx) {
-			params = append(params, helper.DefaultEffect(cfg.DefaultEffect()))
-			params = append(params, helper.User(perm.AdminUser(ctx).GetID()))
+		if !app.IsDefaultAdminUser(admin) {
+			params = append(params, helper.DefaultEffect(app.Cfg.DefaultEffect()))
+			params = append(params, helper.User(admin.GetID()))
 		}
 
 		states, total, err := s.GetStateList(params...)
@@ -226,7 +241,7 @@ func StateList(equipmentID int64, ctx iris.Context, s store.Store, cfg config.Co
 			brief := state.Brief()
 			brief["perm"] = iris.Map{
 				"view": true,
-				"ctrl": perm.Allow(ctx, state, resource.Ctrl),
+				"ctrl": app.Allow(admin, state, resource.Ctrl),
 			}
 			result = append(result, brief)
 		}
@@ -238,14 +253,17 @@ func StateList(equipmentID int64, ctx iris.Context, s store.Store, cfg config.Co
 	})
 }
 
-func CreateState(equipmentID int64, ctx iris.Context, s store.Store, cfg config.Config, validate *validator.Validate) hero.Result {
+func CreateState(equipmentID int64, ctx iris.Context, validate *validator.Validate) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		equipment, err := s.GetEquipment(equipmentID)
+		equipment, err := app.Store().GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, equipment, resource.Ctrl) {
+		if !app.Allow(admin, equipment, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
 
@@ -271,14 +289,17 @@ func CreateState(equipmentID int64, ctx iris.Context, s store.Store, cfg config.
 	})
 }
 
-func StateDetail(stateID int64, ctx iris.Context, s store.Store) hero.Result {
+func StateDetail(stateID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		state, err := s.GetState(stateID)
+		state, err := app.Store().GetState(stateID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, state, resource.View) {
+		if !app.Allow(admin, state, resource.View) {
 			return lang.ErrNoPermission
 		}
 
@@ -286,14 +307,17 @@ func StateDetail(stateID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func UpdateState(stateID int64, ctx iris.Context, s store.Store) hero.Result {
+func UpdateState(stateID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		state, err := s.GetState(stateID)
+		state, err := app.Store().GetState(stateID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, state, resource.Ctrl) {
+		if !app.Allow(admin, state, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
 
@@ -328,14 +352,17 @@ func UpdateState(stateID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func DeleteState(stateID int64, ctx iris.Context, s store.Store) hero.Result {
+func DeleteState(stateID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		state, err := s.GetState(stateID)
+		state, err := app.Store().GetState(stateID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, state, resource.Ctrl) {
+		if !app.Allow(admin, state, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
 
@@ -347,31 +374,38 @@ func DeleteState(stateID int64, ctx iris.Context, s store.Store) hero.Result {
 	})
 }
 
-func LogList(equipmentID int64, ctx iris.Context, s store.Store, store logStore.Store, cfg config.Config) hero.Result {
+func LogList(equipmentID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		equipment, err := s.GetEquipment(equipmentID)
+		equipment, err := app.Store().GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, equipment, resource.View) {
+		if !app.Allow(admin, equipment, resource.View) {
 			return lang.ErrNoPermission
 		}
 
-		return web.GetLogList(equipment.LogUID(), ctx, store, cfg)
+		return web.GetLogList(ctx, equipment.LogUID())
 	})
 }
 
-func LogDelete(equipmentID int64, ctx iris.Context, s store.Store, store logStore.Store) hero.Result {
+func LogDelete(equipmentID int64, ctx iris.Context) hero.Result {
+	s := app.Store()
+	admin := s.MustGetUserFromContext(ctx)
+
 	return response.Wrap(func() interface{} {
-		equipment, err := s.GetEquipment(equipmentID)
+		equipment, err := app.Store().GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
 
-		if perm.Deny(ctx, equipment, resource.Ctrl) {
+		if !app.Allow(admin, equipment, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
-		return web.DeleteLog(equipment.LogUID(), ctx, store)
+
+		return web.DeleteLog(ctx, equipment.LogUID())
 	})
 }
