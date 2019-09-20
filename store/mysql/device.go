@@ -70,7 +70,18 @@ func (d *Device) ResourceDesc() string {
 }
 
 func (d *Device) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
-	panic("implement me")
+	options = append(options, helper.Device(d.GetID()))
+	measures, total, err := d.store.GetMeasureList(options...)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	result := make([]model.Resource, 0, len(measures))
+	for _, measure := range measures {
+		result = append(result, measure)
+	}
+
+	return result, total, nil
 }
 
 func (d *Device) GetID() int64 {

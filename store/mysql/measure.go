@@ -57,7 +57,7 @@ func (m *Measure) ResourceDesc() string {
 }
 
 func (m *Measure) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
-	panic("implement me")
+	return []model.Resource{}, 0, nil
 }
 
 func (m *Measure) GetID() int64 {

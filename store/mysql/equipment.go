@@ -67,7 +67,19 @@ func (e *Equipment) ResourceDesc() string {
 }
 
 func (e *Equipment) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
-	panic("implement me")
+	options = append(options, helper.Equipment(e.GetID()))
+
+	states, total, err := e.store.GetStateList(options...)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	result := make([]model.Resource, 0, len(states))
+	for _, state := range states {
+		result = append(result, state)
+	}
+
+	return result, total, nil
 }
 
 func (e *Equipment) GetID() int64 {

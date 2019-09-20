@@ -18,7 +18,7 @@ import (
 var (
 	Cfg = config.New()
 
-	Ctx, Cancel = context.WithCancel(context.Background())
+	Ctx, cancel = context.WithCancel(context.Background())
 	DB          db.WithTransaction
 
 	LogDBStore = logStore.New()
@@ -143,6 +143,6 @@ func Init() error {
 }
 
 func Close() {
-	Cancel()
+	cancel()
 	LogDBStore.Wait()
 }

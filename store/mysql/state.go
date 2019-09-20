@@ -59,7 +59,7 @@ func (s *State) ResourceDesc() string {
 }
 
 func (s *State) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
-	panic("implement me")
+	return []model.Resource{}, 0, nil
 }
 
 func (s *State) GetID() int64 {

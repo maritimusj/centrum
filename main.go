@@ -33,6 +33,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	//重置系统默认用户的密码和角色信息
 	if *resetDefaultUserPassword {
 		user, err := app.Store().GetUser(app.Cfg.DefaultUserName())
 		if err != nil {

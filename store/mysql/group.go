@@ -54,7 +54,33 @@ func (g *Group) ResourceDesc() string {
 }
 
 func (g *Group) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
-	panic("implement me")
+	var result []model.Resource
+
+	groups, groupTotal, err := g.store.GetGroupList(append(options, helper.Parent(g.GetID()))...)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	for _, group := range groups {
+		result = append(result, group)
+	}
+
+	devices, deviceTotal, err := g.store.GetDeviceList(append(options, helper.Group(g.GetID()))...)
+	if err != nil {
+		return nil, 0, err
+	}
+	for _, device := range devices {
+		result = append(result, device)
+	}
+	equipments, equipmentTotal, err := g.store.GetEquipmentList(append(options, helper.Group(g.GetID()))...)
+	if err != nil {
+		return nil, 0, err
+	}
+	for _, equipment := range equipments {
+		result = append(result, equipment)
+	}
+
+	return result, groupTotal + deviceTotal + equipmentTotal, nil
 }
 
 func (g *Group) Organization() (model.Organization, error) {
