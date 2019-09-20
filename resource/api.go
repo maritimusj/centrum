@@ -1,6 +1,15 @@
 package resource
 
 const (
+	OrganizationCreate = "org.create"
+	OrganizationList   = "org.list"
+	OrganizationDetail = "org.detail"
+	OrganizationUpdate = "org.update"
+	OrganizationDelete = "org.delete"
+
+	ResourceList   = "resource.list"
+	ResourceDetail = "resource.detail"
+
 	MyProfileDetail = "my.profile.detail"
 	MyProfileUpdate = "my.profile.update"
 	MyPerm          = "my.perm"
@@ -12,9 +21,6 @@ const (
 	DeviceLogDelete    = "device.log.delete"
 	EquipmentLogList   = "equip.log.list"
 	EquipmentLogDelete = "equip.log.delete"
-
-	ResourceList   = "resource.list"
-	ResourceDetail = "resource.detail"
 
 	UserList   = "user.list"
 	UserCreate = "user.create"
@@ -61,4 +67,79 @@ const (
 	LogLevelList = "log.level.list"
 	LogList      = "log.list"
 	LogDelete    = "log.delete"
+)
+
+var (
+	Guest = []string{
+		MyProfileDetail,
+		MyProfileUpdate,
+		MyPerm,
+		MyPermMulti,
+	}
+
+	OrganizationAdmin = append(Guest, []string{
+		UserLogList,
+		UserLogDelete,
+		DeviceLogList,
+		DeviceLogDelete,
+		EquipmentLogList,
+		EquipmentLogDelete,
+
+		ResourceList,
+		ResourceDetail,
+
+		UserList,
+		UserCreate,
+		UserDetail,
+		UserUpdate,
+		UserDelete,
+
+		RoleList,
+		RoleCreate,
+		RoleDetail,
+		RoleUpdate,
+		RoleDelete,
+
+		GroupList,
+		GroupCreate,
+		GroupDetail,
+		GroupUpdate,
+		GroupDelete,
+
+		DeviceList,
+		DeviceCreate,
+		DeviceDetail,
+		DeviceUpdate,
+		DeviceDelete,
+
+		MeasureList,
+		MeasureCreate,
+		MeasureDetail,
+		MeasureUpdate,
+		MeasureDelete,
+
+		EquipmentList,
+		EquipmentCreate,
+		EquipmentDetail,
+		EquipmentUpdate,
+		EquipmentDelete,
+
+		StateList,
+		StateCreate,
+		StateDetail,
+		StateUpdate,
+		StateDelete,
+
+		LogLevelList,
+		LogList,
+		LogDelete,
+	}...)
+
+	SystemAdmin = append(OrganizationAdmin, []string{
+		OrganizationCreate,
+		OrganizationList,
+		OrganizationDetail,
+		OrganizationUpdate,
+		OrganizationDelete,
+	}...)
 )

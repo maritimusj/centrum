@@ -26,12 +26,12 @@ func (m *mysqlDB) TransactionDo(fn func(db db.DB) interface{}) interface{} {
 		_ = tx.Rollback()
 	}()
 
-	res := fn(tx)
-	if res != nil {
-		if errCode, ok := res.(lang.ErrorCode); ok && errCode != lang.Ok {
+	result := fn(tx)
+	if result != nil {
+		if errCode, ok := result.(lang.ErrorCode); ok && errCode != lang.Ok {
 			return lang.Error(errCode)
 		}
-		if err, ok := res.(error); ok {
+		if err, ok := result.(error); ok {
 			return err
 		}
 	}
@@ -41,7 +41,7 @@ func (m *mysqlDB) TransactionDo(fn func(db db.DB) interface{}) interface{} {
 		return lang.InternalError(err)
 	}
 
-	return res
+	return result
 }
 
 func Open(ctx context.Context, option map[string]interface{}) (db.WithTransaction, error) {

@@ -70,6 +70,36 @@ func parseOption(options ...helper.OptionFN) *helper.Option {
 	return &option
 }
 
+func (s *mysqlStore) IsOrganizationExists(org interface{}) (bool, error) {
+	if _, err := getOrganizationID(s.db, org); err != nil {
+		if err != lang.Error(lang.ErrOrganizationNotFound) {
+			return false, err
+		}
+		return false, nil
+	}
+	return true, nil
+}
+
+func (s *mysqlStore) IsUserExists(user interface{}) (bool, error) {
+	if _, err := getUserID(s.db, user); err != nil {
+		if err != lang.Error(lang.ErrUserNotFound) {
+			return false, err
+		}
+		return false, nil
+	}
+	return true, nil
+}
+
+func (s *mysqlStore) IsRoleExists(role interface{}) (bool, error) {
+	if _, err := getRoleID(s.db, role); err != nil {
+		if err != lang.Error(lang.ErrRoleNotFound) {
+			return false, err
+		}
+		return false, nil
+	}
+	return true, nil
+}
+
 func (s *mysqlStore) GetResourceGroupList() []interface{} {
 	return []interface{}{
 		map[string]interface{}{
@@ -99,9 +129,9 @@ func (s *mysqlStore) GetResourceGroupList() []interface{} {
 	}
 }
 
-func (s *mysqlStore) loadOrganization(db db.DB, id int64) (*Organization, error) {
+func (s *mysqlStore) loadOrganization(id int64) (*Organization, error) {
 	var org = NewOrganization(s, id)
-	err := LoadData(db, TbOrganization, map[string]interface{}{
+	err := LoadData(s.db, TbOrganization, map[string]interface{}{
 		"enable":     &org.enable,
 		"name":       &org.name,
 		"title":      &org.title,
@@ -120,19 +150,9 @@ func (s *mysqlStore) loadOrganization(db db.DB, id int64) (*Organization, error)
 func (s *mysqlStore) GetOrganization(id interface{}) (model.Organization, error) {
 	result := <-synchronized.Do(s.ctx, TbOrganization, func() interface{} {
 		var orgID int64
-		switch v := id.(type) {
-		case int64:
-			orgID = v
-		case float64:
-			orgID = int64(v)
-		case string:
-			id, err := getOrganizationIDByName(s.db, v)
-			if err != nil {
-				return err
-			}
-			orgID = id
-		default:
-			panic(errors.New("GetOrganization: unknown organization"))
+		orgID, err := getOrganizationID(s.db, id)
+		if err != nil {
+			return err
 		}
 
 		org, err := s.cache.LoadOrganization(orgID)
@@ -144,7 +164,7 @@ func (s *mysqlStore) GetOrganization(id interface{}) (model.Organization, error)
 			return org
 		}
 
-		org, err = s.loadOrganization(s.db, orgID)
+		org, err = s.loadOrganization(orgID)
 		if err != nil {
 			return err
 		}
@@ -175,7 +195,7 @@ func (s *mysqlStore) CreateOrganization(name string, title string) (model.Organi
 			return err
 		}
 
-		org, err := s.loadOrganization(s.db, orgID)
+		org, err := s.loadOrganization(orgID)
 		if err != nil {
 			return err
 		}
@@ -274,9 +294,9 @@ func (s *mysqlStore) GetOrganizationList(options ...helper.OptionFN) ([]model.Or
 	return result, total, nil
 }
 
-func (s *mysqlStore) loadUser(db db.DB, id int64) (*User, error) {
+func (s *mysqlStore) loadUser(id int64) (*User, error) {
 	var user = NewUser(s, id)
-	err := LoadData(db, TbUsers, map[string]interface{}{
+	err := LoadData(s.db, TbUsers, map[string]interface{}{
 		"org_id":     &user.orgID,
 		"enable":     &user.enable,
 		"name":       &user.name,
@@ -298,20 +318,9 @@ func (s *mysqlStore) loadUser(db db.DB, id int64) (*User, error) {
 
 func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 	result := <-synchronized.Do(s.ctx, TbUsers, func() interface{} {
-		var userID int64
-		switch v := user.(type) {
-		case int64:
-			userID = v
-		case float64:
-			userID = int64(v)
-		case string:
-			id, err := getUserIDByName(s.db, v)
-			if err != nil {
-				return err
-			}
-			userID = id
-		default:
-			panic(errors.New("GetUser: unknown user"))
+		userID, err := getUserID(s.db, user)
+		if err != nil {
+			return err
 		}
 
 		if user, err := s.cache.LoadUser(userID); err != nil {
@@ -322,7 +331,7 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 			return user
 		}
 
-		user, err := s.loadUser(s.db, userID)
+		user, err := s.loadUser(userID)
 		if err != nil {
 			return err
 		}
@@ -341,7 +350,7 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 	return result.(model.User), nil
 }
 
-func (s *mysqlStore) CreateUser(org interface{}, name string, password []byte, role model.Role) (model.User, error) {
+func (s *mysqlStore) CreateUser(org interface{}, name string, password []byte, roles ...interface{}) (model.User, error) {
 	result := <-synchronized.Do(s.ctx, TbUsers, func() interface{} {
 		orgID, err := getOrganizationID(s.db, org)
 		if err != nil {
@@ -368,39 +377,16 @@ func (s *mysqlStore) CreateUser(org interface{}, name string, password []byte, r
 			return lang.InternalError(err)
 		}
 
-		user, err := s.loadUser(s.db, userID)
+		user, err := s.loadUser(userID)
 		if err != nil {
 			return err
 		}
 
-		//未指定角色则创建同名角色
-		if role == nil {
-			role, err = s.createRole(s.db, org, name)
+		if len(roles) > 0 {
+			err = user.SetRoles(roles...)
 			if err != nil {
 				return err
 			}
-			apiRes := []string{
-				resource.MyProfileDetail,
-				resource.MyProfileUpdate,
-				resource.MyPerm,
-				resource.MyPermMulti,
-				resource.UserLogList,
-			}
-			for _, name := range apiRes {
-				res, err := s.GetApiResource(name)
-				if err != nil {
-					return err
-				}
-				_, err = role.SetPolicy(res, resource.Invoke, resource.Allow)
-				if err != nil {
-					return err
-				}
-			}
-		}
-
-		err = user.SetRoles(role)
-		if err != nil {
-			return err
 		}
 
 		err = s.cache.Save(user)
@@ -416,34 +402,17 @@ func (s *mysqlStore) CreateUser(org interface{}, name string, password []byte, r
 	return result.(model.User), nil
 }
 
-func (s *mysqlStore) RemoveUser(userID int64) error {
+func (s *mysqlStore) RemoveUser(u interface{}) error {
+	userID, err := getUserID(s.db, u)
+	if err != nil {
+		return err
+	}
+
 	user, err := s.GetUser(userID)
 	if err != nil {
 		return err
 	}
 
-	roles, err := user.GetRoles()
-	if err != nil {
-		return err
-	}
-
-	//删除默认创建的同名角色
-	for _, role := range roles {
-		if role.Title() == user.Name() {
-			users, total, err := role.GetUserList(helper.GetTotal(true))
-			if err != nil {
-				return err
-			}
-			if total == 1 && users[0].Name() == user.Name() {
-				err = role.Destroy()
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	//清空其它角色关联
 	err = user.SetRoles()
 	if err != nil {
 		return err
@@ -553,8 +522,12 @@ func (s *mysqlStore) loadRole(id int64) (*Role, error) {
 	return role, nil
 }
 
-func (s *mysqlStore) GetRole(roleID int64) (model.Role, error) {
+func (s *mysqlStore) GetRole(role interface{}) (model.Role, error) {
 	result := <-synchronized.Do(s.ctx, TbRoles, func() interface{} {
+		roleID, err := getRoleID(s.db, role)
+		if err != nil {
+			return err
+		}
 		if role, err := s.cache.LoadRole(roleID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return lang.InternalError(err)
@@ -581,7 +554,7 @@ func (s *mysqlStore) GetRole(roleID int64) (model.Role, error) {
 	return result.(model.Role), nil
 }
 
-func (s *mysqlStore) createRole(db db.DB, org interface{}, title string) (model.Role, error) {
+func (s *mysqlStore) createRole(db db.DB, org interface{}, name, title string) (model.Role, error) {
 	result := <-synchronized.Do(s.ctx, TbRoles, func() interface{} {
 		orgID, err := getOrganizationID(db, org)
 		if err != nil {
@@ -590,6 +563,7 @@ func (s *mysqlStore) createRole(db db.DB, org interface{}, title string) (model.
 		roleID, err := CreateData(s.db, TbRoles, map[string]interface{}{
 			"org_id":     orgID,
 			"enable":     status.Enable,
+			"name":       name,
 			"title":      title,
 			"created_at": time.Now(),
 		})
@@ -615,11 +589,16 @@ func (s *mysqlStore) createRole(db db.DB, org interface{}, title string) (model.
 	return result.(model.Role), nil
 }
 
-func (s *mysqlStore) CreateRole(org interface{}, title string) (model.Role, error) {
-	return s.createRole(s.db, org, title)
+func (s *mysqlStore) CreateRole(org interface{}, name, title string) (model.Role, error) {
+	return s.createRole(s.db, org, name, title)
 }
 
-func (s *mysqlStore) RemoveRole(roleID int64) error {
+func (s *mysqlStore) RemoveRole(role interface{}) error {
+	roleID, err := getRoleID(s.db, role)
+	if err != nil {
+		return err
+	}
+
 	policies, _, err := s.GetPolicyList(nil, helper.Role(roleID))
 	if err != nil {
 		return err
@@ -1937,7 +1916,10 @@ func (s *mysqlStore) loadApiResource(resID int64) (model.ApiResource, error) {
 		"desc":  &apiRes.desc,
 	}, "id=?", resID)
 	if err != nil {
-		return nil, err
+		if err != sql.ErrNoRows {
+			return nil, lang.InternalError(err)
+		}
+		return nil, lang.Error(lang.ErrApiResourceNotFound)
 	}
 	return apiRes, nil
 }
@@ -2036,8 +2018,9 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 		_ = rows.Close()
 	}()
 
-	var result []model.ApiResource
+
 	var resID int64
+	var ids []int64
 
 	for rows.Next() {
 		err = rows.Scan(&resID)
@@ -2047,12 +2030,16 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 			}
 			return []model.ApiResource{}, total, nil
 		}
+		ids = append(ids, resID)
+	}
 
-		res, err := s.GetApiResource(resID)
+	_ = rows.Close()
+	var result []model.ApiResource
+	for _, id := range ids {
+		res, err := s.GetApiResource(id)
 		if err != nil {
 			return nil, 0, err
 		}
-
 		result = append(result, res)
 	}
 
@@ -2081,5 +2068,29 @@ func (s *mysqlStore) InitApiResource() error {
 	if result != nil {
 		return result.(error)
 	}
+	return nil
+}
+
+func (s *mysqlStore) InitDefaultRoles(org interface{}) error {
+	for pair, apiRes := range lang.DefaultRoles() {
+		println("pair:", pair[0], ":", pair[1])
+		role, err := s.createRole(s.db, org, pair[0], pair[1])
+		if err != nil {
+			return err
+		}
+		print("create policy")
+		for _, api := range apiRes {
+			println(api)
+			res, err := s.GetApiResource(api)
+			if err != nil {
+				return err
+			}
+			_, err = role.SetPolicy(res, resource.Invoke, resource.Allow, nil)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }

@@ -63,13 +63,19 @@ func Create(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
 			OrgID int64  `json:"org"`
+			Name  string `json:"name"`
 			Title string `json:"title"`
 		}
 
-		if err := ctx.ReadJSON(&form); err != nil || form.Title == "" {
+		if err := ctx.ReadJSON(&form); err != nil || form.Name == "" {
 			return lang.ErrInvalidRequestData
 		}
 
+		if exists, err := s.IsRoleExists(form.Name); err != nil {
+			return err
+		} else if exists {
+			return lang.ErrRoleExists
+		}
 		var org interface{}
 		if perm.IsDefaultAdminUser(ctx) {
 			if form.OrgID > 0 {
@@ -81,7 +87,7 @@ func Create(ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
 			org = perm.AdminUser(ctx).OrganizationID()
 		}
 
-		role, err := s.CreateRole(org, form.Title)
+		role, err := s.CreateRole(org, form.Name, form.Title)
 		if err != nil {
 			return err
 		}
@@ -131,21 +137,21 @@ func Update(roleID int64, ctx iris.Context, s store.Store) hero.Result {
 				}
 				if p.Invoke != nil {
 					effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
-					_, err = role.SetPolicy(res, resource.Invoke, effect)
+					_, err = role.SetPolicy(res, resource.Invoke, effect, make(map[model.Resource]struct{}))
 					if err != nil {
 						return err
 					}
 				}
 				if p.View != nil {
 					effect := util.If(*p.View, resource.Allow, resource.Deny).(resource.Effect)
-					_, err = role.SetPolicy(res, resource.View, effect)
+					_, err = role.SetPolicy(res, resource.View, effect, make(map[model.Resource]struct{}))
 					if err != nil {
 						return err
 					}
 				}
 				if p.Ctrl != nil {
 					effect := util.If(*p.Ctrl, resource.Allow, resource.Deny).(resource.Effect)
-					_, err = role.SetPolicy(res, resource.Ctrl, effect)
+					_, err = role.SetPolicy(res, resource.Ctrl, effect, make(map[model.Resource]struct{}))
 					if err != nil {
 						return err
 					}

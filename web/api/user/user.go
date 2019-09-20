@@ -79,21 +79,35 @@ func Create(ctx iris.Context, tx db.WithTransaction, validate *validator.Validat
 		return tx.TransactionDo(func(db db.DB) interface{} {
 			s := mysqlStore.Attach(db)
 
-			if _, err := s.GetUser(form.Username); err != lang.Error(lang.ErrUserNotFound) {
+			if exists, err := s.IsUserExists(form.Username); err != nil {
+				return err
+			} else if exists {
 				return lang.ErrUserExists
 			}
 
-			var role model.Role
+			var roles []interface{}
 			var err error
-			if form.RoleID != nil {
-				role, err = s.GetRole(*form.RoleID)
+
+			if cfg.IsRoleEnabled() {
+				if form.RoleID != nil {
+					role, err := s.GetRole(*form.RoleID)
+					if err != nil {
+						return err
+					}
+					roles = append(roles, role)
+				}
+
+				if len(roles) == 0 {
+					return lang.ErrRoleNotFound
+				}
+			} else {
+				roles = append(roles, lang.RoleGuestName)
+				//创建用户同名的role
+				role, err := s.CreateRole(cfg.DefaultOrganization(), form.Username, form.Username)
 				if err != nil {
 					return err
 				}
-			}
-
-			if cfg.IsRoleEnabled() && role == nil {
-				return lang.ErrRoleNotFound
+				roles = append(roles, role)
 			}
 
 			var org interface{}
@@ -107,7 +121,7 @@ func Create(ctx iris.Context, tx db.WithTransaction, validate *validator.Validat
 				org = perm.AdminUser(ctx).OrganizationID()
 			}
 
-			user, err := s.CreateUser(org, form.Username, []byte(form.Password), role)
+			user, err := s.CreateUser(org, form.Username, []byte(form.Password), roles...)
 			if err != nil {
 				return err
 			}
@@ -201,26 +215,42 @@ func Update(userID int64, ctx iris.Context, s store.Store, cfg config.Config) he
 	})
 }
 
-func Delete(userID int64, ctx iris.Context, s store.Store, cfg config.Config) hero.Result {
+func Delete(userID int64, ctx iris.Context, tx db.WithTransaction, cfg config.Config) hero.Result {
 	return response.Wrap(func() interface{} {
-		user, err := s.GetUser(userID)
-		if err != nil {
-			return err
-		}
+		return tx.TransactionDo(func(db db.DB) interface{} {
+			s := mysqlStore.Attach(db)
 
-		if user.Name() == cfg.DefaultUserName() {
-			return lang.ErrFailedRemoveDefaultUser
-		}
+			user, err := s.GetUser(userID)
+			if err != nil {
+				return err
+			}
 
-		if user.Name() == perm.AdminUser(ctx).Name() {
-			return lang.ErrFailedRemoveUserSelf
-		}
+			if user.Name() == cfg.DefaultUserName() {
+				return lang.ErrFailedRemoveDefaultUser
+			}
 
-		err = user.Destroy()
-		if err != nil {
-			return err
-		}
-		return lang.Ok
+			if user.Name() == perm.AdminUser(ctx).Name() {
+				return lang.ErrFailedRemoveUserSelf
+			}
+
+			if !cfg.IsRoleEnabled() {
+				role, err := s.GetRole(user.Name())
+				if err != nil {
+					return err
+				}
+				err = role.Destroy()
+				if err != nil {
+					return err
+				}
+			}
+
+			err = user.Destroy()
+			if err != nil {
+				return err
+			}
+
+			return lang.Ok
+		})
 	})
 }
 

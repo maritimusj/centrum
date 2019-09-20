@@ -7,19 +7,22 @@ import (
 )
 
 type Store interface {
+	IsOrganizationExists(org interface{}) (bool, error)
 	GetOrganization(org interface{}) (model.Organization, error)
 	CreateOrganization(name string, title string) (model.Organization, error)
 	RemoveOrganization(org interface{}) error
 	GetOrganizationList(options ...helper.OptionFN) ([]model.Organization, int64, error)
 
+	IsUserExists(user interface{}) (bool, error)
 	GetUser(user interface{}) (model.User, error)
-	CreateUser(org interface{}, name string, password []byte, role model.Role) (model.User, error)
-	RemoveUser(userID int64) error
+	CreateUser(org interface{}, name string, password []byte, roles... interface{}) (model.User, error)
+	RemoveUser(user interface{}) error
 	GetUserList(options ...helper.OptionFN) ([]model.User, int64, error)
 
-	GetRole(roleID int64) (model.Role, error)
-	CreateRole(org interface{}, title string) (model.Role, error)
-	RemoveRole(roleID int64) error
+	IsRoleExists(role interface{}) (bool, error)
+	GetRole(role interface{}) (model.Role, error)
+	CreateRole(org interface{}, name, title string) (model.Role, error)
+	RemoveRole(role interface{}) error
 	GetRoleList(options ...helper.OptionFN) ([]model.Role, int64, error)
 
 	GetPolicy(roleID int64) (model.Policy, error)
@@ -59,4 +62,6 @@ type Store interface {
 	GetApiResourceList(options ...helper.OptionFN) ([]model.ApiResource, int64, error)
 	GetApiResource(res interface{}) (model.ApiResource, error)
 	InitApiResource() error
+
+	InitDefaultRoles(org interface{}) error
 }

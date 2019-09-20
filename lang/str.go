@@ -23,6 +23,26 @@ const (
 	LogFatal
 	LogPanic
 
+	RoleSystemAdminTitle
+	RoleOrganizationAdminTitle
+	RoleGuestTitle
+
+	ResourceOrganizationCreateTitle
+	ResourceOrganizationListTitle
+	ResourceOrganizationDetailTitle
+	ResourceOrganizationUpdateTitle
+	ResourceOrganizationDeleteTitle
+	ResourceResourceListTitle
+	ResourceResourceDetailTitle
+
+	OrganizationCreateDesc
+	OrganizationListDesc
+	OrganizationDetailDesc
+	OrganizationUpdateDesc
+	OrganizationDeleteDesc
+	ResourceListDesc
+	ResourceDetailDesc
+
 	ResourceMyProfileDetailTitle
 	ResourceMyProfileDetailDesc
 	ResourceMyProfileUpdateTitle
@@ -119,6 +139,8 @@ const (
 	ResourceLogListDesc
 	ResourceLogDeleteTitle
 	ResourceLogDeleteDesc
+	ResourceLogLevelListTitle
+	ResourceLogLevelListDesc
 
 	DefaultUserPasswordResetOk
 	LogDeletedByUser
@@ -165,6 +187,7 @@ const (
 	ErrFailedRemoveUserSelf
 	ErrFailedDisableUserSelf
 	ErrRoleNotFound
+	ErrRoleExists
 	ErrPolicyNotFound
 	ErrGroupNotFound
 	ErrDeviceNotFound
@@ -192,8 +215,31 @@ func load() {
 	}
 }
 
+var (
+	RoleSystemAdminName       = "__sys__"
+	RoleOrganizationAdminName = "__admin__"
+	RoleGuestName             = "__guest__"
+)
+
+func DefaultRoles() map[[2]string][]string {
+	return map[[2]string][]string{
+		{RoleSystemAdminName, Str(RoleSystemAdminTitle)}:             resource.SystemAdmin,
+		{RoleOrganizationAdminName, Str(RoleOrganizationAdminTitle)}: resource.OrganizationAdmin,
+		{RoleGuestName, Str(RoleGuestTitle)}:                         resource.Guest,
+	}
+}
+
 func ApiResourcesMap() [][3]string {
 	return [][3]string{
+		{resource.OrganizationCreate, Str(ResourceOrganizationCreateTitle), Str(OrganizationCreateDesc)},
+		{resource.OrganizationList, Str(ResourceOrganizationListTitle), Str(OrganizationListDesc)},
+		{resource.OrganizationDetail, Str(ResourceOrganizationDetailTitle), Str(OrganizationDetailDesc)},
+		{resource.OrganizationUpdate, Str(ResourceOrganizationUpdateTitle), Str(OrganizationUpdateDesc)},
+		{resource.OrganizationDelete, Str(ResourceOrganizationDeleteTitle), Str(OrganizationDeleteDesc)},
+
+		{resource.ResourceList, Str(ResourceResourceListTitle), Str(ResourceListDesc)},
+		{resource.ResourceDetail, Str(ResourceResourceDetailTitle), Str(ResourceDetailDesc)},
+
 		{resource.MyProfileDetail, Str(ResourceMyProfileDetailTitle), Str(ResourceMyProfileDetailDesc)},
 		{resource.MyProfileUpdate, Str(ResourceMyProfileUpdateTitle), Str(ResourceMyProfileUpdateDesc)},
 		{resource.MyPerm, Str(ResourceMyPermTitle), Str(ResourceMyPermDesc)},
@@ -249,6 +295,7 @@ func ApiResourcesMap() [][3]string {
 
 		{resource.LogList, Str(ResourceLogListTitle), Str(ResourceLogListDesc)},
 		{resource.LogDelete, Str(ResourceLogDeleteTitle), Str(ResourceLogDeleteDesc)},
+		{resource.LogLevelList, Str(ResourceLogLevelListTitle), Str(ResourceLogLevelListDesc)},
 	}
 }
 

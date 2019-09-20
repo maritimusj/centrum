@@ -14,7 +14,9 @@ type Role struct {
 	id    int64
 	orgID int64
 
-	enable    int8
+	enable int8
+
+	name      string
 	title     string
 	createdAt time.Time
 
@@ -81,6 +83,10 @@ func (r *Role) Disable() {
 
 func (r *Role) IsEnabled() bool {
 	return r.enable == status.Enable
+}
+
+func (r *Role) Name() string {
+	return r.name
 }
 
 func (r *Role) Title() string {

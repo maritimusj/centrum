@@ -73,11 +73,11 @@ func (server *server) Start(cfg config.Config) error {
 
 			//组织
 			p.PartyFunc("/org", func(p router.Party) {
-				p.Get("/", hero.Handler(organization.List))
-				p.Post("/", hero.Handler(organization.Create))
-				p.Get("/{id:int64}", hero.Handler(organization.Detail))
-				p.Put("/{id:int64}", hero.Handler(organization.Update))
-				p.Delete("/{id:int64}", hero.Handler(organization.Delete))
+				p.Get("/", hero.Handler(organization.List)).Name = ResourceDef.OrganizationList
+				p.Post("/", hero.Handler(organization.Create)).Name = ResourceDef.OrganizationCreate
+				p.Get("/{id:int64}", hero.Handler(organization.Detail)).Name = ResourceDef.OrganizationDetail
+				p.Put("/{id:int64}", hero.Handler(organization.Update)).Name = ResourceDef.OrganizationUpdate
+				p.Delete("/{id:int64}", hero.Handler(organization.Delete)).Name = ResourceDef.OrganizationDelete
 			})
 
 			//角色

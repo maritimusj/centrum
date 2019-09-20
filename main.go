@@ -4,6 +4,7 @@ import (
 	"flag"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/maritimusj/centrum/app"
+	"github.com/maritimusj/centrum/db"
 	"github.com/maritimusj/centrum/helper"
 	log "github.com/sirupsen/logrus"
 
@@ -50,67 +51,90 @@ func main() {
 	}()
 
 	//数据库连接
-	db, err := mysqlDB.Open(app.Ctx, map[string]interface{}{
+	conn, err := mysqlDB.Open(app.Ctx, map[string]interface{}{
 		"connStr": cfg.DBConnStr(),
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	store := mysqlStore.Attach(db)
-	_, total, err := store.GetApiResourceList(helper.Limit(1))
-	if err != nil {
-		log.Fatal(err)
-	}
-	if total == 0 {
-		//初始化api资源
-		err = store.InitApiResource()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	result := conn.TransactionDo(func(db db.DB) interface{} {
+		store := mysqlStore.Attach(db)
 
-	//创建默认组织
-	defaultOrg := cfg.DefaultOrganization()
-	org, err := store.GetOrganization(defaultOrg)
-	if err != nil {
-		if err != lang.Error(lang.ErrOrganizationNotFound) {
-			log.Fatal(err)
-		}
-		_, err := store.CreateOrganization(defaultOrg, defaultOrg)
+		_, total, err := store.GetApiResourceList(helper.Limit(1))
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
-	} else {
-		org.Enable()
-		if err = org.Save(); err != nil {
-			log.Fatal(err)
+		if total == 0 {
+			//初始化api资源
+			err = store.InitApiResource()
+			if err != nil {
+				return err
+			}
 		}
-	}
 
-	//创建默认用户
-	defaultUserName := cfg.DefaultUserName()
-	user, err := store.GetUser(defaultUserName)
-	if err != nil {
-		if err != lang.Error(lang.ErrUserNotFound) {
-			log.Fatal(err)
-		}
-		_, err := store.CreateUser(defaultOrg, defaultUserName, []byte(defaultUserName), nil)
+		//创建默认组织
+		defaultOrg := cfg.DefaultOrganization()
+		org, err := store.GetOrganization(defaultOrg)
 		if err != nil {
-			log.Fatal(err)
+			if err != lang.Error(lang.ErrOrganizationNotFound) {
+				return err
+			}
+			_, err := store.CreateOrganization(defaultOrg, defaultOrg)
+			if err != nil {
+				return err
+			}
+		} else {
+			org.Enable()
+			if err = org.Save(); err != nil {
+				return err
+			}
 		}
-	} else if *resetDefaultUserPassword {
-		user.Enable()
-		user.ResetPassword(defaultUserName)
-		if err = user.Save(); err != nil {
-			log.Fatal(err)
+
+		//初始化系统角色
+		_, err = store.GetRole(lang.RoleSystemAdminName)
+		if err != nil {
+			if err != lang.Error(lang.ErrRoleNotFound) {
+				return err
+			}
+			err = store.InitDefaultRoles(defaultOrg)
+			if err != nil {
+				return err
+			}
 		}
-		log.Warnln(lang.Str(lang.DefaultUserPasswordResetOk))
+
+		//创建默认用户
+		defaultUserName := cfg.DefaultUserName()
+		user, err := store.GetUser(defaultUserName)
+		if err != nil {
+			if err != lang.Error(lang.ErrUserNotFound) {
+				return err
+			}
+			user, err = store.CreateUser(defaultOrg, defaultUserName, []byte(defaultUserName), lang.RoleSystemAdminName)
+			if err != nil {
+				return err
+			}
+		} else if *resetDefaultUserPassword {
+			user.Enable()
+			user.ResetPassword(defaultUserName)
+			if err = user.Save(); err != nil {
+				return err
+			}
+			if err = user.SetRoles(lang.RoleSystemAdminName); err != nil {
+				return err
+			}
+			log.Warnln(lang.Str(lang.DefaultUserPasswordResetOk))
+		}
+		return nil
+	})
+
+	if result != nil {
+		log.Fatal(result.(error))
 	}
 
 	//API服务
 	server := api.New()
-	server.Register(db, store, cfg, logDBStore)
+	server.Register(conn, mysqlStore.Attach(conn), cfg, logDBStore)
 
 	err = server.Start(cfg)
 	if err != nil {

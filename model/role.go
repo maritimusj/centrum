@@ -13,6 +13,8 @@ type Role interface {
 
 	OrganizationID() int64
 
+	Name() string
+
 	Title() string
 	SetTitle(title string)
 

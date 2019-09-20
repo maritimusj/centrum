@@ -1,7 +1,6 @@
 package mysqlStore
 
 import (
-	"errors"
 	"fmt"
 	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/helper"
@@ -10,7 +9,6 @@ import (
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/status"
 	"github.com/maritimusj/centrum/util"
-
 	log "github.com/sirupsen/logrus"
 
 	"time"
@@ -154,23 +152,14 @@ func (u *User) SetRoles(roles ...interface{}) error {
 
 	now := time.Now()
 
-	for _, role := range roles {
-		var roleID int64
-		switch v := role.(type) {
-		case int64:
-			roleID = v
-		case model.Role:
-			roleID = v.GetID()
-		default:
-			panic(errors.New("SetRoles: unknown roles"))
-		}
-		_, err := u.store.GetRole(roleID)
+	for _, r := range roles {
+		role, err := u.store.GetRole(r)
 		if err != nil {
 			return err
 		}
 		_, err = CreateData(u.store.db, TbUserRoles, map[string]interface{}{
 			"user_id":    u.id,
-			"role_id":    roleID,
+			"role_id":    role.GetID(),
 			"created_at": now,
 		})
 		if err != nil {

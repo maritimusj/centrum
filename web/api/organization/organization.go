@@ -69,7 +69,9 @@ func Create(ctx iris.Context, s store.Store, validate *validator.Validate) hero.
 			return lang.ErrInvalidRequestData
 		}
 
-		if _, err := s.GetOrganization(form.Name); err != lang.Error(lang.ErrOrganizationNotFound) {
+		if exists, err := s.IsOrganizationExists(form.Name); err != nil {
+			return err
+		} else if exists {
 			return lang.ErrOrganizationExists
 		}
 
