@@ -17,6 +17,8 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -76,6 +78,8 @@ func List(ctx iris.Context) hero.Result {
 
 func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -105,7 +109,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			org = admin.OrganizationID()
 		}
 
-		device, err := app.Store().CreateDevice(org, form.Title, map[string]interface{}{
+		device, err := s.CreateDevice(org, form.Title, map[string]interface{}{
 			"params": map[string]interface{}{
 				"connStr":  form.ConnStr,
 				"interval": form.Interval,
@@ -128,10 +132,12 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 
 func Detail(deviceID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		device, err := app.Store().GetDevice(deviceID)
+		device, err := s.GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
@@ -146,6 +152,8 @@ func Detail(deviceID int64, ctx iris.Context) hero.Result {
 
 func Update(deviceID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -244,6 +252,8 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 
 func MeasureList(deviceID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -300,6 +310,8 @@ func MeasureList(deviceID int64, ctx iris.Context) hero.Result {
 
 func CreateMeasure(deviceID int64, ctx iris.Context, validate *validator.Validate) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -337,10 +349,12 @@ func CreateMeasure(deviceID int64, ctx iris.Context, validate *validator.Validat
 
 func MeasureDetail(measureID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		measure, err := app.Store().GetMeasure(measureID)
+		measure, err := s.GetMeasure(measureID)
 		if err != nil {
 			return err
 		}
@@ -355,10 +369,12 @@ func MeasureDetail(measureID int64, ctx iris.Context) hero.Result {
 
 func DeleteMeasure(measureID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		measure, err := app.Store().GetMeasure(measureID)
+		measure, err := s.GetMeasure(measureID)
 		if err != nil {
 			return err
 		}
@@ -377,6 +393,8 @@ func DeleteMeasure(measureID int64, ctx iris.Context) hero.Result {
 
 func LogList(deviceID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -395,6 +413,8 @@ func LogList(deviceID int64, ctx iris.Context) hero.Result {
 
 func LogDelete(deviceID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {

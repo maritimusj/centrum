@@ -30,8 +30,11 @@ func RequireToken(p iris.Party) {
 }
 
 func CheckUser(ctx iris.Context) {
+	s := app.Store()
+	defer s.Close()
+
 	data := ctx.Values().Get("jwt").(*jwt.Token).Claims.(jwt.MapClaims)
-	user, err := app.Store().GetUser(data["sub"].(float64))
+	user, err := s.GetUser(data["sub"].(float64))
 	if err == nil && user.IsEnabled() {
 		ctx.Values().Set("__userID__", user.GetID())
 		ctx.Next()
@@ -51,7 +54,10 @@ func Login(ctx iris.Context) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		user, err := app.Store().GetUser(form.Username)
+		s := app.Store()
+		defer s.Close()
+
+		user, err := s.GetUser(form.Username)
 		if err != nil {
 			return err
 		}
@@ -117,6 +123,8 @@ func GetLogList(ctx iris.Context, src string) interface{} {
 
 func DeleteLog(ctx iris.Context, src string) interface{} {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	err := app.LogDBStore.Delete(src)

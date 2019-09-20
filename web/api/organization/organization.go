@@ -14,6 +14,8 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -33,7 +35,7 @@ func List(ctx iris.Context) hero.Result {
 			params = append(params, helper.Keyword(keyword))
 		}
 
-		organizations, total, err := app.Store().GetOrganizationList(params...)
+		organizations, total, err := s.GetOrganizationList(params...)
 		if err != nil {
 			return err
 		}
@@ -53,6 +55,8 @@ func List(ctx iris.Context) hero.Result {
 
 func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -96,6 +100,8 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 
 func Detail(orgID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -103,7 +109,7 @@ func Detail(orgID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		org, err := app.Store().GetOrganization(orgID)
+		org, err := s.GetOrganization(orgID)
 		if err != nil {
 			return err
 		}
@@ -114,6 +120,8 @@ func Detail(orgID int64, ctx iris.Context) hero.Result {
 
 func Update(orgID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -121,7 +129,7 @@ func Update(orgID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		org, err := app.Store().GetOrganization(orgID)
+		org, err := s.GetOrganization(orgID)
 		if err != nil {
 			return err
 		}
@@ -151,6 +159,8 @@ func Update(orgID int64, ctx iris.Context) hero.Result {
 
 func Delete(orgID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -158,7 +168,7 @@ func Delete(orgID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		org, err := app.Store().GetOrganization(orgID)
+		org, err := s.GetOrganization(orgID)
 		if err != nil {
 			return err
 		}

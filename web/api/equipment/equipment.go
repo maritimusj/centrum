@@ -15,6 +15,8 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -50,7 +52,7 @@ func List(ctx iris.Context) hero.Result {
 			params = append(params, helper.User(admin.GetID()))
 		}
 
-		equipments, total, err := app.Store().GetEquipmentList(params...)
+		equipments, total, err := s.GetEquipmentList(params...)
 		if err != nil {
 			return err
 		}
@@ -74,6 +76,8 @@ func List(ctx iris.Context) hero.Result {
 
 func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -102,7 +106,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			org = admin.OrganizationID()
 		}
 
-		equipment, err := app.Store().CreateEquipment(org, form.Title, form.Desc)
+		equipment, err := s.CreateEquipment(org, form.Title, form.Desc)
 		if err != nil {
 			return err
 		}
@@ -113,10 +117,12 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 
 func Detail(deviceID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		equipment, err := app.Store().GetEquipment(deviceID)
+		equipment, err := s.GetEquipment(deviceID)
 		if err != nil {
 			return err
 		}
@@ -131,10 +137,12 @@ func Detail(deviceID int64, ctx iris.Context) hero.Result {
 
 func Update(equipmentID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		equipment, err := app.Store().GetEquipment(equipmentID)
+		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
@@ -182,10 +190,12 @@ func Update(equipmentID int64, ctx iris.Context) hero.Result {
 
 func Delete(equipmentID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		equipment, err := app.Store().GetEquipment(equipmentID)
+		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
@@ -204,6 +214,8 @@ func Delete(equipmentID int64, ctx iris.Context) hero.Result {
 
 func StateList(equipmentID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -255,10 +267,12 @@ func StateList(equipmentID int64, ctx iris.Context) hero.Result {
 
 func CreateState(equipmentID int64, ctx iris.Context, validate *validator.Validate) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		equipment, err := app.Store().GetEquipment(equipmentID)
+		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
@@ -291,10 +305,12 @@ func CreateState(equipmentID int64, ctx iris.Context, validate *validator.Valida
 
 func StateDetail(stateID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		state, err := app.Store().GetState(stateID)
+		state, err := s.GetState(stateID)
 		if err != nil {
 			return err
 		}
@@ -309,10 +325,12 @@ func StateDetail(stateID int64, ctx iris.Context) hero.Result {
 
 func UpdateState(stateID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		state, err := app.Store().GetState(stateID)
+		state, err := s.GetState(stateID)
 		if err != nil {
 			return err
 		}
@@ -354,10 +372,12 @@ func UpdateState(stateID int64, ctx iris.Context) hero.Result {
 
 func DeleteState(stateID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		state, err := app.Store().GetState(stateID)
+		state, err := s.GetState(stateID)
 		if err != nil {
 			return err
 		}
@@ -376,10 +396,12 @@ func DeleteState(stateID int64, ctx iris.Context) hero.Result {
 
 func LogList(equipmentID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		equipment, err := app.Store().GetEquipment(equipmentID)
+		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
@@ -394,10 +416,12 @@ func LogList(equipmentID int64, ctx iris.Context) hero.Result {
 
 func LogDelete(equipmentID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		equipment, err := app.Store().GetEquipment(equipmentID)
+		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}

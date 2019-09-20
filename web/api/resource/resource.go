@@ -13,12 +13,16 @@ import (
 
 func GroupList() hero.Result {
 	return response.Wrap(func() interface{} {
-		return app.Store().GetResourceGroupList()
+		s := app.Store()
+		defer s.Close()
+
+		return s.GetResourceGroupList()
 	})
 }
 
 func List(classID int, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
 
 	return response.Wrap(func() interface{} {
 		page := ctx.URLParamInt64Default("page", 1)

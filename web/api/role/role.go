@@ -14,6 +14,8 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -44,7 +46,7 @@ func List(ctx iris.Context) hero.Result {
 			params = append(params, helper.User(userID))
 		}
 
-		roles, total, err := app.Store().GetRoleList(params...)
+		roles, total, err := s.GetRoleList(params...)
 		if err != nil {
 			return err
 		}
@@ -62,6 +64,8 @@ func List(ctx iris.Context) hero.Result {
 
 func Create(ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -101,7 +105,10 @@ func Create(ctx iris.Context) hero.Result {
 
 func Detail(roleID int64) hero.Result {
 	return response.Wrap(func() interface{} {
-		role, err := app.Store().GetRole(roleID)
+		s := app.Store()
+		defer s.Close()
+
+		role, err := s.GetRole(roleID)
 		if err != nil {
 			return err
 		}
@@ -111,6 +118,7 @@ func Detail(roleID int64) hero.Result {
 
 func Update(roleID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
 
 	return response.Wrap(func() interface{} {
 		role, err := s.GetRole(roleID)
@@ -179,6 +187,7 @@ func Update(roleID int64, ctx iris.Context) hero.Result {
 
 func Delete(roleID int64) hero.Result {
 	s := app.Store()
+	defer s.Close()
 
 	return response.Wrap(func() interface{} {
 		role, err := s.GetRole(roleID)

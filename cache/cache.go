@@ -5,6 +5,7 @@ import (
 )
 
 type Cache interface {
+	Flush()
 	Save(obj interface{}) error
 	Remove(obj interface{})
 

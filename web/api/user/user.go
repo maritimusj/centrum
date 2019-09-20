@@ -19,6 +19,8 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -339,7 +341,10 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 
 func LogList(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		user, err := app.Store().GetUser(userID)
+		s := app.Store()
+		defer s.Close()
+
+		user, err := s.GetUser(userID)
 		if err != nil {
 			return err
 		}
@@ -350,10 +355,12 @@ func LogList(userID int64, ctx iris.Context) hero.Result {
 
 func LogDelete(userID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		user, err := app.Store().GetUser(userID)
+		user, err := s.GetUser(userID)
 		if err != nil {
 			return err
 		}

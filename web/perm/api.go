@@ -12,6 +12,8 @@ import (
 
 func CheckApiPerm(ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	checkFN := func() interface{} {

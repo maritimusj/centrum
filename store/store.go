@@ -8,6 +8,8 @@ import (
 )
 
 type Store interface {
+	Close()
+
 	IsOrganizationExists(org interface{}) (bool, error)
 	GetOrganization(org interface{}) (model.Organization, error)
 	CreateOrganization(name string, title string) (model.Organization, error)

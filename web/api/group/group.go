@@ -14,6 +14,8 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -76,6 +78,8 @@ func List(ctx iris.Context) hero.Result {
 
 func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -123,10 +127,12 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 
 func Detail(groupID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		group, err := app.Store().GetGroup(groupID)
+		group, err := s.GetGroup(groupID)
 		if err != nil {
 			return err
 		}
@@ -141,6 +147,8 @@ func Detail(groupID int64, ctx iris.Context) hero.Result {
 
 func Update(groupID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -235,10 +243,12 @@ func Update(groupID int64, ctx iris.Context) hero.Result {
 
 func Delete(groupID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
+	defer s.Close()
+
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-		group, err := app.Store().GetGroup(groupID)
+		group, err := s.GetGroup(groupID)
 		if err != nil {
 			return err
 		}

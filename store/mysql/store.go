@@ -65,11 +65,10 @@ func New() store.Store {
 }
 
 func Attach(ctx context.Context, db db.DB) store.Store {
-	return &mysqlStore{
-		db:    db,
-		cache: memCache.New(),
-		ctx:   ctx,
-	}
+	s := storePool.Get().(*mysqlStore)
+	s.ctx = ctx
+	s.db = db
+	return s
 }
 
 func parseOption(options ...helper.OptionFN) *helper.Option {
@@ -80,6 +79,11 @@ func parseOption(options ...helper.OptionFN) *helper.Option {
 		}
 	}
 	return &option
+}
+
+func (s *mysqlStore) Close() {
+	s.cache.Flush()
+	storePool.Put(s)
 }
 
 func (s *mysqlStore) IsOrganizationExists(org interface{}) (bool, error) {

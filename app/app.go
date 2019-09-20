@@ -43,6 +43,8 @@ func Store() store.Store {
 func TransactionDo(fn func(store.Store) interface{}) interface{} {
 	return DB.TransactionDo(func(db db.DB) interface{} {
 		s := mysqlStore.Attach(Ctx, db)
+		defer s.Close()
+
 		return fn(s)
 	})
 }

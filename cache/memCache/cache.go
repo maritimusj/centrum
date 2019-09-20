@@ -74,6 +74,10 @@ func getKey(obj interface{}) string {
 	return pref + strconv.FormatInt(id, 10)
 }
 
+func (c *cache) Flush() {
+	c.client.Flush()
+}
+
 func (c *cache) Save(obj interface{}) error {
 	c.client.SetDefault(getKey(obj), obj)
 	return nil
