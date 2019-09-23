@@ -270,13 +270,15 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		return app.TransactionDo(func(s store.Store) interface{} {
+			admin := s.MustGetUserFromContext(ctx)
+
 			user, err := s.GetUser(userID)
 			if err != nil {
 				return err
 			}
 
 			if app.IsDefaultAdminUser(user) {
-				return lang.ErrFailedEditDefaultUserPerm
+				return lang.ErrFailedEditDefaultUser
 			}
 
 			roles, err := user.GetRoles()
@@ -300,7 +302,7 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 			}
 
 			newRoles := hashset.New()
-			for _, role := range  roles {
+			for _, role := range roles {
 				newRoles.Add(role.GetID())
 			}
 			//先处理角色设定
@@ -310,10 +312,12 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 					if err != nil {
 						return err
 					}
-					if *p.Enable {
-						newRoles.Add(role.GetID())
-					} else {
-						newRoles.Remove(role.GetID())
+					if app.IsDefaultAdminUser(admin) || role.Name() != lang.RoleSystemAdminName {
+						if *p.Enable {
+							newRoles.Add(role.GetID())
+						} else {
+							newRoles.Remove(role.GetID())
+						}
 					}
 				}
 			}
@@ -360,7 +364,7 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 			}
 
 			for _, role := range roles {
-				if role.Title() == user.Name() {
+				if role.Name() == user.Name() {
 					return update(role)
 				}
 			}

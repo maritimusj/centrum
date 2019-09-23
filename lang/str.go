@@ -211,7 +211,7 @@ const (
 	ErrUserExists
 	ErrFailedDisableDefaultUser
 	ErrFailedRemoveDefaultUser
-	ErrFailedEditDefaultUserPerm
+	ErrFailedEditDefaultUser
 	ErrFailedRemoveUserSelf
 	ErrFailedDisableUserSelf
 	ErrRoleNotFound

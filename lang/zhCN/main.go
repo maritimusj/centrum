@@ -215,7 +215,7 @@ var (
 		lang.ErrUserExists:                      "用户已经存在！",
 		lang.ErrFailedDisableDefaultUser:        "不能禁用系统默认用户！",
 		lang.ErrFailedRemoveDefaultUser:         "不能删除系统默认用户！",
-		lang.ErrFailedEditDefaultUserPerm:       "不能编辑默认用户角色！",
+		lang.ErrFailedEditDefaultUser:           "不能编辑系统默认管理员！",
 		lang.ErrFailedRemoveUserSelf:            "不能删除当前登录的用户账号！",
 		lang.ErrFailedDisableUserSelf:           "不能禁用当前登录的用户账号！",
 		lang.ErrRoleNotFound:                    "用户角色不存在！",

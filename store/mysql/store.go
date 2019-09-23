@@ -152,11 +152,10 @@ func (s *mysqlStore) IsRoleExists(role interface{}) (bool, error) {
 
 func (s *mysqlStore) GetResourceGroupList() []interface{} {
 	return []interface{}{
-		//当前使用菜单角色定义用户权限，所以不需要api resource列表
-		//map[string]interface{}{
-		//	"id":    resource.Api,
-		//	"title": lang.ResourceClassTitle(resource.Api),
-		//},
+		map[string]interface{}{
+			"id":    resource.Api,
+			"title": lang.ResourceClassTitle(resource.Api),
+		},
 		map[string]interface{}{
 			"id":    resource.Group,
 			"title": lang.ResourceClassTitle(resource.Group),
@@ -1992,7 +1991,7 @@ func (s *mysqlStore) GetResource(class resource.Class, resourceID int64) (model.
 		}
 		return res, nil
 	default:
-		panic(errors.New("GetResource: unknown resource class"))
+		return nil, lang.Error(lang.ErrInvalidResourceClassID)
 	}
 }
 

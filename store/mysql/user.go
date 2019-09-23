@@ -1,6 +1,7 @@
 package mysqlStore
 
 import (
+	"errors"
 	"fmt"
 	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/helper"
@@ -174,6 +175,36 @@ func (u *User) GetRoles() ([]model.Role, error) {
 		return nil, err
 	}
 	return roles, nil
+}
+
+func (u *User) Is(role interface{}) (bool, error) {
+	roles, err := u.GetRoles()
+	if err != nil {
+		return false, err
+	}
+	var fn func (role model.Role) bool
+	switch v := role.(type) {
+	case int64:
+		fn = func(role model.Role) bool {
+			return role.GetID() == v
+		}
+	case string:
+		fn = func(role model.Role) bool {
+			return role.Name() == v
+		}
+	case model.Role:
+		fn = func(role model.Role) bool {
+			return role.GetID() == v.GetID()
+		}
+	default:
+		panic(errors.New("user.Is() unknown role"))
+	}
+	for _, role :=range roles {
+		if fn(role) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (u *User) Destroy() error {

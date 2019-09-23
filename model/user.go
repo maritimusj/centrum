@@ -26,6 +26,7 @@ type User interface {
 
 	SetRoles(roles ...interface{}) error
 	GetRoles() ([]Role, error)
+	Is(role interface{}) (bool, error)
 
 	IsAllow(res Resource, action resource.Action) (bool, error)
 }

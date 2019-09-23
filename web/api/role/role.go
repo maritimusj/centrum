@@ -1,6 +1,7 @@
 package role
 
 import (
+	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/app"
@@ -39,18 +40,35 @@ func List(ctx iris.Context) hero.Result {
 			params = append(params, helper.Keyword(keyword))
 		}
 
-		userID := ctx.URLParamInt64Default("user", -1)
-		if userID != -1 {
-			params = append(params, helper.User(userID))
+		userID := ctx.URLParamInt64Default("user", 0)
+		matchRoles := hashset.New()
+		if userID > 0 {
+			user, err := s.GetUser(userID)
+			if err != nil {
+				return err
+			}
+			roles, err := user.GetRoles()
+			if err != nil {
+				return err
+			}
+			for _, p := range roles {
+				matchRoles.Add(p.GetID())
+			}
 		}
-
 		roles, total, err := s.GetRoleList(params...)
 		if err != nil {
 			return err
 		}
 		var result = make([]model.Map, 0, len(roles))
 		for _, role := range roles {
-			result = append(result, role.Brief())
+			//普通用户无法查看__sys__角色
+			if app.IsDefaultAdminUser(admin) || role.Name() != lang.RoleSystemAdminName {
+				brief := role.Brief()
+				if userID > 0 {
+					brief["matched"] = matchRoles.Contains(role.GetID())
+				}
+				result = append(result, brief)
+			}
 		}
 
 		return iris.Map{
@@ -100,23 +118,30 @@ func Create(ctx iris.Context) hero.Result {
 	})
 }
 
-func Detail(roleID int64) hero.Result {
+func Detail(roleID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		role, err := app.Store().GetRole(roleID)
 		if err != nil {
 			return err
 		}
-		return role.Detail()
+		admin := app.Store().MustGetUserFromContext(ctx)
+		if app.IsDefaultAdminUser(admin) || role.Name() != lang.RoleSystemAdminName {
+			return role.Detail()
+		}
+		return lang.ErrNoPermission
 	})
 }
 
 func Update(roleID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-
 	return response.Wrap(func() interface{} {
 		role, err := s.GetRole(roleID)
 		if err != nil {
 			return err
+		}
+
+		if role.Name() == lang.RoleSystemAdminName {
+			return lang.ErrFailedEditDefaultUser
 		}
 
 		type P struct {
