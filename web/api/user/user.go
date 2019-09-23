@@ -19,8 +19,6 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -42,7 +40,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
@@ -93,7 +91,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			var roles []interface{}
 			var err error
 
-			if app.Cfg.IsRoleEnabled() {
+			if app.Config.IsRoleEnabled() {
 				if form.RoleID != nil {
 					role, err := s.GetRole(*form.RoleID)
 					if err != nil {
@@ -108,7 +106,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			} else {
 				roles = append(roles, lang.RoleGuestName)
 				//创建用户同名的role
-				role, err := s.CreateRole(app.Cfg.DefaultOrganization(), form.Username, form.Username)
+				role, err := s.CreateRole(app.Config.DefaultOrganization(), form.Username, form.Username)
 				if err != nil {
 					return err
 				}
@@ -120,7 +118,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 				if form.OrgID > 0 {
 					org = form.OrgID
 				} else {
-					org = app.Cfg.DefaultOrganization()
+					org = app.Config.DefaultOrganization()
 				}
 			} else {
 				org = admin.OrganizationID()
@@ -176,7 +174,7 @@ func Update(userID int64, ctx iris.Context) hero.Result {
 				return lang.ErrInvalidRequestData
 			}
 
-			if app.Cfg.IsRoleEnabled() && form.Roles != nil {
+			if app.Config.IsRoleEnabled() && form.Roles != nil {
 				roles := make([]interface{}, 0, len(form.Roles))
 				for _, role := range form.Roles {
 					roles = append(roles, role)
@@ -244,7 +242,7 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 				return lang.ErrFailedRemoveUserSelf
 			}
 
-			if !app.Cfg.IsRoleEnabled() {
+			if !app.Config.IsRoleEnabled() {
 				role, err := s.GetRole(user.Name())
 				if err != nil {
 					return err
@@ -341,10 +339,7 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 
 func LogList(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		s := app.Store()
-		defer s.Close()
-
-		user, err := s.GetUser(userID)
+		user, err := app.Store().GetUser(userID)
 		if err != nil {
 			return err
 		}
@@ -354,17 +349,13 @@ func LogList(userID int64, ctx iris.Context) hero.Result {
 }
 
 func LogDelete(userID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	defer s.Close()
-
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
-		user, err := s.GetUser(userID)
+		user, err := app.Store().GetUser(userID)
 		if err != nil {
 			return err
 		}
 
+		admin := app.Store().MustGetUserFromContext(ctx)
 		if !app.IsDefaultAdminUser(admin) {
 			return lang.ErrNoPermission
 		}

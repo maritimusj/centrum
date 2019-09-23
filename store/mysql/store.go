@@ -41,21 +41,10 @@ const (
 )
 
 type mysqlStore struct {
-	db    db.DB
-	cache cache.Cache
-	ctx   context.Context
-}
-
-func (s *mysqlStore) MustGetUserFromContext(ctx iris.Context) model.User {
-	userID := ctx.Values().GetInt64Default("__userID__", 0)
-	if userID > 0 {
-		user, err := s.GetUser(userID)
-		if err != nil {
-			panic(err)
-		}
-		return user
-	}
-	panic(lang.Error(lang.ErrInvalidUser))
+	db       db.DB
+	cache    cache.Cache
+	ctx      context.Context
+	cleaners []func(string, interface{})
 }
 
 func New() store.Store {
@@ -64,10 +53,11 @@ func New() store.Store {
 	}
 }
 
-func Attach(ctx context.Context, db db.DB) store.Store {
+func Attach(ctx context.Context, db db.DB, cleaners ...func(key string, obj interface{})) store.Store {
 	s := storePool.Get().(*mysqlStore)
 	s.ctx = ctx
 	s.db = db
+	s.cleaners = append(s.cleaners, cleaners...)
 	return s
 }
 
@@ -81,9 +71,53 @@ func parseOption(options ...helper.OptionFN) *helper.Option {
 	return &option
 }
 
+func (s *mysqlStore) EraseAllData() error {
+	var statements = []string{
+		"TRUNCATE TABLE " + TbOrganization,
+		"TRUNCATE TABLE " + TbUsers,
+		"TRUNCATE TABLE " + TbRoles,
+		"TRUNCATE TABLE " + TbUserRoles,
+		"TRUNCATE TABLE " + TbPolicies,
+		"TRUNCATE TABLE " + TbGroups,
+		"TRUNCATE TABLE " + TbDevices,
+		"TRUNCATE TABLE " + TbMeasures,
+		"TRUNCATE TABLE " + TbDeviceGroups,
+		"TRUNCATE TABLE " + TbEquipments,
+		"TRUNCATE TABLE " + TbStates,
+		"TRUNCATE TABLE " + TbEquipmentGroups,
+		"TRUNCATE TABLE " + TbApiResources,
+	}
+	for _, st := range statements {
+		_, err := s.db.Exec(st)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *mysqlStore) Close() {
+	for _, fn := range s.cleaners {
+		s.cache.Foreach(fn)
+	}
 	s.cache.Flush()
 	storePool.Put(s)
+}
+
+func (s *mysqlStore) Cache() cache.Cache {
+	return s.cache
+}
+
+func (s *mysqlStore) MustGetUserFromContext(ctx iris.Context) model.User {
+	userID := ctx.Values().GetInt64Default("__userID__", 0)
+	if userID > 0 {
+		user, err := s.GetUser(userID)
+		if err != nil {
+			panic(err)
+		}
+		return user
+	}
+	panic(lang.Error(lang.ErrInvalidUser))
 }
 
 func (s *mysqlStore) IsOrganizationExists(org interface{}) (bool, error) {

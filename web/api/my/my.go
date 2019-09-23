@@ -13,8 +13,6 @@ import (
 
 func Detail(ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	my := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -24,8 +22,6 @@ func Detail(ctx iris.Context) hero.Result {
 
 func Update(ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	my := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -70,8 +66,6 @@ func Update(ctx iris.Context) hero.Result {
 
 func Perm(class string, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	my := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -117,8 +111,6 @@ func Perm(class string, ctx iris.Context) hero.Result {
 
 func MultiPerm(class string, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	my := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {

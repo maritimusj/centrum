@@ -14,8 +14,6 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -33,7 +31,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
@@ -64,8 +62,6 @@ func List(ctx iris.Context) hero.Result {
 
 func Create(ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -89,7 +85,7 @@ func Create(ctx iris.Context) hero.Result {
 			if form.OrgID > 0 {
 				org = form.OrgID
 			} else {
-				org = app.Cfg.DefaultOrganization()
+				org = app.Config.DefaultOrganization()
 			}
 		} else {
 			org = admin.OrganizationID()
@@ -105,10 +101,7 @@ func Create(ctx iris.Context) hero.Result {
 
 func Detail(roleID int64) hero.Result {
 	return response.Wrap(func() interface{} {
-		s := app.Store()
-		defer s.Close()
-
-		role, err := s.GetRole(roleID)
+		role, err := app.Store().GetRole(roleID)
 		if err != nil {
 			return err
 		}
@@ -118,7 +111,6 @@ func Detail(roleID int64) hero.Result {
 
 func Update(roleID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
 
 	return response.Wrap(func() interface{} {
 		role, err := s.GetRole(roleID)
@@ -187,7 +179,6 @@ func Update(roleID int64, ctx iris.Context) hero.Result {
 
 func Delete(roleID int64) hero.Result {
 	s := app.Store()
-	defer s.Close()
 
 	return response.Wrap(func() interface{} {
 		role, err := s.GetRole(roleID)

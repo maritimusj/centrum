@@ -2,6 +2,7 @@ package store
 
 import (
 	"github.com/kataras/iris"
+	"github.com/maritimusj/centrum/cache"
 	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/model"
 	"github.com/maritimusj/centrum/resource"
@@ -9,6 +10,8 @@ import (
 
 type Store interface {
 	Close()
+	Cache() cache.Cache
+	EraseAllData() error
 
 	IsOrganizationExists(org interface{}) (bool, error)
 	GetOrganization(org interface{}) (model.Organization, error)

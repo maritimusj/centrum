@@ -17,7 +17,7 @@ import (
 func RequireToken(p iris.Party) {
 	jwtHandler := jwtMiddleware.New(jwtMiddleware.Config{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
-			return app.Cfg.JwtTokenKey(), nil
+			return app.Config.JwtTokenKey(), nil
 		},
 		Extractor: func(ctx iris.Context) (string, error) {
 			return ctx.GetHeader("token"), nil
@@ -30,11 +30,8 @@ func RequireToken(p iris.Party) {
 }
 
 func CheckUser(ctx iris.Context) {
-	s := app.Store()
-	defer s.Close()
-
 	data := ctx.Values().Get("jwt").(*jwt.Token).Claims.(jwt.MapClaims)
-	user, err := s.GetUser(data["sub"].(float64))
+	user, err := app.Store().GetUser(data["sub"].(float64))
 	if err == nil && user.IsEnabled() {
 		ctx.Values().Set("__userID__", user.GetID())
 		ctx.Next()
@@ -54,10 +51,7 @@ func Login(ctx iris.Context) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		s := app.Store()
-		defer s.Close()
-
-		user, err := s.GetUser(form.Username)
+		user, err := app.Store().GetUser(form.Username)
 		if err != nil {
 			return err
 		}
@@ -71,10 +65,10 @@ func Login(ctx iris.Context) hero.Result {
 		claims := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
 			"sub": user.GetID(),
 			"iat": time.Now().Unix(),
-			"exp": time.Now().Add(app.Cfg.MaxTokenExpiration()).Unix(),
+			"exp": time.Now().Add(app.Config.MaxTokenExpiration()).Unix(),
 		})
 
-		token, err := claims.SignedString(app.Cfg.JwtTokenKey())
+		token, err := claims.SignedString(app.Config.JwtTokenKey())
 		if err != nil {
 			return lang.InternalError(err)
 		}
@@ -88,7 +82,7 @@ func GetLogList(ctx iris.Context, src string) interface{} {
 	level := ctx.URLParam("level")
 	start := ctx.URLParamInt64Default("start", 0)
 	page := ctx.URLParamInt64Default("page", 1)
-	pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
+	pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 
 	x := uint64(start)
 	logs, total, err := app.LogDBStore.Get(src, level, &x, uint64((page-1)*pageSize), uint64(pageSize))
@@ -122,10 +116,7 @@ func GetLogList(ctx iris.Context, src string) interface{} {
 }
 
 func DeleteLog(ctx iris.Context, src string) interface{} {
-	s := app.Store()
-	defer s.Close()
-
-	admin := s.MustGetUserFromContext(ctx)
+	admin := app.Store().MustGetUserFromContext(ctx)
 
 	err := app.LogDBStore.Delete(src)
 	if err != nil {

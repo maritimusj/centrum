@@ -6,6 +6,7 @@ import (
 
 type Cache interface {
 	Flush()
+	Foreach(func(key string, obj interface{}))
 	Save(obj interface{}) error
 	Remove(obj interface{})
 

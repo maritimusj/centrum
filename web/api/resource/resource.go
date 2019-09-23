@@ -13,20 +13,16 @@ import (
 
 func GroupList() hero.Result {
 	return response.Wrap(func() interface{} {
-		s := app.Store()
-		defer s.Close()
-
-		return s.GetResourceGroupList()
+		return app.Store().GetResourceGroupList()
 	})
 }
 
 func List(classID int, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
 
 	return response.Wrap(func() interface{} {
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 		keyword := ctx.URLParam("keyword")
 		roleID := ctx.URLParamInt64Default("role", 0)
 		userID := ctx.URLParamInt64Default("user", 0)
@@ -109,18 +105,18 @@ func List(classID int, ctx iris.Context) hero.Result {
 					if v, ok := policies[resource.Invoke]; ok {
 						perm["invoke"] = v.Effect() == resource.Allow
 					} else {
-						perm["invoke"] = app.Cfg.DefaultEffect() == resource.Allow
+						perm["invoke"] = app.Config.DefaultEffect() == resource.Allow
 					}
 				} else {
 					if v, ok := policies[resource.View]; ok {
 						perm["view"] = v.Effect() == resource.Allow
 					} else {
-						perm["view"] = app.Cfg.DefaultEffect()
+						perm["view"] = app.Config.DefaultEffect()
 					}
 					if v, ok := policies[resource.Ctrl]; ok {
 						perm["ctrl"] = v.Effect() == resource.Allow
 					} else {
-						perm["ctrl"] = app.Cfg.DefaultEffect() == resource.Allow
+						perm["ctrl"] = app.Config.DefaultEffect() == resource.Allow
 					}
 				}
 				entry["perm"] = perm
@@ -131,7 +127,7 @@ func List(classID int, ctx iris.Context) hero.Result {
 					if err != nil {
 						switch err {
 						case lang.Error(lang.ErrPolicyNotFound):
-							perm["invoke"] = app.Cfg.DefaultEffect() == resource.Allow
+							perm["invoke"] = app.Config.DefaultEffect() == resource.Allow
 						default:
 							perm["invoke"] = false
 						}
@@ -143,7 +139,7 @@ func List(classID int, ctx iris.Context) hero.Result {
 					if err != nil {
 						switch err {
 						case lang.Error(lang.ErrPolicyNotFound):
-							perm["view"] = app.Cfg.DefaultEffect() == resource.Allow
+							perm["view"] = app.Config.DefaultEffect() == resource.Allow
 						default:
 							perm["view"] = false
 						}
@@ -154,7 +150,7 @@ func List(classID int, ctx iris.Context) hero.Result {
 					if err != nil {
 						switch err {
 						case lang.Error(lang.ErrPolicyNotFound):
-							perm["ctrl"] = app.Cfg.DefaultEffect() == resource.Allow
+							perm["ctrl"] = app.Config.DefaultEffect() == resource.Allow
 						default:
 							perm["ctrl"] = false
 						}

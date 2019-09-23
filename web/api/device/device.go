@@ -17,13 +17,11 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
 		var params []helper.OptionFN
 		var orgID int64
+
+		admin := s.MustGetUserFromContext(ctx)
 		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)
@@ -36,7 +34,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
@@ -51,7 +49,7 @@ func List(ctx iris.Context) hero.Result {
 
 		if !app.IsDefaultAdminUser(admin) {
 			params = append(params, helper.User(admin.GetID()))
-			params = append(params, helper.DefaultEffect(app.Cfg.DefaultEffect()))
+			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
 		}
 
 		devices, total, err := s.GetDeviceList(params...)
@@ -78,8 +76,6 @@ func List(ctx iris.Context) hero.Result {
 
 func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -103,7 +99,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			if form.OrgID > 0 {
 				org = form.OrgID
 			} else {
-				org = app.Cfg.DefaultOrganization()
+				org = app.Config.DefaultOrganization()
 			}
 		} else {
 			org = admin.OrganizationID()
@@ -132,8 +128,6 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 
 func Detail(deviceID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -152,8 +146,6 @@ func Detail(deviceID int64, ctx iris.Context) hero.Result {
 
 func Update(deviceID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -252,8 +244,6 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 
 func MeasureList(deviceID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -267,7 +257,7 @@ func MeasureList(deviceID int64, ctx iris.Context) hero.Result {
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 		kind := ctx.URLParamIntDefault("kind", int(resource.AllKind))
 
 		var params = []helper.OptionFN{
@@ -283,7 +273,7 @@ func MeasureList(deviceID int64, ctx iris.Context) hero.Result {
 
 		if !app.IsDefaultAdminUser(admin) {
 			params = append(params, helper.User(admin.GetID()))
-			params = append(params, helper.DefaultEffect(app.Cfg.DefaultEffect()))
+			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
 		}
 
 		measures, total, err := s.GetMeasureList(params...)
@@ -310,8 +300,6 @@ func MeasureList(deviceID int64, ctx iris.Context) hero.Result {
 
 func CreateMeasure(deviceID int64, ctx iris.Context, validate *validator.Validate) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -349,8 +337,6 @@ func CreateMeasure(deviceID int64, ctx iris.Context, validate *validator.Validat
 
 func MeasureDetail(measureID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -369,8 +355,6 @@ func MeasureDetail(measureID int64, ctx iris.Context) hero.Result {
 
 func DeleteMeasure(measureID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -393,8 +377,6 @@ func DeleteMeasure(measureID int64, ctx iris.Context) hero.Result {
 
 func LogList(deviceID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -413,8 +395,6 @@ func LogList(deviceID int64, ctx iris.Context) hero.Result {
 
 func LogDelete(deviceID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {

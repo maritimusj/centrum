@@ -14,8 +14,6 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -33,7 +31,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
@@ -52,7 +50,7 @@ func List(ctx iris.Context) hero.Result {
 
 		if !app.IsDefaultAdminUser(admin) {
 			params = append(params, helper.User(admin.GetID()))
-			params = append(params, helper.DefaultEffect(app.Cfg.DefaultEffect()))
+			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
 		}
 
 		groups, total, err := s.GetGroupList(params...)
@@ -78,8 +76,6 @@ func List(ctx iris.Context) hero.Result {
 
 func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -110,7 +106,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			if form.OrgID > 0 {
 				org = form.OrgID
 			} else {
-				org = app.Cfg.DefaultOrganization()
+				org = app.Config.DefaultOrganization()
 			}
 		} else {
 			org = admin.OrganizationID()
@@ -127,8 +123,6 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 
 func Detail(groupID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -147,8 +141,6 @@ func Detail(groupID int64, ctx iris.Context) hero.Result {
 
 func Update(groupID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -243,8 +235,6 @@ func Update(groupID int64, ctx iris.Context) hero.Result {
 
 func Delete(groupID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {

@@ -36,46 +36,47 @@ func New() *cache {
 
 func getKey(obj interface{}) string {
 	var pref string
-	var id int64
 	switch v := obj.(type) {
+	case string:
+		return v
 	case model.Organization:
 		pref = PrefixOrg
-		id = v.GetID()
 	case model.User:
 		pref = PrefixUser
-		id = v.GetID()
 	case model.Role:
 		pref = PrefixRole
-		id = v.GetID()
 	case model.Policy:
 		pref = prefixPolicy
-		id = v.GetID()
 	case model.Group:
 		pref = prefixGroup
-		id = v.GetID()
 	case model.Device:
 		pref = prefixDevice
-		id = v.GetID()
 	case model.Measure:
 		pref = prefixMeasure
-		id = v.GetID()
 	case model.Equipment:
 		pref = prefixEquipment
-		id = v.GetID()
 	case model.State:
 		pref = prefixState
-		id = v.GetID()
 	case model.ApiResource:
 		pref = prefixApiResource
-		id = v.GetID()
-	default:
-		panic(errors.New("cache save: unknown obj"))
 	}
-	return pref + strconv.FormatInt(id, 10)
+	type getID interface {
+		GetID() int64
+	}
+	if v, ok := obj.(getID); ok {
+		return pref + strconv.FormatInt(v.GetID(), 10)
+	}
+	panic(errors.New("cache save: unknown obj"))
 }
 
 func (c *cache) Flush() {
 	c.client.Flush()
+}
+
+func (c *cache) Foreach(fn func(key string, obj interface{})) {
+	for k, v := range c.client.Items() {
+		fn(k, v)
+	}
 }
 
 func (c *cache) Save(obj interface{}) error {

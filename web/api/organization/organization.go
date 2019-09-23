@@ -14,8 +14,6 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -24,7 +22,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Cfg.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 
 		var params = []helper.OptionFN{
 			helper.Page(page, pageSize),
@@ -55,8 +53,6 @@ func List(ctx iris.Context) hero.Result {
 
 func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -100,8 +96,6 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 
 func Detail(orgID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -120,8 +114,6 @@ func Detail(orgID int64, ctx iris.Context) hero.Result {
 
 func Update(orgID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -159,8 +151,6 @@ func Update(orgID int64, ctx iris.Context) hero.Result {
 
 func Delete(orgID int64, ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
@@ -173,7 +163,7 @@ func Delete(orgID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 
-		if org.Name() == app.Cfg.DefaultOrganization() {
+		if org.Name() == app.Config.DefaultOrganization() {
 			return lang.ErrFailedRemoveDefaultOrganization
 		}
 

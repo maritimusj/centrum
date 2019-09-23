@@ -149,6 +149,8 @@ var (
 		lang.ResourceLogLevelListTitle: "",
 		lang.ResourceLogLevelListDesc:  "",
 
+		lang.ConfirmAdminPassword:       "请输入[ %s ]确认重置数据库：",
+		lang.FlushDBOk:                  "数据库已重置！",
 		lang.DefaultUserPasswordResetOk: "默认用户密码已重置！",
 		lang.LogDeletedByUser:           "管理 %s 清空日志！",
 
@@ -172,6 +174,7 @@ var (
 		lang.ErrInternal:                        "系统错误: %s，文件：%s，行：%d",
 		lang.ErrInvalidConnStr:                  "数据库连接参数不正确！",
 		lang.ErrInvalidRequestData:              "不正确的请求数据！",
+		lang.ErrConfirmCodeWrong:                "确认操作输入错误！",
 		lang.ErrTokenExpired:                    "请先登录！",
 		lang.ErrNoPermission:                    "没有权限",
 		lang.ErrCacheNotFound:                   "缓存中没有数据！",

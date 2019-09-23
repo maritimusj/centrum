@@ -16,35 +16,40 @@ import (
 )
 
 var (
-	Cfg = config.New()
+	Config = config.New()
 
 	Ctx, cancel = context.WithCancel(context.Background())
 	DB          db.WithTransaction
 
 	LogDBStore = logStore.New()
+	s          store.Store
 )
 
 func IsDefaultAdminUser(user model.User) bool {
-	return user.Name() == Cfg.DefaultUserName()
+	return user.Name() == Config.DefaultUserName()
 }
 
 func Allow(user model.User, res model.Resource, action resource.Action) bool {
 	allow, err := user.IsAllow(res, action)
 	if err != nil && err == lang.Error(lang.ErrPolicyNotFound) {
-		return Cfg.DefaultEffect() == resource.Allow
+		return Config.DefaultEffect() == resource.Allow
 	}
 	return allow
 }
 
 func Store() store.Store {
-	return mysqlStore.Attach(Ctx, DB)
+	return s
+}
+
+func NewStore(db db.DB) store.Store {
+	return mysqlStore.Attach(Ctx, db, func(key string, _ interface{}) {
+		s.Cache().Remove(key)
+	})
 }
 
 func TransactionDo(fn func(store.Store) interface{}) interface{} {
 	return DB.TransactionDo(func(db db.DB) interface{} {
 		s := mysqlStore.Attach(Ctx, db)
-		defer s.Close()
-
 		return fn(s)
 	})
 }
@@ -55,6 +60,7 @@ func InitDB(params map[string]interface{}) error {
 		log.Fatal(err)
 	}
 	DB = conn
+	s = mysqlStore.Attach(Ctx, DB)
 	return nil
 }
 
@@ -64,10 +70,10 @@ func InitLog(levelStr string) error {
 		return err
 	}
 
-	Cfg.SetLogLevel(levelStr)
+	Config.SetLogLevel(levelStr)
 
 	//日志仓库
-	err = LogDBStore.Open(Ctx, Cfg.LogFileName())
+	err = LogDBStore.Open(Ctx, Config.LogFileName())
 	if err != nil {
 		return err
 	}
@@ -79,14 +85,26 @@ func InitLog(levelStr string) error {
 	return nil
 }
 
-func Init() error {
+func Init(logLevel string) error {
+	if err := InitLog(logLevel); err != nil {
+		return err
+	}
+
+	//数据库连接
+	if err := InitDB(map[string]interface{}{
+		"connStr": Config.DBConnStr(),
+	}); err != nil {
+		return err
+	}
+
 	result := TransactionDo(func(s store.Store) interface{} {
 		_, total, err := s.GetApiResourceList(helper.Limit(1))
 		if err != nil {
 			return err
 		}
+
+		//初始化api资源
 		if total == 0 {
-			//初始化api资源
 			err = s.InitApiResource()
 			if err != nil {
 				return err
@@ -94,7 +112,7 @@ func Init() error {
 		}
 
 		//创建默认组织
-		defaultOrg := Cfg.DefaultOrganization()
+		defaultOrg := Config.DefaultOrganization()
 		org, err := s.GetOrganization(defaultOrg)
 		if err != nil {
 			if err != lang.Error(lang.ErrOrganizationNotFound) {
@@ -124,7 +142,7 @@ func Init() error {
 		}
 
 		//创建默认用户
-		defaultUserName := Cfg.DefaultUserName()
+		defaultUserName := Config.DefaultUserName()
 		_, err = s.GetUser(defaultUserName)
 		if err != nil {
 			if err != lang.Error(lang.ErrUserNotFound) {

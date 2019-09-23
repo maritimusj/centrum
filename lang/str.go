@@ -142,7 +142,10 @@ const (
 	ResourceLogLevelListTitle
 	ResourceLogLevelListDesc
 
+	ConfirmAdminPassword
+
 	DefaultUserPasswordResetOk
+	FlushDBOk
 	LogDeletedByUser
 
 	CreateOrgOk
@@ -173,6 +176,7 @@ const (
 	ErrInvalidUser
 	ErrUserDisabled
 	ErrPasswordWrong
+	ErrConfirmCodeWrong
 	ErrInvalidResourceClassID
 	ErrApiResourceNotFound
 	ErrUnknownRole

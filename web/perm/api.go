@@ -12,8 +12,6 @@ import (
 
 func CheckApiPerm(ctx iris.Context) hero.Result {
 	s := app.Store()
-	defer s.Close()
-
 	admin := s.MustGetUserFromContext(ctx)
 
 	checkFN := func() interface{} {
@@ -27,7 +25,7 @@ func CheckApiPerm(ctx iris.Context) hero.Result {
 			if err != lang.Error(lang.ErrApiResourceNotFound) {
 				return err
 			}
-			return util.If(app.Cfg.DefaultEffect() == resource.Allow, nil, lang.ErrNoPermission)
+			return util.If(app.Config.DefaultEffect() == resource.Allow, nil, lang.ErrNoPermission)
 		}
 
 		if app.Allow(admin, res, resource.Invoke) {
