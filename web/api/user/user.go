@@ -1,6 +1,7 @@
 package user
 
 import (
+	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/store"
@@ -286,9 +287,10 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 			type P struct {
 				ResourceClass int   `json:"class"`
 				ResourceID    int64 `json:"id"`
-				Invoke        *bool `json:"invoke"`
-				View          *bool `json:"view"`
-				Ctrl          *bool `json:"ctrl"`
+				Invoke        *bool `json:"invoke"` //是否可以调用api
+				View          *bool `json:"view"`   //是否可以观察资源
+				Ctrl          *bool `json:"ctrl"`   //是否可以控制资源
+				Enable        *bool `json:"enable"` //角色是否启用
 			}
 			var form struct {
 				Policies []P `json:"policies"`
@@ -297,8 +299,36 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 				return lang.ErrInvalidRequestData
 			}
 
+			newRoles := hashset.New()
+			for _, role := range  roles {
+				newRoles.Add(role.GetID())
+			}
+			//先处理角色设定
+			for _, p := range form.Policies {
+				if p.Enable != nil {
+					role, err := s.GetRole(p.ResourceID)
+					if err != nil {
+						return err
+					}
+					if *p.Enable {
+						newRoles.Add(role.GetID())
+					} else {
+						newRoles.Remove(role.GetID())
+					}
+				}
+			}
+			err = user.SetRoles(newRoles.Values()...)
+			if err != nil {
+				return err
+			}
+
 			update := func(role model.Role) interface{} {
 				for _, p := range form.Policies {
+					//角色设置，则跳过
+					if p.Enable != nil {
+						continue
+					}
+
 					res, err := s.GetResource(resource.Class(p.ResourceClass), p.ResourceID)
 					if err != nil {
 						return err
