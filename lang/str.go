@@ -23,9 +23,32 @@ const (
 	LogFatal
 	LogPanic
 
+	UserDefaultRoleDesc
+
 	RoleSystemAdminTitle
 	RoleOrganizationAdminTitle
 	RoleGuestTitle
+
+	MenuRoleGalleryTitle
+	MenuRoleDevicesTitle
+	MenuRoleAlertTitle
+	MenuRoleStatsTitle
+	MenuRoleSMSSettingsTitle
+	MenuRoleUsersTitle
+	MenuRoleSystemSettingsTitle
+	MenuRoleSysLogsTitle
+
+	RoleSystemAdminDesc
+	RoleOrganizationAdminDesc
+	RoleGuestDesc
+	MenuRoleGalleryDesc
+	MenuRoleDevicesDesc
+	MenuRoleAlertDesc
+	MenuRoleStatsDesc
+	MenuRoleSMSSettingsDesc
+	MenuRoleUsersDesc
+	MenuRoleSystemSettingsDesc
+	MenuRoleSysLogsDesc
 
 	ResourceOrganizationCreateTitle
 	ResourceOrganizationListTitle
@@ -226,11 +249,33 @@ var (
 	RoleGuestName             = "__guest__"
 )
 
-func DefaultRoles() map[[2]string][]string {
-	return map[[2]string][]string{
-		{RoleSystemAdminName, Str(RoleSystemAdminTitle)}:             resource.SystemAdmin,
-		{RoleOrganizationAdminName, Str(RoleOrganizationAdminTitle)}: resource.OrganizationAdmin,
-		{RoleGuestName, Str(RoleGuestTitle)}:                         resource.Guest,
+//后台菜单对应的角色
+var (
+	MenuRoleGallery        = "__menu_gallery__"
+	MenuRoleDevices        = "__menu_devices__"
+	MenuRoleAlert          = "__menu_alert__"
+	MenuRoleStats          = "__menu_stats__"
+	MenuRoleSMSSettings    = "__menu_sms_settings__"
+	MenuRoleUsers          = "__menu_users__"
+	MenuRoleSystemSettings = "__menu_sys_settings__"
+	MenuRoleSysLogs        = "__menu_sys_logs__"
+)
+
+func DefaultRoles() map[[3]string][]string {
+	return map[[3]string][]string{
+		{RoleSystemAdminName, Str(RoleSystemAdminTitle), Str(RoleSystemAdminDesc)}:                   resource.SystemAdmin,
+		{RoleOrganizationAdminName, Str(RoleOrganizationAdminTitle), Str(RoleOrganizationAdminDesc)}: resource.OrganizationAdmin,
+		{RoleGuestName, Str(RoleGuestTitle), Str(RoleGuestDesc)}:                                     resource.Guest,
+
+		//后台菜单角色
+		{MenuRoleGallery, Str(MenuRoleGalleryTitle), Str(MenuRoleGalleryDesc)}:                      resource.MenuRoleGallery,
+		{MenuRoleDevices, Str(MenuRoleDevicesTitle), Str(MenuRoleDevicesDesc)}:                      resource.MenuRoleDevices,
+		{MenuRoleAlert, Str(MenuRoleAlertTitle), Str(MenuRoleAlertDesc)}:                            resource.MenuRoleAlert,
+		{MenuRoleStats, Str(MenuRoleStatsTitle), Str(MenuRoleStatsDesc)}:                            resource.MenuRoleStats,
+		{MenuRoleSMSSettings, Str(MenuRoleSMSSettingsTitle), Str(MenuRoleSMSSettingsDesc)}:          resource.MenuRoleSMSSettings,
+		{MenuRoleUsers, Str(MenuRoleUsersTitle), Str(MenuRoleUsersDesc)}:                            resource.MenuRoleUsers,
+		{MenuRoleSystemSettings, Str(MenuRoleSystemSettingsTitle), Str(MenuRoleSystemSettingsDesc)}: resource.MenuRoleSystemSettings,
+		{MenuRoleSysLogs, Str(MenuRoleSysLogsTitle), Str(MenuRoleSysLogsDesc)}:                      resource.MenuRoleSysLogs,
 	}
 }
 

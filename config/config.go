@@ -23,7 +23,6 @@ type Config interface {
 	DefaultUserName() string
 
 	DefaultEffect() resource.Effect
-	IsRoleEnabled() bool
 }
 
 type config struct {
@@ -42,10 +41,6 @@ func (c *config) APIPort() int {
 
 func (c *config) LogFileName() string {
 	return c.logFileName
-}
-
-func (c *config) IsRoleEnabled() bool {
-	return false
 }
 
 func (c *config) LogLevel() string {

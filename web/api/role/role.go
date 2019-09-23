@@ -69,6 +69,7 @@ func Create(ctx iris.Context) hero.Result {
 			OrgID int64  `json:"org"`
 			Name  string `json:"name"`
 			Title string `json:"title"`
+			Desc  string `json:"desc"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil || form.Name == "" {
@@ -91,7 +92,7 @@ func Create(ctx iris.Context) hero.Result {
 			org = admin.OrganizationID()
 		}
 
-		role, err := s.CreateRole(org, form.Name, form.Title)
+		role, err := s.CreateRole(org, form.Name, form.Title, form.Desc)
 		if err != nil {
 			return err
 		}

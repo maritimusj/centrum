@@ -18,6 +18,7 @@ type Role struct {
 
 	name      string
 	title     string
+	desc      string
 	createdAt time.Time
 
 	dirty *dirty.Dirty
@@ -93,11 +94,24 @@ func (r *Role) Title() string {
 	return r.title
 }
 
+func (r *Role) Desc() string {
+	return r.desc
+}
+
 func (r *Role) SetTitle(title string) {
 	if r.title != title {
 		r.title = title
 		r.dirty.Set("title", func() interface{} {
 			return r.title
+		})
+	}
+}
+
+func (r *Role) SetDesc(desc string) {
+	if r.desc != desc {
+		r.desc = desc
+		r.dirty.Set("desc", func() interface{} {
+			return r.desc
 		})
 	}
 }
@@ -185,6 +199,7 @@ func (r *Role) Simple() model.Map {
 	return model.Map{
 		"id":     r.id,
 		"enable": r.IsEnabled(),
+		"name":   r.name,
 		"title":  r.title,
 	}
 }
@@ -196,7 +211,9 @@ func (r *Role) Brief() model.Map {
 	return model.Map{
 		"id":         r.id,
 		"enable":     r.IsEnabled(),
+		"name":       r.name,
 		"title":      r.title,
+		"desc":       r.desc,
 		"created_at": r.createdAt,
 	}
 }
@@ -208,7 +225,9 @@ func (r *Role) Detail() model.Map {
 	return model.Map{
 		"id":         r.id,
 		"enable":     r.IsEnabled(),
+		"name":       r.name,
 		"title":      r.title,
+		"desc":       r.desc,
 		"created_at": r.createdAt,
 	}
 }

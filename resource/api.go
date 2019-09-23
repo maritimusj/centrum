@@ -1,6 +1,7 @@
 package resource
 
 const (
+	Unknown            = ""
 	OrganizationCreate = "org.create"
 	OrganizationList   = "org.list"
 	OrganizationDetail = "org.detail"
@@ -156,4 +157,50 @@ var (
 		OrganizationUpdate,
 		OrganizationDelete,
 	)
+)
+
+//后台菜单角色权限列表
+var (
+	MenuRoleGallery = []string{
+		Unknown,
+	}
+	MenuRoleDevices = []string{
+		GroupList,
+		GroupCreate,
+		GroupDetail,
+		GroupUpdate,
+		GroupDelete,
+
+		DeviceList,
+		DeviceCreate,
+		DeviceDetail,
+		DeviceUpdate,
+		DeviceDelete,
+	}
+	MenuRoleAlert = []string{
+		Unknown,
+	}
+	MenuRoleStats = []string{
+		Unknown,
+	}
+	MenuRoleSMSSettings = []string{
+		Unknown,
+	}
+	MenuRoleUsers = []string{
+		UserList,
+		UserCreate,
+		UserDetail,
+		UserUpdate,
+		UserDelete,
+	}
+	MenuRoleSystemSettings = []string{
+		LogLevelList,
+		LogList,
+		LogDelete,
+	}
+	MenuRoleSysLogs = []string{
+		LogLevelList,
+		LogList,
+		LogDelete,
+	}
 )

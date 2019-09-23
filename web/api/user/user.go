@@ -65,10 +65,10 @@ func List(ctx iris.Context) hero.Result {
 func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
-			OrgID    int64  `json:"org"`
-			Username string `json:"username" validate:"required"`
-			Password string `json:"password" validate:"required"`
-			RoleID   *int64 `json:"role"`
+			OrgID    int64   `json:"org"`
+			Username string  `json:"username" validate:"required"`
+			Password string  `json:"password" validate:"required"`
+			RoleIDs  []int64 `json:"roles"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
@@ -91,27 +91,36 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			var roles []interface{}
 			var err error
 
-			if app.Config.IsRoleEnabled() {
-				if form.RoleID != nil {
-					role, err := s.GetRole(*form.RoleID)
+			if len(form.RoleIDs) > 0 {
+				for _, roleID := range form.RoleIDs {
+					role, err := s.GetRole(roleID)
 					if err != nil {
 						return err
 					}
 					roles = append(roles, role)
 				}
+			}
 
-				if len(roles) == 0 {
-					return lang.ErrRoleNotFound
+			//创建用户同名的role，并设置guest权限
+			role, err := s.CreateRole(app.Config.DefaultOrganization(), form.Username, form.Username, lang.Str(lang.UserDefaultRoleDesc))
+			if err != nil {
+				return err
+			}
+			for _, res := range resource.Guest {
+				if res == resource.Unknown {
+					continue
 				}
-			} else {
-				roles = append(roles, lang.RoleGuestName)
-				//创建用户同名的role
-				role, err := s.CreateRole(app.Config.DefaultOrganization(), form.Username, form.Username)
+				res, err := s.GetApiResource(res)
 				if err != nil {
 					return err
 				}
-				roles = append(roles, role)
+				_, err = role.SetPolicy(res, resource.Invoke, resource.Allow, nil)
+				if err != nil {
+					return err
+				}
 			}
+
+			roles = append(roles, role)
 
 			var org interface{}
 			if app.IsDefaultAdminUser(admin) {
@@ -161,12 +170,12 @@ func Update(userID int64, ctx iris.Context) hero.Result {
 			}
 
 			var form struct {
-				Enable   *bool   `json:"enable"`
-				Password *string `json:"password"`
-				Title    *string `json:"title"`
-				Mobile   *string `json:"mobile"`
-				Email    *string `json:"email"`
-				Roles    []int64 `json:"roles"`
+				Enable   *bool    `json:"enable"`
+				Password *string  `json:"password"`
+				Title    *string  `json:"title"`
+				Mobile   *string  `json:"mobile"`
+				Email    *string  `json:"email"`
+				Roles    *[]int64 `json:"roles"`
 			}
 
 			err = ctx.ReadJSON(&form)
@@ -174,9 +183,9 @@ func Update(userID int64, ctx iris.Context) hero.Result {
 				return lang.ErrInvalidRequestData
 			}
 
-			if app.Config.IsRoleEnabled() && form.Roles != nil {
-				roles := make([]interface{}, 0, len(form.Roles))
-				for _, role := range form.Roles {
+			if form.Roles != nil {
+				roles := make([]interface{}, 0, len(*form.Roles))
+				for _, role := range *form.Roles {
 					roles = append(roles, role)
 				}
 				err = user.SetRoles(roles...)
@@ -242,15 +251,14 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 				return lang.ErrFailedRemoveUserSelf
 			}
 
-			if !app.Config.IsRoleEnabled() {
-				role, err := s.GetRole(user.Name())
-				if err != nil {
-					return err
-				}
-				err = role.Destroy()
-				if err != nil {
-					return err
-				}
+			//删除用户同名角色
+			role, err := s.GetRole(user.Name())
+			if err != nil {
+				return err
+			}
+			err = role.Destroy()
+			if err != nil {
+				return err
 			}
 
 			err = user.Destroy()

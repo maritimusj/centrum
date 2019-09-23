@@ -19,7 +19,7 @@ import (
 func main() {
 	//命令行参数
 	logLevel := flag.String("l", app.Config.LogLevel(), "log level, [trace,debug,info,warn,error,fatal]")
-	resetDefaultUserPassword := flag.Bool("r", false, "reset default user password")
+	resetDefaultUserPassword := flag.Bool("reset", false, "reset default user password")
 	resetDB := flag.Bool("flush", false, "erase all data in database")
 
 	flag.Parse()
@@ -28,6 +28,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	//重置数据库
 	if *resetDB {
 		code := util.RandStr(4, util.RandNum)
 		fmt.Print(lang.Str(lang.ConfirmAdminPassword, code))

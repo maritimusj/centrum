@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 80017
 File Encoding         : 65001
 
-Date: 2019-09-20 15:07:05
+Date: 2019-09-23 10:57:56
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -147,7 +147,8 @@ CREATE TABLE `roles` (
   `org_id` int(10) unsigned NOT NULL DEFAULT '0',
   `enable` tinyint(4) NOT NULL,
   `name` varchar(64) COLLATE utf8mb4_general_ci NOT NULL,
-  `title` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `title` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `desc` varchar(512) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `created_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`) USING BTREE

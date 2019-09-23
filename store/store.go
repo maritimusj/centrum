@@ -27,7 +27,7 @@ type Store interface {
 
 	IsRoleExists(role interface{}) (bool, error)
 	GetRole(role interface{}) (model.Role, error)
-	CreateRole(org interface{}, name, title string) (model.Role, error)
+	CreateRole(org interface{}, name, title, desc string) (model.Role, error)
 	RemoveRole(role interface{}) error
 	GetRoleList(options ...helper.OptionFN) ([]model.Role, int64, error)
 

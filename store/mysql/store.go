@@ -152,10 +152,11 @@ func (s *mysqlStore) IsRoleExists(role interface{}) (bool, error) {
 
 func (s *mysqlStore) GetResourceGroupList() []interface{} {
 	return []interface{}{
-		map[string]interface{}{
-			"id":    resource.Api,
-			"title": lang.ResourceClassTitle(resource.Api),
-		},
+		//当前使用菜单角色定义用户权限，所以不需要api resource列表
+		//map[string]interface{}{
+		//	"id":    resource.Api,
+		//	"title": lang.ResourceClassTitle(resource.Api),
+		//},
 		map[string]interface{}{
 			"id":    resource.Group,
 			"title": lang.ResourceClassTitle(resource.Group),
@@ -569,7 +570,9 @@ func (s *mysqlStore) loadRole(id int64) (*Role, error) {
 	err := LoadData(s.db, TbRoles, map[string]interface{}{
 		"org_id":     &role.orgID,
 		"enable":     &role.enable,
+		"name":       &role.name,
 		"title":      &role.title,
+		"desc":       &role.desc,
 		"created_at": &role.createdAt,
 	}, "id=?", id)
 	if err != nil {
@@ -613,7 +616,7 @@ func (s *mysqlStore) GetRole(role interface{}) (model.Role, error) {
 	return result.(model.Role), nil
 }
 
-func (s *mysqlStore) createRole(db db.DB, org interface{}, name, title string) (model.Role, error) {
+func (s *mysqlStore) createRole(db db.DB, org interface{}, name, title, desc string) (model.Role, error) {
 	result := <-synchronized.Do(s.ctx, TbRoles, func() interface{} {
 		orgID, err := getOrganizationID(db, org)
 		if err != nil {
@@ -624,6 +627,7 @@ func (s *mysqlStore) createRole(db db.DB, org interface{}, name, title string) (
 			"enable":     status.Enable,
 			"name":       name,
 			"title":      title,
+			"desc":       desc,
 			"created_at": time.Now(),
 		})
 		if err != nil {
@@ -648,8 +652,8 @@ func (s *mysqlStore) createRole(db db.DB, org interface{}, name, title string) (
 	return result.(model.Role), nil
 }
 
-func (s *mysqlStore) CreateRole(org interface{}, name, title string) (model.Role, error) {
-	return s.createRole(s.db, org, name, title)
+func (s *mysqlStore) CreateRole(org interface{}, name, title, desc string) (model.Role, error) {
+	return s.createRole(s.db, org, name, title, desc)
 }
 
 func (s *mysqlStore) RemoveRole(role interface{}) error {
@@ -698,8 +702,8 @@ func (s *mysqlStore) GetRoleList(options ...helper.OptionFN) ([]model.Role, int6
 	}
 
 	if option.Keyword != "" {
-		fromSQL += " AND r.title REGEXP ?"
-		params = append(params, option.Keyword)
+		fromSQL += " AND (r.name REGEXP ? OR r.title REGEXP ?)"
+		params = append(params, option.Keyword, option.Keyword)
 	}
 
 	var total int64
@@ -2156,14 +2160,16 @@ func (s *mysqlStore) InitApiResource() error {
 
 func (s *mysqlStore) InitDefaultRoles(org interface{}) error {
 	for pair, apiRes := range lang.DefaultRoles() {
-		println("pair:", pair[0], ":", pair[1])
-		role, err := s.createRole(s.db, org, pair[0], pair[1])
+		role, err := s.createRole(s.db, org, pair[0], pair[1], pair[2])
 		if err != nil {
 			return err
 		}
-		print("create policy")
+
 		for _, api := range apiRes {
-			println(api)
+			if api == resource.Unknown {
+				continue
+			}
+
 			res, err := s.GetApiResource(api)
 			if err != nil {
 				return err

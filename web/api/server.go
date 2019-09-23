@@ -11,6 +11,7 @@ import (
 	"github.com/maritimusj/centrum/web/api/log"
 	"github.com/maritimusj/centrum/web/api/my"
 	"github.com/maritimusj/centrum/web/api/organization"
+	"github.com/maritimusj/centrum/web/api/role"
 	"github.com/maritimusj/centrum/web/api/web"
 	"github.com/maritimusj/centrum/web/perm"
 	"gopkg.in/go-playground/validator.v9"
@@ -20,7 +21,6 @@ import (
 	"github.com/maritimusj/centrum/web/api/equipment"
 	"github.com/maritimusj/centrum/web/api/group"
 	"github.com/maritimusj/centrum/web/api/resource"
-	"github.com/maritimusj/centrum/web/api/role"
 	"github.com/maritimusj/centrum/web/api/user"
 )
 
@@ -83,15 +83,13 @@ func (server *server) Start(cfg config.Config) error {
 			})
 
 			//角色
-			if cfg.IsRoleEnabled() {
-				p.PartyFunc("/role", func(p router.Party) {
-					p.Get("/", hero.Handler(role.List)).Name = ResourceDef.RoleList
-					p.Post("/", hero.Handler(role.Create)).Name = ResourceDef.RoleCreate
-					p.Get("/{id:int64}", hero.Handler(role.Detail)).Name = ResourceDef.RoleDetail
-					p.Put("/{id:int64}", hero.Handler(role.Update)).Name = ResourceDef.RoleUpdate
-					p.Delete("/{id:int64}", hero.Handler(role.Delete)).Name = ResourceDef.RoleDelete
-				})
-			}
+			p.PartyFunc("/role", func(p router.Party) {
+				p.Get("/", hero.Handler(role.List)).Name = ResourceDef.RoleList
+				p.Post("/", hero.Handler(role.Create)).Name = ResourceDef.RoleCreate
+				p.Get("/{id:int64}", hero.Handler(role.Detail)).Name = ResourceDef.RoleDetail
+				p.Put("/{id:int64}", hero.Handler(role.Update)).Name = ResourceDef.RoleUpdate
+				p.Delete("/{id:int64}", hero.Handler(role.Delete)).Name = ResourceDef.RoleDelete
+			})
 
 			//用户
 			p.PartyFunc("/user", func(p router.Party) {
@@ -102,9 +100,7 @@ func (server *server) Start(cfg config.Config) error {
 				p.Delete("/{id:int64}", hero.Handler(user.Delete)).Name = ResourceDef.UserDelete
 
 				//给用户分配权限（通过用户同名角色）
-				if !cfg.IsRoleEnabled() {
-					p.Put("/{id:int64}/perm", hero.Handler(user.UpdatePerm)).Name = ResourceDef.RoleUpdate
-				}
+				p.Put("/{id:int64}/perm", hero.Handler(user.UpdatePerm)).Name = ResourceDef.RoleUpdate
 
 				//日志
 				p.Get("/{id:int64}/log", hero.Handler(user.LogList)).Name = ResourceDef.UserLogList

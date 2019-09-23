@@ -10,7 +10,6 @@ import (
 	"github.com/maritimusj/centrum/status"
 	"github.com/maritimusj/centrum/util"
 	log "github.com/sirupsen/logrus"
-
 	"time"
 )
 
@@ -249,7 +248,7 @@ func (u *User) Detail() model.Map {
 	if u == nil {
 		return model.Map{}
 	}
-	return model.Map{
+	detail := model.Map{
 		"id":         u.id,
 		"enable":     u.IsEnabled(),
 		"name":       u.name,
@@ -258,4 +257,17 @@ func (u *User) Detail() model.Map {
 		"email":      u.email,
 		"created_at": u.createdAt,
 	}
+	rolesData := make(map[string]model.Map, 0)
+	roles, _ := u.GetRoles()
+	for _, role := range roles {
+		if role.Name() != u.Name() {
+		rolesData[role.Name()] = model.Map{
+			"id":     role.GetID(),
+			"enable": role.IsEnabled(),
+			"title":  role.Title(),
+		}
+		}
+	}
+	detail["roles"] = rolesData
+	return detail
 }
