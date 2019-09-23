@@ -8,6 +8,10 @@ import (
 type ep6v2Adapter struct {
 }
 
+func New() adapter.Adapter {
+	return &ep6v2Adapter{}
+}
+
 func (e *ep6v2Adapter) Open(ctx context.Context, option adapter.Option) error {
 	panic("implement me")
 }
@@ -40,6 +44,3 @@ func (e *ep6v2Adapter) Get(keys ...string) (map[string]interface{}, error) {
 	panic("implement me")
 }
 
-func New() adapter.Adapter {
-	return &ep6v2Adapter{}
-}
