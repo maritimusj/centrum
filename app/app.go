@@ -49,7 +49,9 @@ func NewStore(db db.DB) store.Store {
 
 func TransactionDo(fn func(store.Store) interface{}) interface{} {
 	return DB.TransactionDo(func(db db.DB) interface{} {
-		s := mysqlStore.Attach(Ctx, db)
+		s := NewStore(db)
+		defer s.Close()
+
 		return fn(s)
 	})
 }

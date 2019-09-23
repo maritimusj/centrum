@@ -22,8 +22,6 @@ func List(ctx iris.Context) hero.Result {
 	admin := s.MustGetUserFromContext(ctx)
 
 	return response.Wrap(func() interface{} {
-
-		println("get")
 		var params []helper.OptionFN
 		var orgID int64
 
@@ -81,7 +79,6 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 
 		return app.TransactionDo(func(s store.Store) interface{} {
 			admin := s.MustGetUserFromContext(ctx)
-
 			if exists, err := s.IsUserExists(form.Username); err != nil {
 				return err
 			} else if exists {
@@ -145,13 +142,11 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 
 func Detail(userID int64) hero.Result {
 	return response.Wrap(func() interface{} {
-		return app.TransactionDo(func(s store.Store) interface{} {
-			user, err := s.GetUser(userID)
-			if err != nil {
-				return err
-			}
-			return user.Detail()
-		})
+		user, err := app.Store().GetUser(userID)
+		if err != nil {
+			return err
+		}
+		return user.Detail()
 	})
 }
 
