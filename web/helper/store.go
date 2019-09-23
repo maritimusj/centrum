@@ -1,7 +1,7 @@
 package helper
 
 import (
-	"github.com/maritimusj/centrum/resource"
+	"github.com/maritimusj/centrum/web/resource"
 )
 
 type Option struct {

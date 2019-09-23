@@ -6,22 +6,22 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/core/router"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/web/api/log"
 	"github.com/maritimusj/centrum/web/api/my"
 	"github.com/maritimusj/centrum/web/api/organization"
 	"github.com/maritimusj/centrum/web/api/role"
 	"github.com/maritimusj/centrum/web/api/web"
+	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/perm"
 	"gopkg.in/go-playground/validator.v9"
 
-	ResourceDef "github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/web/api/device"
 	"github.com/maritimusj/centrum/web/api/equipment"
 	"github.com/maritimusj/centrum/web/api/group"
 	"github.com/maritimusj/centrum/web/api/resource"
 	"github.com/maritimusj/centrum/web/api/user"
+	ResourceDef "github.com/maritimusj/centrum/web/resource"
 )
 
 type Server interface {

@@ -1,10 +1,10 @@
 package mysqlStore
 
 import (
-	"github.com/maritimusj/centrum/dirty"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/model"
-	"github.com/maritimusj/centrum/resource"
+	"github.com/maritimusj/centrum/web/dirty"
+	"github.com/maritimusj/centrum/web/model"
+	"github.com/maritimusj/centrum/web/resource"
 	"time"
 )
 

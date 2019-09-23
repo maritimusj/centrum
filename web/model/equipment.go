@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/maritimusj/centrum/helper"
+	"github.com/maritimusj/centrum/web/helper"
 )
 
 //虚拟设备

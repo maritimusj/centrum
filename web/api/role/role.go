@@ -4,12 +4,12 @@ import (
 	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/app"
-	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/model"
-	"github.com/maritimusj/centrum/resource"
 	"github.com/maritimusj/centrum/util"
+	"github.com/maritimusj/centrum/web/app"
+	"github.com/maritimusj/centrum/web/helper"
+	"github.com/maritimusj/centrum/web/model"
+	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
 )
 

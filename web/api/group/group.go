@@ -3,12 +3,13 @@ package group
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/app"
-	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/model"
-	"github.com/maritimusj/centrum/resource"
+	"github.com/maritimusj/centrum/web/app"
+	"github.com/maritimusj/centrum/web/helper"
+	"github.com/maritimusj/centrum/web/model"
+	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
+	"github.com/maritimusj/centrum/web/store"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -75,9 +76,6 @@ func List(ctx iris.Context) hero.Result {
 }
 
 func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
 		var form struct {
 			OrgID         int64  `json:"org"`
@@ -94,30 +92,39 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		if form.ParentGroupID > 0 {
-			_, err := s.GetGroup(form.ParentGroupID)
+		return app.TransactionDo(func(s store.Store) interface{} {
+			if form.ParentGroupID > 0 {
+				_, err := s.GetGroup(form.ParentGroupID)
+				if err != nil {
+					return err
+				}
+			}
+
+			var org interface{}
+
+			admin := s.MustGetUserFromContext(ctx)
+			if app.IsDefaultAdminUser(admin) {
+				if form.OrgID > 0 {
+					org = form.OrgID
+				} else {
+					org = app.Config.DefaultOrganization()
+				}
+			} else {
+				org = admin.OrganizationID()
+			}
+
+			group, err := s.CreateGroup(org, form.Title, form.Desc, form.ParentGroupID)
 			if err != nil {
 				return err
 			}
-		}
 
-		var org interface{}
-		if app.IsDefaultAdminUser(admin) {
-			if form.OrgID > 0 {
-				org = form.OrgID
-			} else {
-				org = app.Config.DefaultOrganization()
+			err = app.SetAllow(admin, group, resource.View, resource.Ctrl)
+			if err != nil {
+				return err
 			}
-		} else {
-			org = admin.OrganizationID()
-		}
 
-		group, err := s.CreateGroup(org, form.Title, form.Desc, form.ParentGroupID)
-		if err != nil {
-			return err
-		}
-
-		return group.Simple()
+			return group.Simple()
+		})
 	})
 }
 

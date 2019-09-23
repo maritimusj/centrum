@@ -2,7 +2,7 @@ package ep6v2
 
 import (
 	"context"
-	"github.com/maritimusj/centrum/adapter"
+	"github.com/maritimusj/centrum/edge/adapter"
 )
 
 type ep6v2Adapter struct {
@@ -43,4 +43,3 @@ func (e *ep6v2Adapter) Set(params adapter.Option) error {
 func (e *ep6v2Adapter) Get(keys ...string) (map[string]interface{}, error) {
 	panic("implement me")
 }
-

@@ -3,13 +3,13 @@ package mysqlStore
 import (
 	"errors"
 	"fmt"
-	"github.com/maritimusj/centrum/dirty"
-	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/model"
-	"github.com/maritimusj/centrum/resource"
-	"github.com/maritimusj/centrum/status"
 	"github.com/maritimusj/centrum/util"
+	"github.com/maritimusj/centrum/web/dirty"
+	"github.com/maritimusj/centrum/web/helper"
+	"github.com/maritimusj/centrum/web/model"
+	"github.com/maritimusj/centrum/web/resource"
+	"github.com/maritimusj/centrum/web/status"
 	log "github.com/sirupsen/logrus"
 	"time"
 )
@@ -182,7 +182,7 @@ func (u *User) Is(role interface{}) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	var fn func (role model.Role) bool
+	var fn func(role model.Role) bool
 	switch v := role.(type) {
 	case int64:
 		fn = func(role model.Role) bool {
@@ -199,7 +199,7 @@ func (u *User) Is(role interface{}) (bool, error) {
 	default:
 		panic(errors.New("user.Is() unknown role"))
 	}
-	for _, role :=range roles {
+	for _, role := range roles {
 		if fn(role) {
 			return true, nil
 		}
@@ -216,6 +216,36 @@ func (u *User) Save() error {
 		err := SaveData(u.store.db, TbUsers, u.dirty.Data(true), "id=?", u.id)
 		if err != nil {
 			return lang.InternalError(err)
+		}
+	}
+	return nil
+}
+
+func (u *User) SetDeny(res model.Resource, actions ...resource.Action) error {
+	role, err := u.store.GetRole(u.Name())
+	if err != nil {
+		return err
+	}
+
+	for _, action := range actions {
+		_, err = role.SetPolicy(res, action, resource.Deny, nil)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (u *User) SetAllow(res model.Resource, actions ...resource.Action) error {
+	role, err := u.store.GetRole(u.Name())
+	if err != nil {
+		return err
+	}
+
+	for _, action := range actions {
+		_, err = role.SetPolicy(res, action, resource.Allow, nil)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -292,11 +322,11 @@ func (u *User) Detail() model.Map {
 	roles, _ := u.GetRoles()
 	for _, role := range roles {
 		if role.Name() != u.Name() {
-		rolesData[role.Name()] = model.Map{
-			"id":     role.GetID(),
-			"enable": role.IsEnabled(),
-			"title":  role.Title(),
-		}
+			rolesData[role.Name()] = model.Map{
+				"id":     role.GetID(),
+				"enable": role.IsEnabled(),
+				"title":  role.Title(),
+			}
 		}
 	}
 	detail["roles"] = rolesData

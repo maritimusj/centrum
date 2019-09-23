@@ -3,8 +3,8 @@ package mysql
 import (
 	"context"
 	"database/sql"
-	"github.com/maritimusj/centrum/db"
 	"github.com/maritimusj/centrum/lang"
+	db2 "github.com/maritimusj/centrum/web/db"
 	"time"
 )
 
@@ -13,11 +13,11 @@ type mysqlDB struct {
 	ctx context.Context
 }
 
-func New() db.DB {
+func New() db2.DB {
 	return &mysqlDB{}
 }
 
-func (m *mysqlDB) TransactionDo(fn func(db db.DB) interface{}) interface{} {
+func (m *mysqlDB) TransactionDo(fn func(db db2.DB) interface{}) interface{} {
 	tx, err := m.db.Begin()
 	if err != nil {
 		return lang.InternalError(err)
@@ -44,7 +44,7 @@ func (m *mysqlDB) TransactionDo(fn func(db db.DB) interface{}) interface{} {
 	return result
 }
 
-func Open(ctx context.Context, option map[string]interface{}) (db.WithTransaction, error) {
+func Open(ctx context.Context, option map[string]interface{}) (db2.WithTransaction, error) {
 	if connStr, ok := option["connStr"].(string); ok {
 		conn, err := sql.Open("mysql", connStr)
 		if err != nil {

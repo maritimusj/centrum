@@ -2,10 +2,10 @@ package store
 
 import (
 	"github.com/kataras/iris"
-	"github.com/maritimusj/centrum/cache"
-	"github.com/maritimusj/centrum/helper"
-	"github.com/maritimusj/centrum/model"
-	"github.com/maritimusj/centrum/resource"
+	"github.com/maritimusj/centrum/web/cache"
+	"github.com/maritimusj/centrum/web/helper"
+	"github.com/maritimusj/centrum/web/model"
+	"github.com/maritimusj/centrum/web/resource"
 )
 
 type Store interface {

@@ -2,19 +2,18 @@ package user
 
 import (
 	"github.com/emirpasic/gods/sets/hashset"
-	"github.com/maritimusj/centrum/app"
-	"github.com/maritimusj/centrum/resource"
-	"github.com/maritimusj/centrum/store"
-	"github.com/maritimusj/centrum/web/api/web"
+	"github.com/maritimusj/centrum/web/app"
+	"github.com/maritimusj/centrum/web/resource"
+	"github.com/maritimusj/centrum/web/store"
 
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/model"
-	"github.com/maritimusj/centrum/status"
 	"github.com/maritimusj/centrum/util"
+	"github.com/maritimusj/centrum/web/helper"
+	"github.com/maritimusj/centrum/web/model"
 	"github.com/maritimusj/centrum/web/response"
+	"github.com/maritimusj/centrum/web/status"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -369,32 +368,5 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 
 			return lang.ErrRoleNotFound
 		})
-	})
-}
-
-func LogList(userID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		user, err := app.Store().GetUser(userID)
-		if err != nil {
-			return err
-		}
-
-		return web.GetLogList(ctx, user.LogUID())
-	})
-}
-
-func LogDelete(userID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		user, err := app.Store().GetUser(userID)
-		if err != nil {
-			return err
-		}
-
-		admin := app.Store().MustGetUserFromContext(ctx)
-		if !app.IsDefaultAdminUser(admin) {
-			return lang.ErrNoPermission
-		}
-
-		return web.DeleteLog(ctx, user.LogUID())
 	})
 }

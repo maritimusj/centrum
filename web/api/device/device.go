@@ -3,20 +3,20 @@ package device
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/app"
-	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/model"
-	"github.com/maritimusj/centrum/resource"
-	"github.com/maritimusj/centrum/store"
-	"github.com/maritimusj/centrum/web/api/web"
+	"github.com/maritimusj/centrum/web/app"
+	"github.com/maritimusj/centrum/web/helper"
+	"github.com/maritimusj/centrum/web/model"
+	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
+	"github.com/maritimusj/centrum/web/store"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/go-playground/validator.v9"
 )
 
 func List(ctx iris.Context) hero.Result {
 	s := app.Store()
+
 	return response.Wrap(func() interface{} {
 		var params []helper.OptionFN
 		var orgID int64
@@ -75,16 +75,13 @@ func List(ctx iris.Context) hero.Result {
 }
 
 func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
 		var form struct {
-			OrgID    int64  `json:"org"`
-			Title    string `json:"title" validate:"required"`
+			OrgID    int64   `json:"org"`
+			Title    string  `json:"title" validate:"required"`
 			Groups   []int64 `json:"groups"`
-			ConnStr  string `json:"params.connStr" validate:"required"`
-			Interval int64  `json:"params.interval" validate:"required"`
+			ConnStr  string  `json:"params.connStr" validate:"required"`
+			Interval int64   `json:"params.interval" validate:"required"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
@@ -95,47 +92,56 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		var org interface{}
-		if app.IsDefaultAdminUser(admin) {
-			if form.OrgID > 0 {
-				org = form.OrgID
+		return app.TransactionDo(func(s store.Store) interface{} {
+			var org interface{}
+
+			admin := s.MustGetUserFromContext(ctx)
+			if app.IsDefaultAdminUser(admin) {
+				if form.OrgID > 0 {
+					org = form.OrgID
+				} else {
+					org = app.Config.DefaultOrganization()
+				}
 			} else {
-				org = app.Config.DefaultOrganization()
+				org = admin.OrganizationID()
 			}
-		} else {
-			org = admin.OrganizationID()
-		}
 
-		device, err := s.CreateDevice(org, form.Title, map[string]interface{}{
-			"params": map[string]interface{}{
-				"connStr":  form.ConnStr,
-				"interval": form.Interval,
-			},
-		})
+			device, err := s.CreateDevice(org, form.Title, map[string]interface{}{
+				"params": map[string]interface{}{
+					"connStr":  form.ConnStr,
+					"interval": form.Interval,
+				},
+			})
 
-		if err != nil {
-			go admin.Logger().WithFields(logrus.Fields{
-				"title":    form.Title,
-				"connStr":  form.ConnStr,
-				"interval": form.Interval,
-			}).Info(lang.Str(lang.CreateDeviceFail, err))
-			return err
-		} else {
-			go admin.Logger().WithFields(logrus.Fields(device.Brief())).Info(lang.Str(lang.CreateDeviceOk, device.Title()))
-		}
-
-		if  len(form.Groups) > 0 {
-			var groups []interface{}
-			for _, g := range form.Groups {
-				groups = append(groups, g)
+			if err != nil {
+				go admin.Logger().WithFields(logrus.Fields{
+					"title":    form.Title,
+					"connStr":  form.ConnStr,
+					"interval": form.Interval,
+				}).Info(lang.Str(lang.CreateDeviceFail, err))
+				return err
+			} else {
+				go admin.Logger().WithFields(logrus.Fields(device.Brief())).Info(lang.Str(lang.CreateDeviceOk, device.Title()))
 			}
-			err = device.SetGroups(groups...)
+
+			if len(form.Groups) > 0 {
+				var groups []interface{}
+				for _, g := range form.Groups {
+					groups = append(groups, g)
+				}
+				err = device.SetGroups(groups...)
+				if err != nil {
+					return err
+				}
+			}
+
+			err = app.SetAllow(admin, device, resource.View, resource.Ctrl)
 			if err != nil {
 				return err
 			}
-		}
 
-		return device.Simple()
+			return device.Simple()
+		})
 	})
 }
 
@@ -252,174 +258,5 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 
 			return lang.Ok
 		})
-	})
-}
-
-func MeasureList(deviceID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
-	return response.Wrap(func() interface{} {
-		device, err := s.GetDevice(deviceID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, device, resource.View) {
-			return lang.ErrNoPermission
-		}
-
-		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
-		kind := ctx.URLParamIntDefault("kind", int(resource.AllKind))
-
-		var params = []helper.OptionFN{
-			helper.Page(page, pageSize),
-			helper.Kind(resource.MeasureKind(kind)),
-			helper.Device(device.GetID()),
-		}
-
-		keyword := ctx.URLParam("keyword")
-		if keyword != "" {
-			params = append(params, helper.Keyword(keyword))
-		}
-
-		if !app.IsDefaultAdminUser(admin) {
-			params = append(params, helper.User(admin.GetID()))
-			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
-		}
-
-		measures, total, err := s.GetMeasureList(params...)
-		if err != nil {
-			return err
-		}
-
-		var result = make([]model.Map, 0, len(measures))
-		for _, measure := range measures {
-			brief := measure.Brief()
-			brief["perm"] = iris.Map{
-				"view": true,
-				"ctrl": app.Allow(admin, measure, resource.Ctrl),
-			}
-			result = append(result, brief)
-		}
-
-		return iris.Map{
-			"total": total,
-			"list":  result,
-		}
-	})
-}
-
-func CreateMeasure(deviceID int64, ctx iris.Context, validate *validator.Validate) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
-	return response.Wrap(func() interface{} {
-		device, err := s.GetDevice(deviceID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, device, resource.Ctrl) {
-			return lang.ErrNoPermission
-		}
-
-		var form struct {
-			Title string `json:"title" validate:"required"`
-			Tag   string `json:"tag" validate:"required"`
-			Kind  int8   `json:"kind" validate:"required"`
-		}
-
-		if err := ctx.ReadJSON(&form); err != nil {
-			return lang.ErrInvalidRequestData
-		}
-
-		if err := validate.Struct(&form); err != nil {
-			return lang.ErrInvalidRequestData
-		}
-
-		measure, err := s.CreateMeasure(device.GetID(), form.Title, form.Tag, resource.MeasureKind(form.Kind))
-		if err != nil {
-			return err
-		}
-
-		return measure.Simple()
-	})
-}
-
-func MeasureDetail(measureID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
-	return response.Wrap(func() interface{} {
-		measure, err := s.GetMeasure(measureID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, measure, resource.View) {
-			return lang.ErrNoPermission
-		}
-
-		return measure.Detail()
-	})
-}
-
-func DeleteMeasure(measureID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
-	return response.Wrap(func() interface{} {
-		measure, err := s.GetMeasure(measureID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, measure, resource.View) {
-			return lang.ErrNoPermission
-		}
-
-		err = measure.Destroy()
-		if err != nil {
-			return err
-		}
-		return lang.Ok
-	})
-}
-
-func LogList(deviceID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
-	return response.Wrap(func() interface{} {
-		device, err := s.GetDevice(deviceID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, device, resource.View) {
-			return lang.ErrNoPermission
-		}
-
-		return web.GetLogList(ctx, device.LogUID())
-	})
-}
-
-func LogDelete(deviceID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
-	return response.Wrap(func() interface{} {
-		device, err := s.GetDevice(deviceID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, device, resource.Ctrl) {
-			return lang.ErrNoPermission
-		}
-
-		return web.DeleteLog(ctx, device.LogUID())
 	})
 }

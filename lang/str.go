@@ -2,7 +2,7 @@ package lang
 
 import (
 	"errors"
-	"github.com/maritimusj/centrum/resource"
+	"github.com/maritimusj/centrum/web/resource"
 )
 
 const (

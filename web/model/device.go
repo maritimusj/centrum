@@ -1,8 +1,8 @@
 package model
 
 import (
-	"github.com/maritimusj/centrum/helper"
-	"github.com/maritimusj/centrum/resource"
+	"github.com/maritimusj/centrum/web/helper"
+	"github.com/maritimusj/centrum/web/resource"
 )
 
 //物理设备，网关等

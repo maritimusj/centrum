@@ -3,13 +3,13 @@ package equipment
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/app"
-	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/model"
-	"github.com/maritimusj/centrum/resource"
-	"github.com/maritimusj/centrum/web/api/web"
+	"github.com/maritimusj/centrum/web/app"
+	"github.com/maritimusj/centrum/web/helper"
+	"github.com/maritimusj/centrum/web/model"
+	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
+	"github.com/maritimusj/centrum/web/store"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -73,9 +73,6 @@ func List(ctx iris.Context) hero.Result {
 }
 
 func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
 		var form struct {
 			OrgID int64  `json:"org"`
@@ -91,23 +88,32 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		var org interface{}
-		if app.IsDefaultAdminUser(admin) {
-			if form.OrgID > 0 {
-				org = form.OrgID
+		return app.TransactionDo(func(s store.Store) interface{} {
+			var org interface{}
+
+			admin := s.MustGetUserFromContext(ctx)
+			if app.IsDefaultAdminUser(admin) {
+				if form.OrgID > 0 {
+					org = form.OrgID
+				} else {
+					org = app.Config.DefaultOrganization()
+				}
 			} else {
-				org = app.Config.DefaultOrganization()
+				org = admin.OrganizationID()
 			}
-		} else {
-			org = admin.OrganizationID()
-		}
 
-		equipment, err := s.CreateEquipment(org, form.Title, form.Desc)
-		if err != nil {
-			return err
-		}
+			equipment, err := s.CreateEquipment(org, form.Title, form.Desc)
+			if err != nil {
+				return err
+			}
 
-		return equipment.Simple()
+			err = app.SetAllow(admin, equipment, resource.View, resource.Ctrl)
+			if err != nil {
+				return err
+			}
+
+			return equipment.Simple()
+		})
 	})
 }
 
@@ -199,213 +205,5 @@ func Delete(equipmentID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 		return lang.Ok
-	})
-}
-
-func StateList(equipmentID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
-	return response.Wrap(func() interface{} {
-		equipment, err := s.GetEquipment(equipmentID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, equipment, resource.View) {
-			return lang.ErrNoPermission
-		}
-
-		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
-		kind := ctx.URLParamIntDefault("kind", int(resource.AllKind))
-
-		var params = []helper.OptionFN{
-			helper.Page(page, pageSize),
-			helper.Kind(resource.MeasureKind(kind)),
-			helper.Equipment(equipment.GetID()),
-		}
-
-		if !app.IsDefaultAdminUser(admin) {
-			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
-			params = append(params, helper.User(admin.GetID()))
-		}
-
-		states, total, err := s.GetStateList(params...)
-		if err != nil {
-			return err
-		}
-
-		var result = make([]model.Map, 0, len(states))
-		for _, state := range states {
-			brief := state.Brief()
-			brief["perm"] = iris.Map{
-				"view": true,
-				"ctrl": app.Allow(admin, state, resource.Ctrl),
-			}
-			result = append(result, brief)
-		}
-
-		return iris.Map{
-			"total": total,
-			"list":  result,
-		}
-	})
-}
-
-func CreateState(equipmentID int64, ctx iris.Context, validate *validator.Validate) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
-	return response.Wrap(func() interface{} {
-		equipment, err := s.GetEquipment(equipmentID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, equipment, resource.Ctrl) {
-			return lang.ErrNoPermission
-		}
-
-		var form struct {
-			Title           string `json:"title" validate:"required"`
-			Desc            string `json:"desc"`
-			MeasureID       int64  `json:"measure_id" validate:"required"`
-			TransformScript string `json:"script"`
-		}
-
-		if err := ctx.ReadJSON(&form); err != nil {
-			return lang.ErrInvalidRequestData
-		}
-		if err := validate.Struct(&form); err != nil {
-			return lang.ErrInvalidRequestData
-		}
-
-		state, err := equipment.CreateState(form.Title, form.Desc, form.MeasureID, form.TransformScript)
-		if err != nil {
-			return err
-		}
-		return state.Simple()
-	})
-}
-
-func StateDetail(stateID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
-	return response.Wrap(func() interface{} {
-		state, err := s.GetState(stateID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, state, resource.View) {
-			return lang.ErrNoPermission
-		}
-
-		return state.Detail()
-	})
-}
-
-func UpdateState(stateID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
-	return response.Wrap(func() interface{} {
-		state, err := s.GetState(stateID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, state, resource.Ctrl) {
-			return lang.ErrNoPermission
-		}
-
-		var form struct {
-			Title           *string `json:"title"`
-			MeasureID       *int64  `json:"measure_id"`
-			TransformScript *string `json:"script"`
-		}
-
-		if err := ctx.ReadJSON(&form); err != nil {
-			return lang.ErrInvalidRequestData
-		}
-
-		if form.Title != nil {
-			state.SetTitle(*form.Title)
-		}
-
-		if form.MeasureID != nil {
-			state.SetMeasure(*form.MeasureID)
-		}
-
-		if form.TransformScript != nil {
-			state.SetScript(*form.TransformScript)
-		}
-
-		err = state.Save()
-		if err != nil {
-			return err
-		}
-
-		return lang.Ok
-	})
-}
-
-func DeleteState(stateID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
-	return response.Wrap(func() interface{} {
-		state, err := s.GetState(stateID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, state, resource.Ctrl) {
-			return lang.ErrNoPermission
-		}
-
-		err = state.Destroy()
-		if err != nil {
-			return err
-		}
-		return lang.Ok
-	})
-}
-
-func LogList(equipmentID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
-	return response.Wrap(func() interface{} {
-		equipment, err := s.GetEquipment(equipmentID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, equipment, resource.View) {
-			return lang.ErrNoPermission
-		}
-
-		return web.GetLogList(ctx, equipment.LogUID())
-	})
-}
-
-func LogDelete(equipmentID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
-	return response.Wrap(func() interface{} {
-		equipment, err := s.GetEquipment(equipmentID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, equipment, resource.Ctrl) {
-			return lang.ErrNoPermission
-		}
-
-		return web.DeleteLog(ctx, equipment.LogUID())
 	})
 }

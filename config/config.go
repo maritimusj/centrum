@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/maritimusj/centrum/resource"
+	"github.com/maritimusj/centrum/web/resource"
 	"time"
 )
 

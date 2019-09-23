@@ -3,10 +3,10 @@ package organization
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/app"
-	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/web/app"
+	"github.com/maritimusj/centrum/web/helper"
+	"github.com/maritimusj/centrum/web/model"
 	"github.com/maritimusj/centrum/web/response"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/go-playground/validator.v9"

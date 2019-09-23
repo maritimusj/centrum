@@ -1,6 +1,6 @@
 package model
 
-import "github.com/maritimusj/centrum/resource"
+import "github.com/maritimusj/centrum/web/resource"
 
 //点位
 type Measure interface {

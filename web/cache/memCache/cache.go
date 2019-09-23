@@ -3,7 +3,7 @@ package memCache
 import (
 	"errors"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/web/model"
 	goCache "github.com/patrickmn/go-cache"
 	"strconv"
 	"time"

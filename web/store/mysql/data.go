@@ -2,8 +2,8 @@ package mysqlStore
 
 import (
 	"database/sql"
-	"github.com/maritimusj/centrum/db"
 	"github.com/maritimusj/centrum/util"
+	"github.com/maritimusj/centrum/web/db"
 	log "github.com/sirupsen/logrus"
 
 	"errors"

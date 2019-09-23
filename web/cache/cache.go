@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/web/model"
 )
 
 type Cache interface {

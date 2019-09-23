@@ -1,6 +1,6 @@
 package model
 
-import "github.com/maritimusj/centrum/resource"
+import "github.com/maritimusj/centrum/web/resource"
 
 type Map map[string]interface{}
 
@@ -27,6 +27,9 @@ type User interface {
 	SetRoles(roles ...interface{}) error
 	GetRoles() ([]Role, error)
 	Is(role interface{}) (bool, error)
+
+	SetAllow(res Resource, actions ...resource.Action) error
+	SetDeny(res Resource, actions ...resource.Action) error
 
 	IsAllow(res Resource, action resource.Action) (bool, error)
 }

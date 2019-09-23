@@ -3,15 +3,15 @@ package app
 import (
 	"context"
 	"github.com/maritimusj/centrum/config"
-	"github.com/maritimusj/centrum/db"
-	mysqlDB "github.com/maritimusj/centrum/db/mysql"
-	"github.com/maritimusj/centrum/helper"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/logStore"
-	"github.com/maritimusj/centrum/model"
-	"github.com/maritimusj/centrum/resource"
-	"github.com/maritimusj/centrum/store"
-	mysqlStore "github.com/maritimusj/centrum/store/mysql"
+	"github.com/maritimusj/centrum/web/db"
+	mysqlDB "github.com/maritimusj/centrum/web/db/mysql"
+	"github.com/maritimusj/centrum/web/helper"
+	"github.com/maritimusj/centrum/web/model"
+	"github.com/maritimusj/centrum/web/resource"
+	"github.com/maritimusj/centrum/web/store"
+	mysqlStore "github.com/maritimusj/centrum/web/store/mysql"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -30,6 +30,10 @@ func IsDefaultAdminUser(user model.User) bool {
 }
 
 func Allow(user model.User, res model.Resource, action resource.Action) bool {
+	if IsDefaultAdminUser(user) {
+		return true
+	}
+
 	allow, err := user.IsAllow(res, action)
 	if err != nil && err == lang.Error(lang.ErrPolicyNotFound) {
 		return Config.DefaultEffect() == resource.Allow
@@ -161,10 +165,45 @@ func Init(logLevel string) error {
 	if result != nil {
 		return result.(error)
 	}
+
 	return nil
 }
 
 func Close() {
 	cancel()
 	LogDBStore.Wait()
+}
+
+func FlushDB() error {
+	res := TransactionDo(func(store store.Store) interface{} {
+		return store.EraseAllData()
+	})
+	if res != nil {
+		return res.(error)
+	}
+	return nil
+}
+
+func ResetDefaultAdminUser() error {
+	user, err := Store().GetUser(Config.DefaultUserName())
+	if err != nil {
+		return err
+	}
+
+	user.Enable()
+	user.ResetPassword(Config.DefaultUserName())
+	if err = user.Save(); err != nil {
+		return err
+	}
+	if err = user.SetRoles(lang.RoleSystemAdminName); err != nil {
+		return err
+	}
+	return nil
+}
+
+func SetAllow(user model.User, res model.Resource, actions ...resource.Action) error {
+	if IsDefaultAdminUser(user) {
+		return nil
+	}
+	return user.SetAllow(res, actions...)
 }

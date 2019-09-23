@@ -2,9 +2,9 @@ package mysqlStore
 
 import (
 	"database/sql"
-	"github.com/maritimusj/centrum/db"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/model"
+	"github.com/maritimusj/centrum/web/db"
+	"github.com/maritimusj/centrum/web/model"
 )
 
 func getOrganizationID(db db.DB, org interface{}) (int64, error) {

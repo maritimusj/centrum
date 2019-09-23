@@ -1,6 +1,6 @@
 package model
 
-import "github.com/maritimusj/centrum/resource"
+import "github.com/maritimusj/centrum/web/resource"
 
 //策略
 type Policy interface {
