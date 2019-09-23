@@ -289,7 +289,6 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 			type P struct {
 				ResourceClass int   `json:"class"`
 				ResourceID    int64 `json:"id"`
-				Invoke        *bool `json:"invoke"` //是否可以调用api
 				View          *bool `json:"view"`   //是否可以观察资源
 				Ctrl          *bool `json:"ctrl"`   //是否可以控制资源
 				Enable        *bool `json:"enable"` //角色是否启用
@@ -337,13 +336,12 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 					if err != nil {
 						return err
 					}
-					if p.Invoke != nil {
-						effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
-						_, err = role.SetPolicy(res, resource.Invoke, effect, make(map[model.Resource]struct{}))
-						if err != nil {
-							return err
-						}
+
+					//Api权限不允许单独分配（只能通过角色分配）
+					if res.ResourceClass() == resource.Api {
+						return lang.ErrNoPermission
 					}
+
 					if p.View != nil {
 						effect := util.If(*p.View, resource.Allow, resource.Deny).(resource.Effect)
 						_, err = role.SetPolicy(res, resource.View, effect, make(map[model.Resource]struct{}))

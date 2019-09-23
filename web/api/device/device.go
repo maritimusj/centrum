@@ -42,8 +42,8 @@ func List(ctx iris.Context) hero.Result {
 			params = append(params, helper.Keyword(keyword))
 		}
 
-		groupID := ctx.URLParamInt64Default("group", -1)
-		if groupID != -1 {
+		if ctx.URLParamExists("group") {
+			groupID := ctx.URLParamInt64Default("group", 0)
 			params = append(params, helper.Group(groupID))
 		}
 
@@ -82,6 +82,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 		var form struct {
 			OrgID    int64  `json:"org"`
 			Title    string `json:"title" validate:"required"`
+			Groups   []int64 `json:"groups"`
 			ConnStr  string `json:"params.connStr" validate:"required"`
 			Interval int64  `json:"params.interval" validate:"required"`
 		}
@@ -111,6 +112,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 				"interval": form.Interval,
 			},
 		})
+
 		if err != nil {
 			go admin.Logger().WithFields(logrus.Fields{
 				"title":    form.Title,
@@ -120,6 +122,17 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			return err
 		} else {
 			go admin.Logger().WithFields(logrus.Fields(device.Brief())).Info(lang.Str(lang.CreateDeviceOk, device.Title()))
+		}
+
+		if  len(form.Groups) > 0 {
+			var groups []interface{}
+			for _, g := range form.Groups {
+				groups = append(groups, g)
+			}
+			err = device.SetGroups(groups...)
+			if err != nil {
+				return err
+			}
 		}
 
 		return device.Simple()
@@ -192,7 +205,7 @@ func Update(deviceID int64, ctx iris.Context) hero.Result {
 			logFields["Interval"] = form.Interval
 		}
 
-		if form.Groups != nil && len(*form.Groups) > 0 {
+		if form.Groups != nil {
 			var groups []interface{}
 			for _, g := range *form.Groups {
 				groups = append(groups, g)

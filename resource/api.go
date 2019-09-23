@@ -76,20 +76,6 @@ var (
 		MyProfileUpdate,
 		MyPerm,
 		MyPermMulti,
-
-		UserLogList,
-		DeviceLogList,
-		EquipmentLogList,
-		ResourceList,
-		UserList,
-		RoleList,
-		GroupList,
-		DeviceList,
-		MeasureList,
-		EquipmentList,
-		StateList,
-		LogLevelList,
-		LogList,
 	}
 
 	OrganizationAdmin = append(Guest,
