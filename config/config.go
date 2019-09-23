@@ -6,6 +6,9 @@ import (
 )
 
 type Config interface {
+	APIAddr() string
+	APIPort() int
+
 	LogLevel() string
 	SetLogLevel(string)
 
@@ -27,6 +30,14 @@ type config struct {
 	jwtTokenKey []byte
 	logLevel    string
 	logFileName string
+}
+
+func (c *config) APIAddr() string {
+	return ""
+}
+
+func (c *config) APIPort() int {
+	return 9090
 }
 
 func (c *config) LogFileName() string {

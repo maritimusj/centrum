@@ -1,10 +1,12 @@
 package api
 
 import (
+	"fmt"
 	"github.com/iris-contrib/middleware/cors"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/core/router"
 	"github.com/kataras/iris/hero"
+	"github.com/maritimusj/centrum/app"
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/web/api/log"
 	"github.com/maritimusj/centrum/web/api/my"
@@ -174,7 +176,8 @@ func (server *server) Start(cfg config.Config) error {
 		})
 	})
 
-	return server.app.Run(iris.Addr(":9090"), iris.WithoutServerError(iris.ErrServerClosed))
+	addr := fmt.Sprintf("%s:%d", app.Config.APIAddr(), app.Config.APIPort())
+	return server.app.Run(iris.Addr(addr), iris.WithoutServerError(iris.ErrServerClosed))
 }
 
 func (server *server) Close() {
