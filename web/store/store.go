@@ -36,6 +36,9 @@ type Store interface {
 	RemovePolicy(policyID int64) error
 	GetPolicyList(res model.Resource, options ...helper.OptionFN) ([]model.Policy, int64, error)
 
+	GetDeviceGroups(deviceID int64) ([]model.Group, error)
+	GetEquipmentGroups(deviceID int64) ([]model.Group, error)
+
 	GetGroup(groupID int64) (model.Group, error)
 	CreateGroup(org interface{}, title, desc string, parentID int64) (model.Group, error)
 	RemoveGroup(groupID int64) error

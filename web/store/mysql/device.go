@@ -215,7 +215,7 @@ func (d *Device) SetGroups(groups ...interface{}) error {
 
 func (d *Device) Groups() ([]model.Group, error) {
 	if d != nil {
-		groups, _, err := d.store.GetGroupList(helper.Device(d.id))
+		groups, err := d.store.GetDeviceGroups(d.GetID())
 		if err != nil {
 			return nil, err
 		}
@@ -281,10 +281,11 @@ func (d *Device) Brief() model.Map {
 		return model.Map{}
 	}
 	return model.Map{
-		"id":         d.id,
-		"enable":     d.IsEnabled(),
-		"title":      d.title,
-		"created_at": d.createdAt,
+		"id":             d.id,
+		"enable":         d.IsEnabled(),
+		"title":          d.title,
+		"params.connStr": d.GetOption("params.connStr").Str,
+		"created_at":     d.createdAt,
 	}
 }
 
@@ -292,10 +293,24 @@ func (d *Device) Detail() model.Map {
 	if d == nil {
 		return model.Map{}
 	}
-	return model.Map{
-		"id":         d.id,
-		"enable":     d.IsEnabled(),
-		"title":      d.title,
-		"created_at": d.createdAt,
+
+	detail := model.Map{
+		"id":              d.id,
+		"enable":          d.IsEnabled(),
+		"title":           d.title,
+		"params.connStr":  d.GetOption("params.connStr").String(),
+		"params.interval": d.GetOption("params.interval").Int(),
+		"created_at":      d.createdAt,
 	}
+
+	groups, _ := d.Groups()
+	if len(groups) > 0 {
+		groupsProfile := make([]model.Map, 0, len(groups))
+		for _, g := range groups {
+			groupsProfile = append(groupsProfile, g.Simple())
+		}
+		detail["groups"] = groupsProfile
+	}
+
+	return detail
 }

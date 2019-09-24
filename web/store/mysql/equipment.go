@@ -191,7 +191,7 @@ func (e *Equipment) SetGroups(groups ...interface{}) error {
 }
 
 func (e *Equipment) Groups() ([]model.Group, error) {
-	groups, _, err := e.store.GetGroupList(helper.Device(e.id))
+	groups, err := e.store.GetEquipmentGroups(e.GetID())
 	if err != nil {
 		return nil, err
 	}

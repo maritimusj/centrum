@@ -228,7 +228,7 @@ func (g *Group) RemoveDevice(devices ...interface{}) error {
 }
 
 func (g *Group) GetDeviceList(options ...helper.OptionFN) ([]model.Device, int64, error) {
-	return g.store.GetDeviceList(options...)
+	return g.store.GetDeviceList(append(options, helper.Group(g.GetID()))...)
 }
 
 func (g *Group) AddEquipment(equipments ...interface{}) error {
@@ -295,7 +295,7 @@ func (g *Group) RemoveEquipment(equipments ...interface{}) error {
 }
 
 func (g *Group) GetEquipmentList(options ...helper.OptionFN) ([]model.Equipment, int64, error) {
-	return g.store.GetEquipmentList(options...)
+	return g.store.GetEquipmentList(append(options, helper.Group(g.GetID()))...)
 }
 
 func (g *Group) Simple() model.Map {

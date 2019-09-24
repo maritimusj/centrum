@@ -986,6 +986,74 @@ func (s *mysqlStore) GetGroup(groupID int64) (model.Group, error) {
 	return result.(model.Group), nil
 }
 
+func (s *mysqlStore) GetDeviceGroups(deviceID int64) ([]model.Group, error) {
+	const (
+		SQL = "SELECT id FROM " + TbDeviceGroups + " WHERE device_id=?"
+	)
+
+	rows, err := s.db.Query(SQL, deviceID)
+	if err != nil {
+		return nil, lang.InternalError(err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var groupID int64
+	var result []model.Group
+
+	for rows.Next() {
+		err = rows.Scan(&groupID)
+		if err != nil {
+			if err != sql.ErrNoRows {
+				return nil, lang.InternalError(err)
+			}
+			return []model.Group{}, nil
+		}
+		group, err := s.GetGroup(groupID)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, group)
+	}
+
+	return result, nil
+}
+
+func (s *mysqlStore) GetEquipmentGroups(equipmentID int64) ([]model.Group, error) {
+	const (
+		SQL = "SELECT id FROM " + TbEquipments + " WHERE device_id=?"
+	)
+
+	rows, err := s.db.Query(SQL, equipmentID)
+	if err != nil {
+		return nil, lang.InternalError(err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var groupID int64
+	var result []model.Group
+
+	for rows.Next() {
+		err = rows.Scan(&groupID)
+		if err != nil {
+			if err != sql.ErrNoRows {
+				return nil, lang.InternalError(err)
+			}
+			return []model.Group{}, nil
+		}
+		group, err := s.GetGroup(groupID)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, group)
+	}
+
+	return result, nil
+}
+
 func (s *mysqlStore) CreateGroup(org interface{}, title string, desc string, parentID int64) (model.Group, error) {
 	result := <-synchronized.Do(s.ctx, TbGroups, func() interface{} {
 		orgID, err := getOrganizationID(s.db, org)
