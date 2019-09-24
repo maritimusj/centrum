@@ -23,7 +23,7 @@ func (m *mysqlStore) Wait() {
 	panic("implement me")
 }
 
-func (m *mysqlStore) Get(orgID int64, src, level string, start *uint64, offset, limit uint64) (result []*logStore.Data, total uint64, err error) {
+func (m *mysqlStore) GetList(orgID int64, src, level string, start *uint64, offset, limit uint64) (result []*logStore.Data, total uint64, err error) {
 	panic("implement me")
 }
 

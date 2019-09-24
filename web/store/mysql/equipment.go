@@ -159,7 +159,7 @@ func (e *Equipment) SetDesc(desc string) {
 }
 
 func (e *Equipment) SetGroups(groups ...interface{}) error {
-	err := RemoveData(e.store.db, TbEquipmentGroups, "equipment_id", e.id)
+	err := RemoveData(e.store.db, TbEquipmentGroups, "equipment_id=?", e.id)
 	if err != nil {
 		return err
 	}

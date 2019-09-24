@@ -332,7 +332,7 @@ func (store *store) Stats(orgID int64) map[string]interface{} {
 	return result
 }
 
-func (store *store) Get(orgID int64, src, level string, start *uint64, offset, limit uint64) (result []*logStore.Data, total uint64, err error) {
+func (store *store) GetList(orgID int64, src, level string, start *uint64, offset, limit uint64) (result []*logStore.Data, total uint64, err error) {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 

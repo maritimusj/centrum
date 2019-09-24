@@ -8,7 +8,7 @@ import (
 type ep6v2Adapter struct {
 }
 
-func New() adapter.Adapter {
+func New() adapter.Client {
 	return &ep6v2Adapter{}
 }
 

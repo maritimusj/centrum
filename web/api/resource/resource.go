@@ -4,6 +4,7 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/lang"
+	"github.com/maritimusj/centrum/util"
 	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/helper"
 	"github.com/maritimusj/centrum/web/model"
@@ -15,6 +16,53 @@ func GroupList() hero.Result {
 	return response.Wrap(func() interface{} {
 		return app.Store().GetResourceGroupList()
 	})
+}
+
+func getUserPerm(user model.User, res model.Resource) interface{} {
+	perm := map[string]bool{}
+	switch res.ResourceClass() {
+	case resource.Api:
+		perm["invoke"] = app.Allow(user, res, resource.Invoke)
+	default:
+		perm["view"] = app.Allow(user, res, resource.View)
+		perm["ctrl"] = app.Allow(user, res, resource.Ctrl)
+	}
+	return perm
+}
+
+func getRolePerm(role model.Role, res model.Resource) (interface{}, error) {
+	policies, err := role.GetPolicy(res)
+	if err != nil {
+		return nil, err
+	}
+
+	perm := map[string]interface{}{}
+	switch res.ResourceClass() {
+	case resource.Api:
+		perm["invoke"] = util.If(role.Name() == lang.RoleSystemAdminName, true, func() interface{} {
+			if v, ok := policies[resource.Invoke]; ok {
+				return v.Effect() == resource.Allow
+			} else {
+				return app.Config.DefaultEffect() == resource.Allow
+			}
+		})
+	default:
+		perm["view"] = util.If(role.Name() == lang.RoleSystemAdminName, true, func() interface{} {
+			if v, ok := policies[resource.View]; ok {
+				return v.Effect() == resource.Allow
+			} else {
+				return app.Config.DefaultEffect()
+			}
+		})
+		perm["ctrl"] = util.If(role.Name() == lang.RoleSystemAdminName, true, func() interface{} {
+			if v, ok := policies[resource.Ctrl]; ok {
+				return v.Effect() == resource.Allow
+			} else {
+				return app.Config.DefaultEffect() == resource.Allow
+			}
+		})
+	}
+	return perm, nil
 }
 
 func List(classID int, ctx iris.Context) hero.Result {
@@ -80,7 +128,7 @@ func List(classID int, ctx iris.Context) hero.Result {
 			}
 		}
 
-		resources, total, err := s.GetResourceList(resource.Class(classID), params...)
+		resources, total, err := s.GetResourceList(class, params...)
 		if err != nil {
 			return err
 		}
@@ -91,75 +139,18 @@ func List(classID int, ctx iris.Context) hero.Result {
 				"id":          res.ResourceID(),
 				"title":       res.ResourceTitle(),
 				"desc":        res.ResourceDesc(),
-				"class":       classID,
+				"class":       class,
 				"class_title": lang.ResourceClassTitle(class),
 			}
 
 			if role != nil {
-				perm := model.Map{}
-				policies, err := role.GetPolicy(res)
+				perm, err := getRolePerm(role, res)
 				if err != nil {
 					return err
 				}
-				if resource.Class(classID) == resource.Api {
-					if v, ok := policies[resource.Invoke]; ok {
-						perm["invoke"] = v.Effect() == resource.Allow
-					} else {
-						perm["invoke"] = app.Config.DefaultEffect() == resource.Allow
-					}
-				} else {
-					if v, ok := policies[resource.View]; ok {
-						perm["view"] = v.Effect() == resource.Allow
-					} else {
-						perm["view"] = app.Config.DefaultEffect()
-					}
-					if v, ok := policies[resource.Ctrl]; ok {
-						perm["ctrl"] = v.Effect() == resource.Allow
-					} else {
-						perm["ctrl"] = app.Config.DefaultEffect() == resource.Allow
-					}
-				}
 				entry["perm"] = perm
 			} else if user != nil {
-				perm := model.Map{}
-				if resource.Class(classID) == resource.Api {
-					allowed, err := user.IsAllow(res, resource.Invoke)
-					if err != nil {
-						switch err {
-						case lang.Error(lang.ErrPolicyNotFound):
-							perm["invoke"] = app.Config.DefaultEffect() == resource.Allow
-						default:
-							perm["invoke"] = false
-						}
-					} else {
-						perm["invoke"] = allowed
-					}
-				} else {
-					allowView, err := user.IsAllow(res, resource.View)
-					if err != nil {
-						switch err {
-						case lang.Error(lang.ErrPolicyNotFound):
-							perm["view"] = app.Config.DefaultEffect() == resource.Allow
-						default:
-							perm["view"] = false
-						}
-					} else {
-						perm["view"] = allowView
-					}
-					allowCtrl, err := user.IsAllow(res, resource.Ctrl)
-					if err != nil {
-						switch err {
-						case lang.Error(lang.ErrPolicyNotFound):
-							perm["ctrl"] = app.Config.DefaultEffect() == resource.Allow
-						default:
-							perm["ctrl"] = false
-						}
-					} else {
-						perm["ctrl"] = allowCtrl
-					}
-				}
-
-				entry["perm"] = perm
+				entry["perm"] = getUserPerm(user, res)
 			}
 
 			list = append(list, entry)

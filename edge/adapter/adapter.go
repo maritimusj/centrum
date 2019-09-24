@@ -15,7 +15,7 @@ type CtrlData struct {
 
 type Option map[string]interface{}
 
-type Adapter interface {
+type Client interface {
 	Open(ctx context.Context, option Option) error
 	Close() error
 

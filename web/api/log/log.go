@@ -77,7 +77,7 @@ func GetLogList(ctx iris.Context, orgID int64, src string) interface{} {
 	admin := app.Store().MustGetUserFromContext(ctx)
 
 	x := uint64(start)
-	logs, total, err := app.LogDBStore.Get(orgID, src, level, &x, uint64((page-1)*pageSize), uint64(pageSize))
+	logs, total, err := app.LogDBStore.GetList(orgID, src, level, &x, uint64((page-1)*pageSize), uint64(pageSize))
 	if err != nil {
 		return err
 	}

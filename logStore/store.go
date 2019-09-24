@@ -32,7 +32,7 @@ type Store interface {
 	Open(ctx context.Context, option map[string]interface{}) error
 	Wait()
 
-	Get(orgID int64, src, level string, start *uint64, offset, limit uint64) (result []*Data, total uint64, err error)
+	GetList(orgID int64, src, level string, start *uint64, offset, limit uint64) (result []*Data, total uint64, err error)
 	Delete(orgID int64, src string) error
 	Stats(orgID int64) map[string]interface{}
 
@@ -40,4 +40,3 @@ type Store interface {
 	Levels() []logrus.Level
 	Fire(entry *logrus.Entry) error
 }
-

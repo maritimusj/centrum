@@ -180,7 +180,7 @@ func (d *Device) SetOption(key string, value interface{}) error {
 
 func (d *Device) SetGroups(groups ...interface{}) error {
 	if d != nil {
-		err := RemoveData(d.store.db, TbDeviceGroups, "device_id", d.id)
+		err := RemoveData(d.store.db, TbDeviceGroups, "device_id=?", d.id)
 		if err != nil {
 			return err
 		}
