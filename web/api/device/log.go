@@ -4,7 +4,7 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/web/api/web"
+	"github.com/maritimusj/centrum/web/api/log"
 	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
@@ -23,7 +23,7 @@ func LogList(deviceID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		return web.GetLogList(ctx, device.LogUID())
+		return log.GetLogList(ctx, device.OrganizationID(), device.LogUID())
 	})
 }
 
@@ -40,6 +40,6 @@ func LogDelete(deviceID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		return web.DeleteLog(ctx, device.LogUID())
+		return log.DeleteLog(ctx, device.OrganizationID(), device.LogUID())
 	})
 }

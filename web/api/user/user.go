@@ -2,6 +2,7 @@ package user
 
 import (
 	"github.com/emirpasic/gods/sets/hashset"
+	"github.com/maritimusj/centrum/event"
 	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/store"
@@ -76,7 +77,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		return app.TransactionDo(func(s store.Store) interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			admin := s.MustGetUserFromContext(ctx)
 			if exists, err := s.IsUserExists(form.Username); err != nil {
 				return err
@@ -134,8 +135,22 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 				return err
 			}
 
-			return user.Simple()
+			data := event.NewData(event.User)
+			data.Set("event", event.Created)
+			data.Set("userID", user.GetID())
+			data.Set("adminID", admin.GetID())
+			data.Set("result", user.Simple())
+
+			return data
 		})
+
+		if data, ok := result.(*event.Data); ok {
+			result := data.Pop("result")
+			go event.Fire(data)
+			return result
+		}
+
+		return result
 	})
 }
 
@@ -151,7 +166,7 @@ func Detail(userID int64) hero.Result {
 
 func Update(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		return app.TransactionDo(func(s store.Store) interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			user, err := s.GetUser(userID)
 			if err != nil {
 				return err
@@ -221,14 +236,27 @@ func Update(userID int64, ctx iris.Context) hero.Result {
 			if err != nil {
 				return err
 			}
-			return lang.Ok
+
+			eventData := event.NewData(event.User)
+			eventData.Set("event", event.Updated)
+			eventData.Set("userID", user.GetID())
+			eventData.Set("adminID", admin.GetID())
+
+			return eventData
 		})
+
+		if data, ok := result.(*event.Data); ok {
+			go event.Fire(data)
+			return lang.Ok
+		}
+
+		return result
 	})
 }
 
 func Delete(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		return app.TransactionDo(func(s store.Store) interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			user, err := s.GetUser(userID)
 			if err != nil {
 				return err
@@ -248,6 +276,12 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 			if err != nil {
 				return err
 			}
+
+			data := event.NewData(event.User)
+			data.Set("event", event.Deleted)
+			data.Set("name", user.Name())
+			data.Set("adminID", admin.GetID())
+
 			err = role.Destroy()
 			if err != nil {
 				return err
@@ -258,14 +292,20 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 				return err
 			}
 
-			return lang.Ok
+			return data
 		})
+
+		if data, ok := result.(*event.Data); ok {
+			go event.Fire(data)
+			return lang.Ok
+		}
+		return result
 	})
 }
 
 func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		return app.TransactionDo(func(s store.Store) interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			user, err := s.GetUser(userID)
 			if err != nil {
 				return err
@@ -355,16 +395,31 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 					}
 				}
 
-				return lang.Ok
+				return nil
 			}
+
+			data := event.NewData(event.User)
+			data.Set("event", event.Updated)
+			data.Set("userID", user.GetID())
+			data.Set("adminID", admin.GetID())
 
 			for _, role := range roles {
 				if role.Name() == user.Name() {
-					return update(role)
+					err := update(role)
+					if err != nil {
+						return err
+					}
+					return data
 				}
 			}
 
 			return lang.ErrRoleNotFound
 		})
+
+		if data, ok := result.(*event.Data); ok {
+			go event.Fire(data)
+			return lang.Ok
+		}
+		return result
 	})
 }

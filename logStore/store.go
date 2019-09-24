@@ -59,9 +59,9 @@ type Store interface {
 	Open(ctx context.Context, filename string) error
 	Wait()
 
-	Get(src, level string, start *uint64, offset, limit uint64) (result []*Data, total uint64, err error)
-	Delete(src string) error
-	Stats() map[string]interface{}
+	Get(orgID int64, src, level string, start *uint64, offset, limit uint64) (result []*Data, total uint64, err error)
+	Delete(orgID int64, src string) error
+	Stats(orgID int64) map[string]interface{}
 
 	//interface for logrus hook
 	Levels() []logrus.Level
@@ -176,7 +176,7 @@ func (store *logStore) Close() {
 	}
 }
 
-func (store *logStore) Delete(src string) error {
+func (store *logStore) Delete(orgID int64, src string) error {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
@@ -185,7 +185,11 @@ func (store *logStore) Delete(src string) error {
 	}
 
 	return store.db.Update(func(tx *bolt.Tx) error {
-		logB := tx.Bucket([]byte("log"))
+		orgB := tx.Bucket(i2b(uint64(orgID)))
+		if orgB == nil {
+			return nil
+		}
+		logB := orgB.Bucket([]byte("log"))
 		if logB != nil {
 			err := logB.DeleteBucket([]byte(src))
 			if err == bolt.ErrBucketNotFound {
@@ -273,9 +277,15 @@ func (store *logStore) worker(ctx context.Context, db *bolt.DB, cache <-chan *En
 }
 
 func (store *logStore) write(db *bolt.DB, entry *Entry) error {
+	var orgID uint64
+	if v, ok := entry.Fields["org"].(int64); ok {
+		orgID = uint64(v)
+		delete(entry.Fields, "org")
+	}
+
 	var src string
-	if v, ok := entry.Fields["src"]; ok {
-		src = v.(string)
+	if v, ok := entry.Fields["src"].(string); ok {
+		src = v
 		delete(entry.Fields, "src")
 	}
 
@@ -284,7 +294,12 @@ func (store *logStore) write(db *bolt.DB, entry *Entry) error {
 	}
 
 	return db.Batch(func(tx *bolt.Tx) error {
-		logB, err := tx.CreateBucketIfNotExists([]byte("log"))
+		orgB, err := tx.CreateBucketIfNotExists(i2b(orgID))
+		if err != nil {
+			return err
+		}
+
+		logB, err := orgB.CreateBucketIfNotExists([]byte("log"))
 		if err != nil {
 			return err
 		}
@@ -325,33 +340,38 @@ func (store *logStore) write(db *bolt.DB, entry *Entry) error {
 	})
 }
 
-func (store *logStore) Stats() map[string]interface{} {
+func (store *logStore) Stats(orgID int64) map[string]interface{} {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
 	var stats = map[string]uint64{}
 	_ = store.db.View(func(tx *bolt.Tx) error {
-		logB := tx.Bucket([]byte("log"))
-		if logB != nil {
-			_ = logB.ForEach(func(k, v []byte) error {
-				if v == nil {
-					srcB := logB.Bucket(k)
-					if srcB != nil {
-						_ = srcB.ForEach(func(k, v []byte) error {
-							if v == nil {
-								b := srcB.Bucket(k)
-								if b != nil {
-									stats[string(k)] += b.Sequence()
-								}
-							}
-							return nil
-						})
-
-					}
-				}
-				return nil
-			})
+		orgB := tx.Bucket(i2b(uint64(orgID)))
+		if orgB == nil {
+			return nil
 		}
+
+		logB := tx.Bucket([]byte("log"))
+		if logB == nil {
+			return nil
+		}
+		_ = logB.ForEach(func(k, v []byte) error {
+			if v == nil {
+				srcB := logB.Bucket(k)
+				if srcB != nil {
+					_ = srcB.ForEach(func(k, v []byte) error {
+						if v == nil {
+							b := srcB.Bucket(k)
+							if b != nil {
+								stats[string(k)] += b.Sequence()
+							}
+						}
+						return nil
+					})
+				}
+			}
+			return nil
+		})
 		return nil
 	})
 
@@ -362,7 +382,7 @@ func (store *logStore) Stats() map[string]interface{} {
 	return result
 }
 
-func (store *logStore) Get(src, level string, start *uint64, offset, limit uint64) (result []*Data, total uint64, err error) {
+func (store *logStore) Get(orgID int64, src, level string, start *uint64, offset, limit uint64) (result []*Data, total uint64, err error) {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
@@ -380,58 +400,68 @@ func (store *logStore) Get(src, level string, start *uint64, offset, limit uint6
 		src = SystemLog
 	}
 
+	var errNoResult = errors.New("no result")
+
 	err = store.db.View(func(tx *bolt.Tx) error {
-		logB := tx.Bucket([]byte("log"))
-		if logB != nil {
-			srcB := logB.Bucket([]byte(src))
-			if srcB != nil {
-				entriesB := srcB.Bucket([]byte("entries"))
-				if entriesB != nil {
-					if level != "" {
-						logIDs := make([][]byte, 0, limit)
-						levelB := srcB.Bucket([]byte(level))
-						if levelB != nil {
-							total = levelB.Sequence()
-							if *start == 0 {
-								*start = total
-							} else if *start > total {
-								*start = total
-							}
-							c := levelB.Cursor()
-							prefix := i2b(*start - offset)
-							l := uint64(0)
-							for k, v := c.Seek(prefix); k != nil && l < limit; k, v = c.Prev() {
-								logIDs = append(logIDs, v)
-								l++
-							}
-						}
-						for _, id := range logIDs {
-							v := entriesB.Get(id)
-							result = append(result, &Data{b2i(id), v})
-						}
-					} else {
-						total = entriesB.Sequence()
-						if *start == 0 {
-							*start = total
-						} else if *start > total {
-							*start = total
-						}
+		orgB := tx.Bucket(i2b(uint64(orgID)))
+		if orgB == nil {
+			return errNoResult
+		}
+		logB := orgB.Bucket([]byte("log"))
+		if logB == nil {
+			return errNoResult
+		}
 
-						c := entriesB.Cursor()
-						prefix := i2b(*start - offset)
-						l := uint64(0)
-						for k, v := c.Seek(prefix); k != nil && l < limit; k, v = c.Prev() {
-							result = append(result, &Data{b2i(k), v})
-							l++
-						}
-					}
+		srcB := logB.Bucket([]byte(src))
+		if srcB == nil {
+			return errNoResult
+		}
 
-					return nil
+		entriesB := srcB.Bucket([]byte("entries"))
+		if entriesB == nil {
+			return errNoResult
+		}
+
+		if level != "" {
+			logIDs := make([][]byte, 0, limit)
+			levelB := srcB.Bucket([]byte(level))
+			if levelB != nil {
+				total = levelB.Sequence()
+				if *start == 0 {
+					*start = total
+				} else if *start > total {
+					*start = total
 				}
+				c := levelB.Cursor()
+				prefix := i2b(*start - offset)
+				l := uint64(0)
+				for k, v := c.Seek(prefix); k != nil && l < limit; k, v = c.Prev() {
+					logIDs = append(logIDs, v)
+					l++
+				}
+			}
+			for _, id := range logIDs {
+				v := entriesB.Get(id)
+				result = append(result, &Data{b2i(id), v})
+			}
+		} else {
+			total = entriesB.Sequence()
+			if *start == 0 {
+				*start = total
+			} else if *start > total {
+				*start = total
+			}
+
+			c := entriesB.Cursor()
+			prefix := i2b(*start - offset)
+			l := uint64(0)
+			for k, v := c.Seek(prefix); k != nil && l < limit; k, v = c.Prev() {
+				result = append(result, &Data{b2i(k), v})
+				l++
 			}
 		}
 
-		return errors.New("no result")
+		return nil
 	})
 
 	if err != nil {

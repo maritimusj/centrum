@@ -176,12 +176,17 @@ const (
 	DeleteOrgOk
 	DeleteOrgFail
 
-	CreateDeviceOk
-	CreateDeviceFail
-	UpdateDeviceOk
-	UpdateDeviceFail
-	DeleteDeviceOk
-	DeleteDeviceFail
+	AdminCreateUserOk
+	AdminUpdateUserOk
+	AdminDeleteUserOk
+
+	UserCreateDeviceOk
+	UserUpdateDeviceOk
+	UserDeleteDeviceOk
+
+	UserCreateEquipmentOk
+	UserUpdateEquipmentOk
+	UserDeleteEquipmentOk
 )
 
 type ErrorCode int

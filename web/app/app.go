@@ -88,6 +88,7 @@ func InitLog(levelStr string) error {
 	log.AddHook(LogDBStore)
 	log.SetLevel(level)
 
+	go eventProcessor()
 	return nil
 }
 

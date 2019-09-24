@@ -3,6 +3,7 @@ package equipment
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
+	"github.com/maritimusj/centrum/event"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/helper"
@@ -89,7 +90,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		return app.TransactionDo(func(s store.Store) interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			var org interface{}
 
 			admin := s.MustGetUserFromContext(ctx)
@@ -113,8 +114,22 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 				return err
 			}
 
-			return equipment.Simple()
+			data := event.NewData(event.Equipment)
+			data.Set("event", event.Created)
+			data.Set("equipmentID", equipment.GetID())
+			data.Set("userID", admin.GetID())
+			data.Set("result", equipment.Simple())
+
+			return data
 		})
+
+		if data, ok := result.(*event.Data); ok {
+			result := data.Pop("result")
+			go event.Fire(data)
+			return result
+		}
+
+		return result
 	})
 }
 
@@ -147,7 +162,7 @@ func Update(equipmentID int64, ctx iris.Context) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		return app.TransactionDo(func(s store.Store) interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			admin := s.MustGetUserFromContext(ctx)
 			equipment, err := s.GetEquipment(equipmentID)
 			if err != nil {
@@ -181,28 +196,52 @@ func Update(equipmentID int64, ctx iris.Context) hero.Result {
 			if err != nil {
 				return err
 			}
-			return lang.Ok
+
+			data := event.NewData(event.Equipment)
+			data.Set("event", event.Updated)
+			data.Set("equipmentID", equipment.GetID())
+			data.Set("userID", admin.GetID())
+
+			return data
 		})
+
+		if data, ok := result.(*event.Data); ok {
+			go event.Fire(data)
+			return lang.Ok
+		}
+
+		return result
 	})
 }
 
 func Delete(equipmentID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		s := app.Store()
-		equipment, err := s.GetEquipment(equipmentID)
-		if err != nil {
-			return err
-		}
+		result := app.TransactionDo(func(s store.Store) interface{} {
+			equipment, err := s.GetEquipment(equipmentID)
+			if err != nil {
+				return err
+			}
 
-		admin := s.MustGetUserFromContext(ctx)
-		if !app.Allow(admin, equipment, resource.Ctrl) {
-			return lang.ErrNoPermission
-		}
+			admin := s.MustGetUserFromContext(ctx)
+			if !app.Allow(admin, equipment, resource.Ctrl) {
+				return lang.ErrNoPermission
+			}
 
-		err = equipment.Destroy()
-		if err != nil {
-			return err
+			data := event.NewData(event.Equipment)
+			data.Set("event", event.Deleted)
+			data.Set("title", equipment.Title())
+			data.Set("userID", admin.GetID())
+
+			err = equipment.Destroy()
+			if err != nil {
+				return err
+			}
+			return data
+		})
+		if data, ok := result.(*event.Data); ok {
+			go event.Fire(data)
+			return lang.Ok
 		}
-		return lang.Ok
+		return result
 	})
 }

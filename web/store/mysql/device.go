@@ -38,23 +38,38 @@ func NewDDevice(store *mysqlStore, id int64) *Device {
 }
 
 func (d *Device) OrganizationID() int64 {
-	return d.orgID
+	if d != nil {
+		return d.orgID
+	}
+	return 0
 }
 
 func (d *Device) Organization() (model.Organization, error) {
-	return d.store.GetOrganization(d.orgID)
+	if d != nil {
+		return d.store.GetOrganization(d.orgID)
+	}
+	return nil, lang.Error(lang.ErrDeviceNotFound)
 }
 
 func (d *Device) LogUID() string {
-	return fmt.Sprintf("device:%d", d.id)
+	if d != nil {
+		return fmt.Sprintf("device:%d", d.id)
+	}
+	return "device:<unknown>"
 }
 
 func (d *Device) Logger() *log.Entry {
-	return log.WithField("src", d.LogUID())
+	return log.WithFields(log.Fields{
+		"org": d.OrganizationID(),
+		"src": d.LogUID(),
+	})
 }
 
 func (d *Device) ResourceID() int64 {
-	return d.id
+	if d != nil {
+		return d.id
+	}
+	return 0
 }
 
 func (d *Device) ResourceClass() resource.Class {
@@ -62,34 +77,47 @@ func (d *Device) ResourceClass() resource.Class {
 }
 
 func (d *Device) ResourceTitle() string {
-	return d.title
+	if d != nil {
+		return d.title
+	}
+	return "<unknown>"
 }
 
 func (d *Device) ResourceDesc() string {
-	return d.title
+	if d != nil {
+		return d.title
+	}
+	return "<unknown>"
 }
 
 func (d *Device) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
-	options = append(options, helper.Device(d.GetID()))
-	measures, total, err := d.store.GetMeasureList(options...)
-	if err != nil {
-		return nil, 0, err
+	if d != nil {
+		options = append(options, helper.Device(d.GetID()))
+		measures, total, err := d.store.GetMeasureList(options...)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		result := make([]model.Resource, 0, len(measures))
+		for _, measure := range measures {
+			result = append(result, measure)
+		}
+
+		return result, total, nil
 	}
 
-	result := make([]model.Resource, 0, len(measures))
-	for _, measure := range measures {
-		result = append(result, measure)
-	}
-
-	return result, total, nil
+	return nil, 0, lang.Error(lang.ErrDeviceNotFound)
 }
 
 func (d *Device) GetID() int64 {
-	return d.id
+	if d != nil {
+		return d.id
+	}
+	return 0
 }
 
 func (d *Device) Enable() {
-	if d.enable != status.Enable {
+	if d != nil && d.enable != status.Enable {
 		d.enable = status.Enable
 		d.dirty.Set("enable", func() interface{} {
 			return d.enable
@@ -98,7 +126,7 @@ func (d *Device) Enable() {
 }
 
 func (d *Device) Disable() {
-	if d.enable != status.Disable {
+	if d != nil && d.enable != status.Disable {
 		d.enable = status.Disable
 		d.dirty.Set("enable", func() interface{} {
 			return d.enable
@@ -107,15 +135,18 @@ func (d *Device) Disable() {
 }
 
 func (d *Device) IsEnabled() bool {
-	return d.enable == status.Enable
+	return d != nil && d.enable == status.Enable
 }
 
 func (d *Device) Title() string {
-	return d.title
+	if d != nil {
+		return d.title
+	}
+	return "<unknown>"
 }
 
 func (d *Device) SetTitle(title string) {
-	if d.title != title {
+	if d != nil && d.title != title {
 		d.title = title
 		d.dirty.Set("title", func() interface{} {
 			return d.title
@@ -124,88 +155,114 @@ func (d *Device) SetTitle(title string) {
 }
 
 func (d *Device) GetOption(key string) gjson.Result {
-	return gjson.GetBytes(d.options, key)
+	if d != nil {
+		return gjson.GetBytes(d.options, key)
+	}
+	return gjson.Result{}
 }
 
 func (d *Device) SetOption(key string, value interface{}) error {
-	data, err := sjson.SetBytes(d.options, key, value)
-	if err != nil {
-		return err
-	}
-
-	d.options = data
-	d.dirty.Set("options", func() interface{} {
-		return d.options
-	})
-
-	return d.Save()
-}
-
-func (d *Device) SetGroups(groups ...interface{}) error {
-	err := RemoveData(d.store.db, TbDeviceGroups, "device_id", d.id)
-	if err != nil {
-		return err
-	}
-	now := time.Now()
-	for _, group := range groups {
-		var groupID int64
-		switch v := group.(type) {
-		case int64:
-			groupID = v
-		case model.Group:
-			groupID = v.GetID()
-		default:
-			panic(errors.New("device SetGroups: unknown groups"))
-		}
-		_, err := d.store.GetGroup(groupID)
+	if d != nil {
+		data, err := sjson.SetBytes(d.options, key, value)
 		if err != nil {
 			return err
 		}
-		_, err = CreateData(d.store.db, TbDeviceGroups, map[string]interface{}{
-			"device_id":  d.id,
-			"group_id":   groupID,
-			"created_at": now,
+
+		d.options = data
+		d.dirty.Set("options", func() interface{} {
+			return d.options
 		})
-		if err != nil {
-			return lang.InternalError(err)
-		}
+
+		return d.Save()
 	}
-	return nil
+	return lang.Error(lang.ErrDeviceNotFound)
+}
+
+func (d *Device) SetGroups(groups ...interface{}) error {
+	if d != nil {
+		err := RemoveData(d.store.db, TbDeviceGroups, "device_id", d.id)
+		if err != nil {
+			return err
+		}
+		now := time.Now()
+		for _, group := range groups {
+			var groupID int64
+			switch v := group.(type) {
+			case int64:
+				groupID = v
+			case model.Group:
+				groupID = v.GetID()
+			default:
+				panic(errors.New("device SetGroups: unknown groups"))
+			}
+			_, err := d.store.GetGroup(groupID)
+			if err != nil {
+				return err
+			}
+			_, err = CreateData(d.store.db, TbDeviceGroups, map[string]interface{}{
+				"device_id":  d.id,
+				"group_id":   groupID,
+				"created_at": now,
+			})
+			if err != nil {
+				return lang.InternalError(err)
+			}
+		}
+		return nil
+	}
+	return lang.Error(lang.ErrDeviceNotFound)
 }
 
 func (d *Device) Groups() ([]model.Group, error) {
-	groups, _, err := d.store.GetGroupList(helper.Device(d.id))
-	if err != nil {
-		return nil, err
+	if d != nil {
+		groups, _, err := d.store.GetGroupList(helper.Device(d.id))
+		if err != nil {
+			return nil, err
+		}
+		return groups, nil
 	}
-	return groups, nil
+	return nil, lang.Error(lang.ErrDeviceNotFound)
 }
 
 func (d *Device) GetMeasureList(options ...helper.OptionFN) ([]model.Measure, int64, error) {
-	return d.store.GetMeasureList(options...)
+	if d != nil {
+		return d.store.GetMeasureList(options...)
+	}
+	return nil, 0, lang.Error(lang.ErrDeviceNotFound)
 }
 
 func (d *Device) CreateMeasure(title string, tag string, kind resource.MeasureKind) (model.Measure, error) {
-	return d.store.CreateMeasure(d.GetID(), title, tag, kind)
+	if d != nil {
+		return d.store.CreateMeasure(d.GetID(), title, tag, kind)
+	}
+	return nil, lang.Error(lang.ErrDeviceNotFound)
 }
 
 func (d *Device) CreatedAt() time.Time {
-	return d.createdAt
+	if d != nil {
+		return d.createdAt
+	}
+	return time.Time{}
 }
 
 func (d *Device) Destroy() error {
-	return d.store.RemoveDevice(d.id)
+	if d != nil {
+		return d.store.RemoveDevice(d.id)
+	}
+	return lang.Error(lang.ErrDeviceNotFound)
 }
 
 func (d *Device) Save() error {
-	if d.dirty.Any() {
-		err := SaveData(d.store.db, TbDevices, d.dirty.Data(true), "id=?", d.id)
-		if err != nil {
-			return lang.InternalError(err)
+	if d != nil {
+		if d.dirty.Any() {
+			err := SaveData(d.store.db, TbDevices, d.dirty.Data(true), "id=?", d.id)
+			if err != nil {
+				return lang.InternalError(err)
+			}
 		}
+		return nil
 	}
-
-	return nil
+	return lang.Error(lang.ErrDeviceNotFound)
 }
 
 func (d *Device) Simple() model.Map {

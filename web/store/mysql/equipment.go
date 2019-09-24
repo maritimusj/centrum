@@ -47,7 +47,10 @@ func (e *Equipment) LogUID() string {
 }
 
 func (e *Equipment) Logger() *log.Entry {
-	return log.WithField("src", e.LogUID())
+	return log.WithFields(log.Fields{
+		"org": e.OrganizationID(),
+		"src": e.LogUID(),
+	})
 }
 
 func (e *Equipment) ResourceClass() resource.Class {
@@ -91,7 +94,16 @@ func (e *Equipment) CreatedAt() time.Time {
 }
 
 func (e *Equipment) Save() error {
-	panic("implement me")
+	if e != nil {
+		if e.dirty.Any() {
+			err := SaveData(e.store.db, TbEquipments, e.dirty.Data(true), "id=?", e.id)
+			if err != nil {
+				return lang.InternalError(err)
+			}
+		}
+		return nil
+	}
+	return lang.Error(lang.ErrEquipmentNotFound)
 }
 
 func (e *Equipment) Destroy() error {

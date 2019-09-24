@@ -3,6 +3,7 @@ package device
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
+	"github.com/maritimusj/centrum/event"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/helper"
@@ -10,7 +11,6 @@ import (
 	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
 	"github.com/maritimusj/centrum/web/store"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -91,7 +91,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		return app.TransactionDo(func(s store.Store) interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			var org interface{}
 
 			admin := s.MustGetUserFromContext(ctx)
@@ -113,14 +113,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			})
 
 			if err != nil {
-				go admin.Logger().WithFields(logrus.Fields{
-					"title":    form.Title,
-					"connStr":  form.ConnStr,
-					"interval": form.Interval,
-				}).Info(lang.Str(lang.CreateDeviceFail, err))
 				return err
-			} else {
-				go admin.Logger().WithFields(logrus.Fields(device.Brief())).Info(lang.Str(lang.CreateDeviceOk, device.Title()))
 			}
 
 			if len(form.Groups) > 0 {
@@ -139,8 +132,22 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 				return err
 			}
 
-			return device.Simple()
+			data := event.NewData(event.Device)
+			data.Set("event", event.Created)
+			data.Set("deviceID", device.GetID())
+			data.Set("userID", admin.GetID())
+			data.Set("result", device.Simple())
+
+			return data
 		})
+
+		if data, ok := result.(*event.Data); ok {
+			result := data.Pop("result")
+			go event.Fire(data)
+			return result
+		}
+
+		return result
 	})
 }
 
@@ -173,7 +180,7 @@ func Update(deviceID int64, ctx iris.Context) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		return app.TransactionDo(func(s store.Store) interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			device, err := s.GetDevice(deviceID)
 			if err != nil {
 				return err
@@ -220,20 +227,29 @@ func Update(deviceID int64, ctx iris.Context) hero.Result {
 
 			err = device.Save()
 			if err != nil {
-				go admin.Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceFail, device.Title(), err))
 				return err
-			} else {
-				go admin.Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceOk, device.Title()))
 			}
 
-			return lang.Ok
+			data := event.NewData(event.Device)
+			data.Set("event", event.Updated)
+			data.Set("deviceID", device.GetID())
+			data.Set("userID", admin.GetID())
+
+			return data
 		})
+
+		if data, ok := result.(*event.Data); ok {
+			go event.Fire(data)
+			return lang.Ok
+		}
+
+		return result
 	})
 }
 
 func Delete(deviceID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		return app.TransactionDo(func(s store.Store) interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			device, err := s.GetDevice(deviceID)
 			if err != nil {
 				return err
@@ -244,15 +260,23 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 				return lang.ErrNoPermission
 			}
 
+			data := event.NewData(event.Device)
+			data.Set("event", event.Deleted)
+			data.Set("title", device.Title())
+			data.Set("userID", admin.GetID())
+
 			err = device.Destroy()
 			if err != nil {
-				go admin.Logger().Info(lang.Str(lang.DeleteDeviceFail, device.Title(), err))
 				return err
-			} else {
-				go admin.Logger().Info(lang.Str(lang.DeleteDeviceOk, device.Title()))
 			}
 
-			return lang.Ok
+			return data
 		})
+
+		if data, ok := result.(*event.Data); ok {
+			go event.Fire(data)
+			return lang.Ok
+		}
+		return result
 	})
 }

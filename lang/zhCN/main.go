@@ -182,12 +182,17 @@ var (
 		lang.DeleteOrgOk:   "删除组织 %s(%s) 成功！",
 		lang.DeleteOrgFail: "删除组织 %s(%s) 失败：%s",
 
-		lang.CreateDeviceOk:   "创建设备 %s 成功！",
-		lang.CreateDeviceFail: "创建设备失败：%s",
-		lang.UpdateDeviceOk:   "更新设备 %s 成功！",
-		lang.UpdateDeviceFail: "更新设备 %s 失败：%s",
-		lang.DeleteDeviceOk:   "删除设备 %s 成功！",
-		lang.DeleteDeviceFail: "删除设备 %s 失败：%s",
+		lang.AdminCreateUserOk: "管理员 %s 创建用户 %s 成功！",
+		lang.AdminUpdateUserOk: "管理员 %s 更新用户 %s 成功！",
+		lang.AdminDeleteUserOk: "管理员 %s 删除用户 %s 成功！",
+
+		lang.UserCreateDeviceOk: "管理员 %s 创建设备 %s 成功！",
+		lang.UserUpdateDeviceOk: "管理员 %s 更新设备 %s 成功！",
+		lang.UserDeleteDeviceOk: "管理员 %s 删除设备 %s 成功！",
+
+		lang.UserCreateEquipmentOk: "管理员 %s 创建自定义设备 %s 成功！",
+		lang.UserUpdateEquipmentOk: "管理员 %s 更新自定义设备 %s 成功！",
+		lang.UserDeleteEquipmentOk: "管理员 %s 删除自定义设备 %s 成功！",
 	}
 
 	errStrMap = map[lang.ErrorCode]string{

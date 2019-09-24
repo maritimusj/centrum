@@ -155,7 +155,7 @@ func Update(groupID int64, ctx iris.Context) hero.Result {
 		}
 
 		admin := s.MustGetUserFromContext(ctx)
-		if app.Allow(admin, group, resource.Ctrl) {
+		if !app.Allow(admin, group, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
 
