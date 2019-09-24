@@ -14,12 +14,13 @@ import (
 )
 
 func List(ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
+
 		var params []helper.OptionFN
 		var orgID int64
+
+		admin := s.MustGetUserFromContext(ctx)
 		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)
@@ -118,15 +119,14 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 }
 
 func Detail(deviceID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
 		equipment, err := s.GetEquipment(deviceID)
 		if err != nil {
 			return err
 		}
 
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.Allow(admin, equipment, resource.View) {
 			return lang.ErrNoPermission
 		}
@@ -136,66 +136,65 @@ func Detail(deviceID int64, ctx iris.Context) hero.Result {
 }
 
 func Update(equipmentID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
-		equipment, err := s.GetEquipment(equipmentID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, equipment, resource.Ctrl) {
-			return lang.ErrNoPermission
-		}
-
 		var form struct {
 			Title  *string  `json:"title"`
 			Desc   *string  `json:"desc"`
 			Groups *[]int64 `json:"groups"`
 		}
 
-		if err = ctx.ReadJSON(&form); err != nil {
+		if err := ctx.ReadJSON(&form); err != nil {
 			return lang.ErrInvalidRequestData
 		}
 
-		if form.Title != nil {
-			equipment.SetTitle(*form.Title)
-		}
-
-		if form.Desc != nil {
-			equipment.SetDesc(*form.Desc)
-		}
-
-		if form.Groups != nil && len(*form.Groups) > 0 {
-			var groups []interface{}
-			for _, g := range *form.Groups {
-				groups = append(groups, g)
-			}
-			err = equipment.SetGroups(groups...)
+		return app.TransactionDo(func(s store.Store) interface{} {
+			admin := s.MustGetUserFromContext(ctx)
+			equipment, err := s.GetEquipment(equipmentID)
 			if err != nil {
 				return err
 			}
-		}
 
-		err = equipment.Save()
-		if err != nil {
-			return err
-		}
-		return lang.Ok
+			if !app.Allow(admin, equipment, resource.Ctrl) {
+				return lang.ErrNoPermission
+			}
+
+			if form.Title != nil {
+				equipment.SetTitle(*form.Title)
+			}
+
+			if form.Desc != nil {
+				equipment.SetDesc(*form.Desc)
+			}
+
+			if form.Groups != nil && len(*form.Groups) > 0 {
+				var groups []interface{}
+				for _, g := range *form.Groups {
+					groups = append(groups, g)
+				}
+				err = equipment.SetGroups(groups...)
+				if err != nil {
+					return err
+				}
+			}
+
+			err = equipment.Save()
+			if err != nil {
+				return err
+			}
+			return lang.Ok
+		})
 	})
 }
 
 func Delete(equipmentID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
 		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
 
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.Allow(admin, equipment, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}

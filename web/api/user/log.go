@@ -35,4 +35,3 @@ func LogDelete(userID int64, ctx iris.Context) hero.Result {
 		return web.DeleteLog(ctx, user.LogUID())
 	})
 }
-

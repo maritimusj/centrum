@@ -11,15 +11,14 @@ import (
 )
 
 func LogList(equipmentID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
 		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
 
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.Allow(admin, equipment, resource.View) {
 			return lang.ErrNoPermission
 		}
@@ -29,15 +28,14 @@ func LogList(equipmentID int64, ctx iris.Context) hero.Result {
 }
 
 func LogDelete(equipmentID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
 		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
 
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.Allow(admin, equipment, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
@@ -45,4 +43,3 @@ func LogDelete(equipmentID int64, ctx iris.Context) hero.Result {
 		return web.DeleteLog(ctx, equipment.LogUID())
 	})
 }
-

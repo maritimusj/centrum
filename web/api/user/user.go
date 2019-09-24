@@ -18,13 +18,12 @@ import (
 )
 
 func List(ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
 		var params []helper.OptionFN
 		var orgID int64
 
+		s := app.Store()
+		admin := s.MustGetUserFromContext(ctx)
 		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)
@@ -153,13 +152,12 @@ func Detail(userID int64) hero.Result {
 func Update(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		return app.TransactionDo(func(s store.Store) interface{} {
-			admin := s.MustGetUserFromContext(ctx)
-
 			user, err := s.GetUser(userID)
 			if err != nil {
 				return err
 			}
 
+			admin := s.MustGetUserFromContext(ctx)
 			if app.IsDefaultAdminUser(user) && !app.IsDefaultAdminUser(admin) {
 				return lang.ErrNoPermission
 			}
@@ -231,13 +229,12 @@ func Update(userID int64, ctx iris.Context) hero.Result {
 func Delete(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		return app.TransactionDo(func(s store.Store) interface{} {
-			admin := s.MustGetUserFromContext(ctx)
-
 			user, err := s.GetUser(userID)
 			if err != nil {
 				return err
 			}
 
+			admin := s.MustGetUserFromContext(ctx)
 			if app.IsDefaultAdminUser(user) {
 				return lang.ErrFailedRemoveDefaultUser
 			}
@@ -269,8 +266,6 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		return app.TransactionDo(func(s store.Store) interface{} {
-			admin := s.MustGetUserFromContext(ctx)
-
 			user, err := s.GetUser(userID)
 			if err != nil {
 				return err
@@ -303,6 +298,9 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 			for _, role := range roles {
 				newRoles.Add(role.GetID())
 			}
+
+			admin := s.MustGetUserFromContext(ctx)
+
 			//先处理角色设定
 			for _, p := range form.Policies {
 				if p.Enable != nil {

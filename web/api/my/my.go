@@ -8,22 +8,18 @@ import (
 	"github.com/maritimusj/centrum/web/model"
 	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
+	"github.com/maritimusj/centrum/web/store"
 	"strconv"
 )
 
 func Detail(ctx iris.Context) hero.Result {
-	s := app.Store()
-	my := s.MustGetUserFromContext(ctx)
-
+	my := app.Store().MustGetUserFromContext(ctx)
 	return response.Wrap(func() interface{} {
 		return my.Detail()
 	})
 }
 
 func Update(ctx iris.Context) hero.Result {
-	s := app.Store()
-	my := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
 		var form struct {
 			Password *string `json:"password"`
@@ -37,38 +33,40 @@ func Update(ctx iris.Context) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		if form.Password != nil && *form.Password != "" {
-			my.ResetPassword(*form.Password)
-		}
+		return app.TransactionDo(func(s store.Store) interface{} {
+			my := s.MustGetUserFromContext(ctx)
+			if form.Password != nil && *form.Password != "" {
+				my.ResetPassword(*form.Password)
+			}
 
-		var data = model.Map{}
-		if form.Title != nil {
-			data["title"] = *form.Title
-		}
-		if form.Mobile != nil {
-			data["mobile"] = *form.Mobile
-		}
-		if form.Email != nil {
-			data["email"] = *form.Email
-		}
+			var data = model.Map{}
+			if form.Title != nil {
+				data["title"] = *form.Title
+			}
+			if form.Mobile != nil {
+				data["mobile"] = *form.Mobile
+			}
+			if form.Email != nil {
+				data["email"] = *form.Email
+			}
 
-		if len(data) > 0 {
-			my.Update(data)
-		}
+			if len(data) > 0 {
+				my.Update(data)
+			}
 
-		err = my.Save()
-		if err != nil {
-			return err
-		}
-		return lang.Ok
+			err = my.Save()
+			if err != nil {
+				return err
+			}
+			return lang.Ok
+		})
 	})
 }
 
 func Perm(class string, ctx iris.Context) hero.Result {
-	s := app.Store()
-	my := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
+
 		var res model.Resource
 		var err error
 		switch class {
@@ -97,6 +95,8 @@ func Perm(class string, ctx iris.Context) hero.Result {
 			return err
 		}
 
+		my := s.MustGetUserFromContext(ctx)
+
 		if class == "api" {
 			return iris.Map{
 				"invoke": app.Allow(my, res, resource.Invoke),
@@ -110,9 +110,6 @@ func Perm(class string, ctx iris.Context) hero.Result {
 }
 
 func MultiPerm(class string, ctx iris.Context) hero.Result {
-	s := app.Store()
-	my := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
 		var form struct {
 			Names []string `json:"names"`
@@ -122,6 +119,9 @@ func MultiPerm(class string, ctx iris.Context) hero.Result {
 		if err := ctx.ReadJSON(&form); err != nil || resource.IsValidClass(class) {
 			return lang.ErrInvalidRequestData
 		}
+
+		s := app.Store()
+		my := s.MustGetUserFromContext(ctx)
 
 		var perms = iris.Map{}
 		switch class {

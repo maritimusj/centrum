@@ -14,15 +14,15 @@ import (
 )
 
 func MeasureList(deviceID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
+
 		device, err := s.GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
 
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.Allow(admin, device, resource.View) {
 			return lang.ErrNoPermission
 		}
@@ -112,15 +112,14 @@ func CreateMeasure(deviceID int64, ctx iris.Context, validate *validator.Validat
 }
 
 func MeasureDetail(measureID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
 		measure, err := s.GetMeasure(measureID)
 		if err != nil {
 			return err
 		}
 
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.Allow(admin, measure, resource.View) {
 			return lang.ErrNoPermission
 		}
@@ -130,15 +129,14 @@ func MeasureDetail(measureID int64, ctx iris.Context) hero.Result {
 }
 
 func DeleteMeasure(measureID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
 		measure, err := s.GetMeasure(measureID)
 		if err != nil {
 			return err
 		}
 
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.Allow(admin, measure, resource.View) {
 			return lang.ErrNoPermission
 		}

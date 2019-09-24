@@ -14,15 +14,14 @@ import (
 )
 
 func StateList(equipmentID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
 		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
 
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.Allow(admin, equipment, resource.View) {
 			return lang.ErrNoPermission
 		}
@@ -106,15 +105,14 @@ func CreateState(equipmentID int64, ctx iris.Context, validate *validator.Valida
 }
 
 func StateDetail(stateID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
 		state, err := s.GetState(stateID)
 		if err != nil {
 			return err
 		}
 
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.Allow(admin, state, resource.View) {
 			return lang.ErrNoPermission
 		}
@@ -124,15 +122,14 @@ func StateDetail(stateID int64, ctx iris.Context) hero.Result {
 }
 
 func UpdateState(stateID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
 		state, err := s.GetState(stateID)
 		if err != nil {
 			return err
 		}
 
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.Allow(admin, state, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
@@ -169,15 +166,14 @@ func UpdateState(stateID int64, ctx iris.Context) hero.Result {
 }
 
 func DeleteState(stateID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
 		state, err := s.GetState(stateID)
 		if err != nil {
 			return err
 		}
 
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.Allow(admin, state, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
@@ -189,4 +185,3 @@ func DeleteState(stateID int64, ctx iris.Context) hero.Result {
 		return lang.Ok
 	})
 }
-

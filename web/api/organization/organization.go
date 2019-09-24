@@ -8,15 +8,16 @@ import (
 	"github.com/maritimusj/centrum/web/helper"
 	"github.com/maritimusj/centrum/web/model"
 	"github.com/maritimusj/centrum/web/response"
+	"github.com/maritimusj/centrum/web/store"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/go-playground/validator.v9"
 )
 
 func List(ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
+		admin := s.MustGetUserFromContext(ctx)
+
 		if !app.IsDefaultAdminUser(admin) {
 			return lang.ErrNoPermission
 		}
@@ -52,53 +53,53 @@ func List(ctx iris.Context) hero.Result {
 }
 
 func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
-		if !app.IsDefaultAdminUser(admin) {
-			return lang.ErrNoPermission
-		}
+		return app.TransactionDo(func(s store.Store) interface{} {
+			admin := s.MustGetUserFromContext(ctx)
+			if !app.IsDefaultAdminUser(admin) {
+				return lang.ErrNoPermission
+			}
 
-		var form struct {
-			Name  string `json:"name" validate:"required"`
-			Title string `json:"title"`
-		}
+			var form struct {
+				Name  string `json:"name" validate:"required"`
+				Title string `json:"title"`
+			}
 
-		if err := ctx.ReadJSON(&form); err != nil {
-			return lang.ErrInvalidRequestData
-		}
+			if err := ctx.ReadJSON(&form); err != nil {
+				return lang.ErrInvalidRequestData
+			}
 
-		if err := validate.Struct(&form); err != nil {
-			return lang.ErrInvalidRequestData
-		}
+			if err := validate.Struct(&form); err != nil {
+				return lang.ErrInvalidRequestData
+			}
 
-		if exists, err := s.IsOrganizationExists(form.Name); err != nil {
-			return err
-		} else if exists {
-			return lang.ErrOrganizationExists
-		}
+			if exists, err := s.IsOrganizationExists(form.Name); err != nil {
+				return err
+			} else if exists {
+				return lang.ErrOrganizationExists
+			}
 
-		org, err := s.CreateOrganization(form.Name, form.Title)
-		if err != nil {
-			go admin.Logger().WithFields(logrus.Fields{
-				"name":  form.Name,
-				"title": form.Title,
-			}).Info(lang.Str(lang.CreateOrgFail, form.Name, form.Title, err))
-			return err
-		} else {
-			go admin.Logger().WithFields(logrus.Fields(org.Brief())).Info(lang.Str(lang.CreateOrgOk, org.Title(), org.Name()))
-		}
+			org, err := s.CreateOrganization(form.Name, form.Title)
+			if err != nil {
+				go admin.Logger().WithFields(logrus.Fields{
+					"name":  form.Name,
+					"title": form.Title,
+				}).Info(lang.Str(lang.CreateOrgFail, form.Name, form.Title, err))
+				return err
+			} else {
+				go admin.Logger().WithFields(logrus.Fields(org.Brief())).Info(lang.Str(lang.CreateOrgOk, org.Title(), org.Name()))
+			}
 
-		return org.Simple()
+			return org.Simple()
+		})
 	})
 }
 
 func Detail(orgID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
+
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.IsDefaultAdminUser(admin) {
 			return lang.ErrNoPermission
 		}
@@ -113,65 +114,65 @@ func Detail(orgID int64, ctx iris.Context) hero.Result {
 }
 
 func Update(orgID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
-		if !app.IsDefaultAdminUser(admin) {
-			return lang.ErrNoPermission
-		}
+		return app.TransactionDo(func(s store.Store) interface{} {
+			admin := s.MustGetUserFromContext(ctx)
+			if !app.IsDefaultAdminUser(admin) {
+				return lang.ErrNoPermission
+			}
 
-		org, err := s.GetOrganization(orgID)
-		if err != nil {
-			return err
-		}
+			org, err := s.GetOrganization(orgID)
+			if err != nil {
+				return err
+			}
 
-		var form struct {
-			Title *string `json:"title"`
-		}
+			var form struct {
+				Title *string `json:"title"`
+			}
 
-		if err = ctx.ReadJSON(&form); err != nil {
-			return lang.ErrInvalidRequestData
-		}
+			if err = ctx.ReadJSON(&form); err != nil {
+				return lang.ErrInvalidRequestData
+			}
 
-		logFields := make(map[string]interface{})
+			logFields := make(map[string]interface{})
 
-		if form.Title != nil {
-			org.SetTitle(*form.Title)
-			logFields["title"] = form.Title
-		}
+			if form.Title != nil {
+				org.SetTitle(*form.Title)
+				logFields["title"] = form.Title
+			}
 
-		err = org.Save()
-		if err != nil {
-			return err
-		}
-		return lang.Ok
+			err = org.Save()
+			if err != nil {
+				return err
+			}
+			return lang.Ok
+		})
 	})
 }
 
 func Delete(orgID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
-		if !app.IsDefaultAdminUser(admin) {
-			return lang.ErrNoPermission
-		}
+		return app.TransactionDo(func(s store.Store) interface{} {
+			admin := s.MustGetUserFromContext(ctx)
+			if !app.IsDefaultAdminUser(admin) {
+				return lang.ErrNoPermission
+			}
 
-		org, err := s.GetOrganization(orgID)
-		if err != nil {
-			return err
-		}
+			org, err := s.GetOrganization(orgID)
+			if err != nil {
+				return err
+			}
 
-		if org.Name() == app.Config.DefaultOrganization() {
-			return lang.ErrFailedRemoveDefaultOrganization
-		}
+			if org.Name() == app.Config.DefaultOrganization() {
+				return lang.ErrFailedRemoveDefaultOrganization
+			}
 
-		err = org.Destroy()
-		if err != nil {
-			return err
-		}
+			err = org.Destroy()
+			if err != nil {
+				return err
+			}
 
-		return lang.Ok
+			return lang.Ok
+		})
 	})
 }

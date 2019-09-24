@@ -7,7 +7,6 @@ import (
 
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/web/app"
-
 )
 
 func GetLogList(ctx iris.Context, src string) interface{} {
@@ -48,14 +47,12 @@ func GetLogList(ctx iris.Context, src string) interface{} {
 }
 
 func DeleteLog(ctx iris.Context, src string) interface{} {
-	admin := app.Store().MustGetUserFromContext(ctx)
-
 	err := app.LogDBStore.Delete(src)
 	if err != nil {
 		return err
 	}
 
+	admin := app.Store().MustGetUserFromContext(ctx)
 	log.Info(lang.Str(lang.LogDeletedByUser, admin.Name()))
 	return lang.Ok
 }
-

@@ -18,8 +18,6 @@ func GroupList() hero.Result {
 }
 
 func List(classID int, ctx iris.Context) hero.Result {
-	s := app.Store()
-
 	return response.Wrap(func() interface{} {
 		page := ctx.URLParamInt64Default("page", 1)
 		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
@@ -31,6 +29,8 @@ func List(classID int, ctx iris.Context) hero.Result {
 
 		var role model.Role
 		var user model.User
+
+		s := app.Store()
 
 		if roleID > 0 {
 			role, err = s.GetRole(roleID)

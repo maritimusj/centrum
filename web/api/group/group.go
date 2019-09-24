@@ -14,12 +14,13 @@ import (
 )
 
 func List(ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
+
 		var params []helper.OptionFN
 		var orgID int64
+
+		admin := s.MustGetUserFromContext(ctx)
 		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)
@@ -129,15 +130,14 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 }
 
 func Detail(groupID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
 		group, err := s.GetGroup(groupID)
 		if err != nil {
 			return err
 		}
 
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.Allow(admin, group, resource.View) {
 			return lang.ErrNoPermission
 		}
@@ -147,15 +147,14 @@ func Detail(groupID int64, ctx iris.Context) hero.Result {
 }
 
 func Update(groupID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
 		group, err := s.GetGroup(groupID)
 		if err != nil {
 			return err
 		}
 
+		admin := s.MustGetUserFromContext(ctx)
 		if app.Allow(admin, group, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}
@@ -241,15 +240,14 @@ func Update(groupID int64, ctx iris.Context) hero.Result {
 }
 
 func Delete(groupID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
 		group, err := s.GetGroup(groupID)
 		if err != nil {
 			return err
 		}
 
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.Allow(admin, group, resource.Ctrl) {
 			return lang.ErrNoPermission
 		}

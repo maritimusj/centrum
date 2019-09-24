@@ -15,12 +15,11 @@ import (
 )
 
 func List(ctx iris.Context) hero.Result {
-	s := app.Store()
-
 	return response.Wrap(func() interface{} {
 		var params []helper.OptionFN
 		var orgID int64
 
+		s := app.Store()
 		admin := s.MustGetUserFromContext(ctx)
 		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
@@ -146,15 +145,13 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 }
 
 func Detail(deviceID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
-		device, err := s.GetDevice(deviceID)
+		device, err := app.Store().GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
 
+		admin := app.Store().MustGetUserFromContext(ctx)
 		if !app.Allow(admin, device, resource.View) {
 			return lang.ErrNoPermission
 		}
@@ -164,19 +161,7 @@ func Detail(deviceID int64, ctx iris.Context) hero.Result {
 }
 
 func Update(deviceID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
-		device, err := s.GetDevice(deviceID)
-		if err != nil {
-			return err
-		}
-
-		if !app.Allow(admin, device, resource.Ctrl) {
-			return lang.ErrNoPermission
-		}
-
 		var form struct {
 			Title    *string  `json:"title"`
 			ConnStr  *string  `json:"params.connStr"`
@@ -184,66 +169,77 @@ func Update(deviceID int64, ctx iris.Context) hero.Result {
 			Groups   *[]int64 `json:"groups"`
 		}
 
-		if err = ctx.ReadJSON(&form); err != nil {
+		if err := ctx.ReadJSON(&form); err != nil {
 			return lang.ErrInvalidRequestData
 		}
 
-		logFields := make(map[string]interface{})
-
-		if form.Title != nil {
-			device.SetTitle(*form.Title)
-			logFields["title"] = form.Title
-		}
-
-		if form.ConnStr != nil {
-			err = device.SetOption("params.connStr", form.ConnStr)
+		return app.TransactionDo(func(s store.Store) interface{} {
+			device, err := s.GetDevice(deviceID)
 			if err != nil {
 				return err
 			}
-			logFields["connStr"] = form.ConnStr
-		}
 
-		if form.Interval != nil {
-			err = device.SetOption("params.interval", form.Interval)
+			admin := s.MustGetUserFromContext(ctx)
+			if !app.Allow(admin, device, resource.Ctrl) {
+				return lang.ErrNoPermission
+			}
+
+			logFields := make(map[string]interface{})
+
+			if form.Title != nil {
+				device.SetTitle(*form.Title)
+				logFields["title"] = form.Title
+			}
+
+			if form.ConnStr != nil {
+				err = device.SetOption("params.connStr", form.ConnStr)
+				if err != nil {
+					return err
+				}
+				logFields["connStr"] = form.ConnStr
+			}
+
+			if form.Interval != nil {
+				err = device.SetOption("params.interval", form.Interval)
+				if err != nil {
+					return err
+				}
+				logFields["Interval"] = form.Interval
+			}
+
+			if form.Groups != nil {
+				var groups []interface{}
+				for _, g := range *form.Groups {
+					groups = append(groups, g)
+				}
+				err = device.SetGroups(groups...)
+				if err != nil {
+					return err
+				}
+			}
+
+			err = device.Save()
 			if err != nil {
+				go admin.Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceFail, device.Title(), err))
 				return err
+			} else {
+				go admin.Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceOk, device.Title()))
 			}
-			logFields["Interval"] = form.Interval
-		}
 
-		if form.Groups != nil {
-			var groups []interface{}
-			for _, g := range *form.Groups {
-				groups = append(groups, g)
-			}
-			err = device.SetGroups(groups...)
-			if err != nil {
-				return err
-			}
-		}
-
-		err = device.Save()
-		if err != nil {
-			go admin.Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceFail, device.Title(), err))
-			return err
-		} else {
-			go admin.Logger().WithFields(logFields).Info(lang.Str(lang.UpdateDeviceOk, device.Title()))
-		}
-
-		return lang.Ok
+			return lang.Ok
+		})
 	})
 }
 
 func Delete(deviceID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		return app.TransactionDo(func(s store.Store) interface{} {
-			admin := s.MustGetUserFromContext(ctx)
-
 			device, err := s.GetDevice(deviceID)
 			if err != nil {
 				return err
 			}
 
+			admin := s.MustGetUserFromContext(ctx)
 			if !app.Allow(admin, device, resource.Ctrl) {
 				return lang.ErrNoPermission
 			}

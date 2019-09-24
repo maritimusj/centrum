@@ -11,13 +11,14 @@ import (
 	"github.com/maritimusj/centrum/web/model"
 	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
+	"github.com/maritimusj/centrum/web/store"
 )
 
 func List(ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
+		s := app.Store()
+		admin := s.MustGetUserFromContext(ctx)
+
 		var params []helper.OptionFN
 		var orgID int64
 		if app.IsDefaultAdminUser(admin) {
@@ -79,9 +80,6 @@ func List(ctx iris.Context) hero.Result {
 }
 
 func Create(ctx iris.Context) hero.Result {
-	s := app.Store()
-	admin := s.MustGetUserFromContext(ctx)
-
 	return response.Wrap(func() interface{} {
 		var form struct {
 			OrgID int64  `json:"org"`
@@ -94,27 +92,32 @@ func Create(ctx iris.Context) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		if exists, err := s.IsRoleExists(form.Name); err != nil {
-			return err
-		} else if exists {
-			return lang.ErrRoleExists
-		}
-		var org interface{}
-		if app.IsDefaultAdminUser(admin) {
-			if form.OrgID > 0 {
-				org = form.OrgID
-			} else {
-				org = app.Config.DefaultOrganization()
+		return app.TransactionDo(func(s store.Store) interface{} {
+			if exists, err := s.IsRoleExists(form.Name); err != nil {
+				return err
+			} else if exists {
+				return lang.ErrRoleExists
 			}
-		} else {
-			org = admin.OrganizationID()
-		}
 
-		role, err := s.CreateRole(org, form.Name, form.Title, form.Desc)
-		if err != nil {
-			return err
-		}
-		return role.Brief()
+			var org interface{}
+
+			admin := s.MustGetUserFromContext(ctx)
+			if app.IsDefaultAdminUser(admin) {
+				if form.OrgID > 0 {
+					org = form.OrgID
+				} else {
+					org = app.Config.DefaultOrganization()
+				}
+			} else {
+				org = admin.OrganizationID()
+			}
+
+			role, err := s.CreateRole(org, form.Name, form.Title, form.Desc)
+			if err != nil {
+				return err
+			}
+			return role.Brief()
+		})
 	})
 }
 
@@ -133,8 +136,8 @@ func Detail(roleID int64, ctx iris.Context) hero.Result {
 }
 
 func Update(roleID int64, ctx iris.Context) hero.Result {
-	s := app.Store()
 	return response.Wrap(func() interface{} {
+		s := app.Store()
 		role, err := s.GetRole(roleID)
 		if err != nil {
 			return err
@@ -204,18 +207,18 @@ func Update(roleID int64, ctx iris.Context) hero.Result {
 }
 
 func Delete(roleID int64) hero.Result {
-	s := app.Store()
-
 	return response.Wrap(func() interface{} {
-		role, err := s.GetRole(roleID)
-		if err != nil {
-			return err
-		}
+		return app.TransactionDo(func(s store.Store) interface{} {
+			role, err := s.GetRole(roleID)
+			if err != nil {
+				return err
+			}
 
-		err = role.Destroy()
-		if err != nil {
-			return err
-		}
-		return lang.Ok
+			err = role.Destroy()
+			if err != nil {
+				return err
+			}
+			return lang.Ok
+		})
 	})
 }
