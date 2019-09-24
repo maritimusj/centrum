@@ -988,7 +988,7 @@ func (s *mysqlStore) GetGroup(groupID int64) (model.Group, error) {
 
 func (s *mysqlStore) GetDeviceGroups(deviceID int64) ([]model.Group, error) {
 	const (
-		SQL = "SELECT id FROM " + TbDeviceGroups + " WHERE device_id=?"
+		SQL = "SELECT group_id FROM " + TbDeviceGroups + " WHERE device_id=?"
 	)
 
 	rows, err := s.db.Query(SQL, deviceID)
@@ -1022,7 +1022,7 @@ func (s *mysqlStore) GetDeviceGroups(deviceID int64) ([]model.Group, error) {
 
 func (s *mysqlStore) GetEquipmentGroups(equipmentID int64) ([]model.Group, error) {
 	const (
-		SQL = "SELECT id FROM " + TbEquipments + " WHERE device_id=?"
+		SQL = "SELECT group_id FROM " + TbEquipments + " WHERE device_id=?"
 	)
 
 	rows, err := s.db.Query(SQL, equipmentID)
