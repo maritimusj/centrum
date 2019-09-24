@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/logStore"
+	logStore "github.com/maritimusj/centrum/logStore/bolt"
 	"github.com/maritimusj/centrum/web/db"
 	mysqlDB "github.com/maritimusj/centrum/web/db/mysql"
 	"github.com/maritimusj/centrum/web/helper"
@@ -79,7 +79,9 @@ func InitLog(levelStr string) error {
 	Config.SetLogLevel(levelStr)
 
 	//日志仓库
-	err = LogDBStore.Open(Ctx, Config.LogFileName())
+	err = LogDBStore.Open(Ctx, map[string]interface{}{
+		"filename": Config.LogFileName(),
+	})
 	if err != nil {
 		return err
 	}
