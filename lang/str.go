@@ -266,6 +266,7 @@ var (
 	MenuRoleSysLogs        = "__menu_sys_logs__"
 )
 
+//默认角色，名称，说明及权限集合
 func DefaultRoles() map[[3]string][]string {
 	return map[[3]string][]string{
 		{RoleSystemAdminName, Str(RoleSystemAdminTitle), Str(RoleSystemAdminDesc)}:                   resource.SystemAdmin,
@@ -284,6 +285,7 @@ func DefaultRoles() map[[3]string][]string {
 	}
 }
 
+//api资源的名称，标题和说明
 func ApiResourcesMap() [][3]string {
 	return [][3]string{
 		{resource.OrganizationCreate, Str(ResourceOrganizationCreateTitle), Str(OrganizationCreateDesc)},
