@@ -1,8 +1,9 @@
 package event
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
+	"encoding/gob"
 	"errors"
 	"sync"
 
@@ -36,21 +37,23 @@ func (data *Data) Pop(key string) interface{} {
 }
 
 func (data *Data) Clone() (*Data, error) {
-	jsonData, err := json.Marshal(data)
-	if err != nil {
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode(data); err != nil {
 		return nil, err
 	}
-	var clone Data
-	err = json.Unmarshal(jsonData, &clone)
-	if err != nil {
+	var dst Data
+	if err := gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(&dst); err != nil {
 		return nil, err
 	}
-	return &clone, nil
+	return &dst, nil
 }
 
 type Event interface {
+	//发起一个事件消息
 	Fire(data *Data)
+	//异步订阅事件消息
 	Sub(ctx context.Context, codes ...int) <-chan *Data
+	//注册一个同步事件消息的函数
 	Register(ctx context.Context, fn CallbackFN, codes ...int)
 	Wait()
 }

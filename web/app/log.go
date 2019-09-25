@@ -39,22 +39,21 @@ func processLog(data *event.Data) {
 func processDeviceLog(data map[string]interface{}) {
 	var err error
 	var user model.User
-	//data.Clone后，由于json.Marshal的原因，所有int64都变成了float64
-	if userID, ok := data["userID"].(float64); ok {
-		user, err = Store().GetUser(int64(userID))
+	if userID, ok := data["userID"].(int64); ok {
+		user, err = Store().GetUser(userID)
 		if err != nil {
 			log.Error("processDeviceLog: ", err)
 		}
 	}
 	var device model.Device
-	if deviceID, ok := data["deviceID"].(float64); ok {
-		device, err = Store().GetDevice(int64(deviceID))
+	if deviceID, ok := data["deviceID"].(int64); ok {
+		device, err = Store().GetDevice(deviceID)
 		if err != nil {
 			log.Error("processDeviceLog: ", err)
 		}
 	}
 
-	if v, ok := data["event"].(string); ok {
+	if v, ok := data["event"].(int); ok {
 		switch v {
 		case event.Created:
 			log.Info(lang.Str(lang.UserCreateDeviceOk, user.Name(), device.Title()))
@@ -75,22 +74,21 @@ func processDeviceLog(data map[string]interface{}) {
 func processUserLog(data map[string]interface{}) {
 	var err error
 	var admin model.User
-	//data.Clone后，由于json.Marshal的原因，所有int64都变成了float64
-	if userID, ok := data["adminID"].(float64); ok {
-		admin, err = Store().GetUser(int64(userID))
+	if userID, ok := data["adminID"].(int64); ok {
+		admin, err = Store().GetUser(userID)
 		if err != nil {
 			log.Error("processUserLog: ", err)
 		}
 	}
 	var user model.User
-	if userID, ok := data["userID"].(float64); ok {
-		user, err = Store().GetUser(int64(userID))
+	if userID, ok := data["userID"].(int64); ok {
+		user, err = Store().GetUser(userID)
 		if err != nil {
 			log.Error("processUserLog: ", err)
 		}
 	}
 
-	if v, ok := data["event"].(string); ok {
+	if v, ok := data["event"].(int); ok {
 		switch v {
 		case event.Created:
 			log.Info(lang.Str(lang.AdminCreateUserOk, admin.Name(), user.Title()))
@@ -111,22 +109,21 @@ func processUserLog(data map[string]interface{}) {
 func processEquipmentLog(data map[string]interface{}) {
 	var err error
 	var user model.User
-	//data.Clone后，由于json.Marshal的原因，所有int64都变成了float64
-	if userID, ok := data["userID"].(float64); ok {
-		user, err = Store().GetUser(int64(userID))
+	if userID, ok := data["userID"].(int64); ok {
+		user, err = Store().GetUser(userID)
 		if err != nil {
 			log.Error("processEquipmentLog: ", err)
 		}
 	}
 	var equipment model.Equipment
-	if equipmentID, ok := data["equipmentID"].(float64); ok {
-		equipment, err = Store().GetEquipment(int64(equipmentID))
+	if equipmentID, ok := data["equipmentID"].(int64); ok {
+		equipment, err = Store().GetEquipment(equipmentID)
 		if err != nil {
 			log.Error("processEquipmentLog: ", err)
 		}
 	}
 
-	if v, ok := data["event"].(string); ok {
+	if v, ok := data["event"].(int); ok {
 		switch v {
 		case event.Created:
 			log.Info(lang.Str(lang.UserCreateEquipmentOk, user.Name(), equipment.Title()))

@@ -12,9 +12,10 @@ const (
 )
 
 const (
-	Created = "c"
-	Updated = "u"
-	Deleted = "d"
+	_ = iota
+	Created
+	Updated
+	Deleted
 )
 
 var (
