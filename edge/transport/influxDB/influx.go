@@ -3,17 +3,20 @@ package influxDB
 import (
 	"context"
 	"github.com/maritimusj/centrum/edge/adapter"
-	"github.com/maritimusj/centrum/edge/transport"
 	"io"
+
+	db "github.com/influxdata/influxdb1-client/v2"
 )
 
-type client struct{}
+type client struct {
+	db db.Client
+}
 
-func New() transport.Client {
+func New() *client {
 	return &client{}
 }
 
-func (c *client) Open(context.Context, transport.Option) error {
+func (c *client) Open(context.Context, context.Context, map[string]interface{}) error {
 	panic("implement me")
 }
 

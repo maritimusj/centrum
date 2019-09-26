@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/Joker/jade v1.0.0 // indirect
 	github.com/Shopify/goreferrer v0.0.0-20181106222321-ec9c9a553398 // indirect
+	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 	github.com/aymerick/raymond v2.0.2+incompatible // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385 // indirect
@@ -16,7 +17,9 @@ require (
 	github.com/go-playground/locales v0.12.1 // indirect
 	github.com/go-playground/universal-translator v0.16.0 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
+	github.com/goburrow/serial v0.1.0 // indirect
 	github.com/gorilla/schema v1.1.0 // indirect
+	github.com/influxdata/influxdb1-client v0.0.0-20190809212627-fc22c7df067e
 	github.com/iris-contrib/blackfriday v2.0.0+incompatible // indirect
 	github.com/iris-contrib/formBinder v5.0.0+incompatible // indirect
 	github.com/iris-contrib/go.uuid v2.0.0+incompatible // indirect
@@ -29,6 +32,7 @@ require (
 	github.com/klauspost/cpuid v1.2.1 // indirect
 	github.com/kr/pretty v0.1.0
 	github.com/leodido/go-urn v1.1.0 // indirect
+	github.com/maritimusj/modbus v0.1.1
 	github.com/mattn/go-sqlite3 v1.11.0
 	github.com/microcosm-cc/bluemonday v1.0.2 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible

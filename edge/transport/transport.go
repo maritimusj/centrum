@@ -7,10 +7,15 @@ import (
 	"io"
 )
 
-type Option map[string]interface{}
+type Type int
+
+const (
+	_ Type = iota
+	InfluxDB
+)
 
 type Client interface {
-	Open(context.Context, Option) error
+	Open(context.Context, map[string]interface{}) error
 	Close() error
 
 	Add(string, adapter.Client) (io.Closer, error)

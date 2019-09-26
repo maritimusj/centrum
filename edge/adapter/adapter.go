@@ -2,6 +2,13 @@ package adapter
 
 import "context"
 
+type Type int
+
+const (
+	_ Type = iota
+	Ep6v2
+)
+
 type MeasureData struct {
 	Name   string
 	Tags   map[string]string
@@ -13,14 +20,12 @@ type CtrlData struct {
 	Error  chan error
 }
 
-type Option map[string]interface{}
-
 type Client interface {
-	Open(ctx context.Context, option Option) error
+	Open(ctx context.Context, option map[string]interface{}) error
 	Close() error
 
 	//创建数据接收通道
-	Create(option Option) (<-chan *MeasureData, error)
+	Create(option map[string]interface{}) (<-chan *MeasureData, error)
 
 	//关闭数据接收通道
 	Drop(<-chan *MeasureData)
@@ -32,7 +37,7 @@ type Client interface {
 	Stats() (map[string]interface{}, error)
 
 	//设置参数
-	Set(params Option) error
+	Set(params map[string]interface{}) error
 
 	//获取状态参数当前值
 	Get(keys ...string) (map[string]interface{}, error)

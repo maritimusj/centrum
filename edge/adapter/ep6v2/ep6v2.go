@@ -2,44 +2,23 @@ package ep6v2
 
 import (
 	"context"
-	"github.com/maritimusj/centrum/edge/adapter"
+
+	Adapter "github.com/maritimusj/chuanyan/gate/adapter"
+	AdapterContract "github.com/maritimusj/chuanyan/gate/adapter/contract"
+	L "github.com/maritimusj/chuanyan/gate/lang"
 )
 
-type ep6v2Adapter struct {
+type adapter struct{}
+
+func (adapter *adapter) Open(ctx context.Context, option AdapterContract.Option) (AdapterContract.Client, error) {
+	client := New()
+	if err := client.Open(ctx, option); err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
 
-func New() adapter.Client {
-	return &ep6v2Adapter{}
-}
-
-func (e *ep6v2Adapter) Open(ctx context.Context, option adapter.Option) error {
-	panic("implement me")
-}
-
-func (e *ep6v2Adapter) Close() error {
-	panic("implement me")
-}
-
-func (e *ep6v2Adapter) Create(option adapter.Option) (<-chan *adapter.MeasureData, error) {
-	panic("implement me")
-}
-
-func (e *ep6v2Adapter) Drop(<-chan *adapter.MeasureData) {
-	panic("implement me")
-}
-
-func (e *ep6v2Adapter) Plug(<-chan *adapter.CtrlData) error {
-	panic("implement me")
-}
-
-func (e *ep6v2Adapter) Stats() (map[string]interface{}, error) {
-	panic("implement me")
-}
-
-func (e *ep6v2Adapter) Set(params adapter.Option) error {
-	panic("implement me")
-}
-
-func (e *ep6v2Adapter) Get(keys ...string) (map[string]interface{}, error) {
-	panic("implement me")
+func init() {
+	Adapter.Register("ep6v2", L.Str(L.EP6v2Desc), &adapter{})
 }
