@@ -42,8 +42,8 @@ func List(ctx iris.Context) hero.Result {
 			params = append(params, helper.Keyword(keyword))
 		}
 
-		groupID := ctx.URLParamInt64Default("group", -1)
-		if groupID != -1 {
+		if ctx.URLParamExists("group") {
+			groupID := ctx.URLParamInt64Default("group", 0)
 			params = append(params, helper.Group(groupID))
 		}
 
@@ -80,6 +80,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			OrgID int64  `json:"org"`
 			Title string `json:"title" validate:"required"`
 			Desc  string `json:"desc"`
+			Groups []int64 `json:"groups"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
@@ -107,6 +108,17 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			equipment, err := s.CreateEquipment(org, form.Title, form.Desc)
 			if err != nil {
 				return err
+			}
+
+			if len(form.Groups) > 0 {
+				var groups []interface{}
+				for _, g := range form.Groups {
+					groups = append(groups, g)
+				}
+				err = equipment.SetGroups(groups...)
+				if err != nil {
+					return err
+				}
 			}
 
 			err = app.SetAllow(admin, equipment, resource.View, resource.Ctrl)

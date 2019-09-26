@@ -13,6 +13,9 @@ type Store interface {
 	Cache() cache.Cache
 	EraseAllData() error
 
+	MustGetUserFromContext(ctx iris.Context) model.User
+	InitDefaultRoles(org interface{}) error
+
 	IsOrganizationExists(org interface{}) (bool, error)
 	GetOrganization(org interface{}) (model.Organization, error)
 	CreateOrganization(name string, title string) (model.Organization, error)
@@ -71,8 +74,4 @@ type Store interface {
 	GetApiResourceList(options ...helper.OptionFN) ([]model.ApiResource, int64, error)
 	GetApiResource(res interface{}) (model.ApiResource, error)
 	InitApiResource() error
-
-	InitDefaultRoles(org interface{}) error
-
-	MustGetUserFromContext(ctx iris.Context) model.User
 }

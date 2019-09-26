@@ -1022,7 +1022,7 @@ func (s *mysqlStore) GetDeviceGroups(deviceID int64) ([]model.Group, error) {
 
 func (s *mysqlStore) GetEquipmentGroups(equipmentID int64) ([]model.Group, error) {
 	const (
-		SQL = "SELECT group_id FROM " + TbEquipments + " WHERE device_id=?"
+		SQL = "SELECT group_id FROM " + TbEquipmentGroups + " WHERE equipment_id=?"
 	)
 
 	rows, err := s.db.Query(SQL, equipmentID)
@@ -1333,6 +1333,7 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 		where += " AND d.title REGEXP ?"
 		params = append(params, option.Keyword)
 	}
+
 	var total int64
 	if option.GetTotal == nil || *option.GetTotal {
 		if err := s.db.QueryRow("SELECT COUNT(DISTINCT d.id) "+from+where, params...).Scan(&total); err != nil {
@@ -1706,7 +1707,8 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 	}
 
 	if option.GroupID != nil {
-		where += " INNER JOIN " + TbEquipmentGroups + " g ON e.id=g.equip_id WHERE g.group_id=?"
+		from  += " INNER JOIN " + TbEquipmentGroups + " g ON e.id=g.equipment_id"
+		where += " AND g.group_id=?"
 		params = append(params, *option.GroupID)
 	}
 
@@ -1716,12 +1718,14 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 	}
 
 	var total int64
-	if err := s.db.QueryRow("SELECT COUNT(DISTINCT e.id) "+from+where, params...).Scan(&total); err != nil {
-		return nil, 0, lang.InternalError(err)
-	}
+	if option.GetTotal == nil || *option.GetTotal {
+		if err := s.db.QueryRow("SELECT COUNT(DISTINCT e.id) "+from+where, params...).Scan(&total); err != nil {
+			return nil, 0, lang.InternalError(err)
+		}
 
-	if total == 0 {
-		return []model.Equipment{}, 0, nil
+		if total == 0 {
+			return []model.Equipment{}, 0, nil
+		}
 	}
 
 	where += " ORDER BY e.id ASC"
@@ -1735,6 +1739,7 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 		where += " OFFSET ?"
 		params = append(params, option.Offset)
 	}
+
 	rows, err := s.db.Query("SELECT DISTINCT e.id "+from+where, params...)
 	if err != nil {
 		return nil, 0, lang.InternalError(err)

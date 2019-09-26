@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 80017
 File Encoding         : 65001
 
-Date: 2019-09-24 16:42:06
+Date: 2019-09-25 14:13:30
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -58,10 +58,10 @@ CREATE TABLE `devices` (
 -- ----------------------------
 DROP TABLE IF EXISTS `equipment_groups`;
 CREATE TABLE `equipment_groups` (
-  `equip_id` int(10) unsigned NOT NULL,
+  `equipment_id` int(10) unsigned NOT NULL,
   `group_id` int(10) unsigned NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY `id` (`group_id`,`equip_id`)
+  UNIQUE KEY `id` (`group_id`,`equipment_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ----------------------------

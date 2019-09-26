@@ -234,6 +234,7 @@ func (e *Equipment) Brief() model.Map {
 		"id":         e.id,
 		"enable":     e.IsEnabled(),
 		"title":      e.title,
+		"desc":       e.desc,
 		"created_at": e.createdAt,
 	}
 }
@@ -242,10 +243,21 @@ func (e *Equipment) Detail() model.Map {
 	if e == nil {
 		return model.Map{}
 	}
-	return model.Map{
+	detail := model.Map{
 		"id":         e.id,
 		"enable":     e.IsEnabled(),
 		"title":      e.title,
+		"desc":       e.desc,
 		"created_at": e.createdAt,
 	}
+
+	groups, _ := e.Groups()
+	if len(groups) > 0 {
+		groupsProfile := make([]model.Map, 0, len(groups))
+		for _, g := range groups {
+			groupsProfile = append(groupsProfile, g.Simple())
+		}
+		detail["groups"] = groupsProfile
+	}
+	return detail
 }
