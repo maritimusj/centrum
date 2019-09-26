@@ -77,9 +77,9 @@ func List(ctx iris.Context) hero.Result {
 func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
-			OrgID int64  `json:"org"`
-			Title string `json:"title" validate:"required"`
-			Desc  string `json:"desc"`
+			OrgID  int64   `json:"org"`
+			Title  string  `json:"title" validate:"required"`
+			Desc   string  `json:"desc"`
 			Groups []int64 `json:"groups"`
 		}
 

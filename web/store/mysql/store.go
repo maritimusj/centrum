@@ -1707,7 +1707,7 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 	}
 
 	if option.GroupID != nil {
-		from  += " INNER JOIN " + TbEquipmentGroups + " g ON e.id=g.equipment_id"
+		from += " INNER JOIN " + TbEquipmentGroups + " g ON e.id=g.equipment_id"
 		where += " AND g.group_id=?"
 		params = append(params, *option.GroupID)
 	}
