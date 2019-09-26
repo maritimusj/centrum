@@ -61,6 +61,17 @@ func (r *Role) Save() error {
 }
 
 func (r *Role) Destroy() error {
+	policies, _, err := r.store.GetPolicyList(nil, helper.Role(r.GetID()))
+	if err != nil {
+		return err
+	}
+	for _, p := range policies {
+		err = p.Destroy()
+		if err != nil {
+			return err
+		}
+	}
+
 	return r.store.RemoveRole(r.id)
 }
 
@@ -162,6 +173,19 @@ func (r *Role) SetPolicy(res model.Resource, action resource.Action, effect reso
 	}
 
 	return policy, nil
+}
+
+func (r *Role) RemovePolicy(res model.Resource) error {
+	policies, _, err := r.store.GetPolicyList(res, helper.Role(r.id))
+	if err != nil {
+		return err
+	}
+	for _, policy := range policies {
+		if err = policy.Destroy(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *Role) GetPolicy(res model.Resource) (map[resource.Action]model.Policy, error) {

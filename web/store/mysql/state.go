@@ -81,6 +81,16 @@ func (s *State) Save() error {
 }
 
 func (s *State) Destroy() error {
+	policies, _, err := s.store.GetPolicyList(s)
+	if err != nil {
+		return err
+	}
+
+	for _, policy := range policies {
+		if err = policy.Destroy(); err != nil {
+			return err
+		}
+	}
 	return s.store.RemoveState(s.id)
 }
 

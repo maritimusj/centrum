@@ -31,5 +31,7 @@ type User interface {
 	SetAllow(res Resource, actions ...resource.Action) error
 	SetDeny(res Resource, actions ...resource.Action) error
 
+	RemovePolicies(res Resource) error
+
 	IsAllow(res Resource, action resource.Action) (bool, error)
 }

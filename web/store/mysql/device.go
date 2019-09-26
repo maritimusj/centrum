@@ -246,10 +246,38 @@ func (d *Device) CreatedAt() time.Time {
 }
 
 func (d *Device) Destroy() error {
-	if d != nil {
-		return d.store.RemoveDevice(d.id)
+	if d == nil {
+		return lang.Error(lang.ErrDeviceNotFound)
 	}
-	return lang.Error(lang.ErrDeviceNotFound)
+
+	measures, _, err := d.store.GetMeasureList(helper.Device(d.GetID()))
+	if err != nil {
+		return err
+	}
+
+	for _, measure := range measures {
+		if err = measure.Destroy(); err != nil {
+			return err
+		}
+	}
+
+	err = d.SetGroups(nil)
+	if err != nil {
+		return err
+	}
+
+	policies, _, err := d.store.GetPolicyList(d)
+	if err != nil {
+		return err
+	}
+
+	for _, policy := range policies {
+		if err = policy.Destroy(); err != nil {
+			return err
+		}
+	}
+
+	return d.store.RemoveDevice(d.id)
 }
 
 func (d *Device) Save() error {

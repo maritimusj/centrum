@@ -107,6 +107,33 @@ func (e *Equipment) Save() error {
 }
 
 func (e *Equipment) Destroy() error {
+	states, _, err := e.store.GetStateList(helper.Equipment(e.GetID()))
+	if err != nil {
+		return err
+	}
+
+	for _, state := range states {
+		if err = state.Destroy(); err != nil {
+			return err
+		}
+	}
+
+	err = e.SetGroups(nil)
+	if err != nil {
+		return err
+	}
+
+	policies, _, err := e.store.GetPolicyList(e)
+	if err != nil {
+		return err
+	}
+
+	for _, policy := range policies {
+		if err = policy.Destroy(); err != nil {
+			return err
+		}
+	}
+
 	return e.store.RemoveEquipment(e.id)
 }
 

@@ -252,28 +252,6 @@ func Delete(groupID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		//todo 还没有处理子分组
-
-		if res, _, err := group.GetDeviceList(); err != nil {
-			return err
-		} else if len(res) > 0 {
-			var devices []interface{}
-			for _, device := range res {
-				devices = append(devices, device)
-			}
-			err = group.RemoveDevice(devices...)
-		}
-
-		if res, _, err := group.GetEquipmentList(); err != nil {
-			return err
-		} else if len(res) > 0 {
-			var equipments []interface{}
-			for _, e := range res {
-				equipments = append(equipments, e)
-			}
-			err = group.RemoveDevice(equipments...)
-		}
-
 		err = group.Destroy()
 		if err != nil {
 			return err

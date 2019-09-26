@@ -120,6 +120,16 @@ func (m *Measure) CreatedAt() time.Time {
 }
 
 func (m *Measure) Destroy() error {
+	policies, _, err := m.store.GetPolicyList(m)
+	if err != nil {
+		return err
+	}
+
+	for _, policy := range policies {
+		if err = policy.Destroy(); err != nil {
+			return err
+		}
+	}
 	return m.store.RemoveMeasure(m.id)
 }
 

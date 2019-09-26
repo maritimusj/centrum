@@ -162,6 +162,24 @@ var (
 		DeviceDetail,
 		DeviceUpdate,
 		DeviceDelete,
+
+		MeasureList,
+		MeasureCreate,
+		MeasureDetail,
+		MeasureUpdate,
+		MeasureDelete,
+
+		EquipmentList,
+		EquipmentCreate,
+		EquipmentDetail,
+		EquipmentUpdate,
+		EquipmentDelete,
+
+		StateList,
+		StateCreate,
+		StateDetail,
+		StateUpdate,
+		StateDelete,
 	}
 	MenuRoleAlert = []string{
 		Unknown,

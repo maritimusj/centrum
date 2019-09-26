@@ -1,6 +1,9 @@
 package adapter
 
-import "context"
+import (
+	"context"
+	"github.com/maritimusj/centrum/edge"
+)
 
 type Type int
 
@@ -9,29 +12,18 @@ const (
 	Ep6v2
 )
 
-type MeasureData struct {
-	Name   string
-	Tags   map[string]string
-	Fields map[string]interface{}
-}
-
-type CtrlData struct {
-	Values map[string]interface{}
-	Error  chan error
-}
-
 type Client interface {
 	Open(ctx context.Context, option map[string]interface{}) error
 	Close() error
 
 	//创建数据接收通道
-	Create(option map[string]interface{}) (<-chan *MeasureData, error)
+	Create(option map[string]interface{}) (<-chan *edge.MeasureData, error)
 
 	//关闭数据接收通道
-	Drop(<-chan *MeasureData)
+	Drop(<-chan *edge.MeasureData)
 
 	//插入控制通道
-	Plug(<-chan *CtrlData) error
+	Plug(<-chan *edge.CtrlData) error
 
 	//报告状态
 	Stats() (map[string]interface{}, error)

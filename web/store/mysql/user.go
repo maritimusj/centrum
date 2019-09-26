@@ -280,6 +280,25 @@ func (u *User) Save() error {
 	return nil
 }
 
+func (u *User) RemovePolicies(res model.Resource) error {
+	if u == nil {
+		return lang.Error(lang.ErrUserNotFound)
+	}
+
+	roles, err := u.GetRoles()
+	if err != nil {
+		return err
+	}
+
+	for _, role := range roles {
+		err = role.RemovePolicy(res)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (u *User) SetDeny(res model.Resource, actions ...resource.Action) error {
 	if u == nil {
 		return lang.Error(lang.ErrUserNotFound)
@@ -291,7 +310,7 @@ func (u *User) SetDeny(res model.Resource, actions ...resource.Action) error {
 	}
 
 	for _, action := range actions {
-		_, err = role.SetPolicy(res, action, resource.Deny, nil)
+		_, err = role.SetPolicy(res, action, resource.Deny, make(map[model.Resource]struct{}))
 		if err != nil {
 			return err
 		}
@@ -310,7 +329,7 @@ func (u *User) SetAllow(res model.Resource, actions ...resource.Action) error {
 	}
 
 	for _, action := range actions {
-		_, err = role.SetPolicy(res, action, resource.Allow, nil)
+		_, err = role.SetPolicy(res, action, resource.Allow, make(map[model.Resource]struct{}))
 		if err != nil {
 			return err
 		}

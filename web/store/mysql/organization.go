@@ -3,6 +3,7 @@ package mysqlStore
 import (
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/web/dirty"
+	"github.com/maritimusj/centrum/web/helper"
 	"github.com/maritimusj/centrum/web/model"
 	"github.com/maritimusj/centrum/web/status"
 	"github.com/tidwall/gjson"
@@ -107,6 +108,47 @@ func (o *Organization) Save() error {
 }
 
 func (o *Organization) Destroy() error {
+	users, _, err := o.store.GetUserList(helper.Organization(o.GetID()))
+	if err != nil {
+		return err
+	}
+	for _, user := range users {
+		if err = user.Destroy(); err != nil {
+			return err
+		}
+	}
+
+	devices, _, err := o.store.GetDeviceList(helper.Organization(o.GetID()))
+	if err != nil {
+		return err
+	}
+	for _, device := range devices {
+		if err = device.Destroy(); err != nil {
+			return err
+		}
+	}
+
+	equipments, _, err := o.store.GetEquipmentList(helper.Organization(o.GetID()))
+	if err != nil {
+		return err
+	}
+	for _, equipment := range equipments {
+		if err = equipment.Destroy(); err != nil {
+			return err
+		}
+	}
+
+	groups, _, err := o.store.GetGroupList(helper.Organization(o.GetID()))
+	if err != nil {
+		return err
+	}
+
+	for _, group := range groups {
+		if err = group.Destroy(); err != nil {
+			return err
+		}
+	}
+
 	return o.store.RemoveOrganization(o.id)
 }
 

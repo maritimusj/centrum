@@ -210,3 +210,10 @@ func SetAllow(user model.User, res model.Resource, actions ...resource.Action) e
 	}
 	return user.SetAllow(res, actions...)
 }
+
+func SetDeny(user model.User, res model.Resource, actions ...resource.Action) error {
+	if IsDefaultAdminUser(user) {
+		return nil
+	}
+	return user.SetDeny(res, actions...)
+}

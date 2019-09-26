@@ -106,6 +106,52 @@ func (g *Group) Save() error {
 }
 
 func (g *Group) Destroy() error {
+	//处理子分组
+	groups, _, err := g.store.GetGroupList(helper.Parent(g.GetID()))
+	if err != nil {
+		return err
+	}
+
+	for _, g := range groups {
+		g.SetParent(nil)
+		if err = g.Save(); err != nil {
+			return err
+		}
+	}
+
+	//处理分组下设备
+	if res, _, err := g.GetDeviceList(); err != nil {
+		return err
+	} else if len(res) > 0 {
+		var devices []interface{}
+		for _, device := range res {
+			devices = append(devices, device)
+		}
+		err = g.RemoveDevice(devices...)
+	}
+
+	//处理分组下自定义设备
+	if res, _, err := g.GetEquipmentList(); err != nil {
+		return err
+	} else if len(res) > 0 {
+		var equipments []interface{}
+		for _, e := range res {
+			equipments = append(equipments, e)
+		}
+		err = g.RemoveDevice(equipments...)
+	}
+
+	policies, _, err := g.store.GetPolicyList(g)
+	if err != nil {
+		return err
+	}
+
+	for _, policy := range policies {
+		if err = policy.Destroy(); err != nil {
+			return err
+		}
+	}
+
 	return g.store.RemoveGroup(g.id)
 }
 
@@ -152,6 +198,8 @@ func (g *Group) SetParent(parent interface{}) {
 		parentID = v
 	case model.Group:
 		parentID = v.GetID()
+	case nil:
+		parentID = 0
 	default:
 		panic(errors.New("group SetParent: unknown group"))
 	}

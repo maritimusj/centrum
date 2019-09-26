@@ -264,17 +264,17 @@ func (s *mysqlStore) CreateOrganization(name string, title string) (model.Organi
 }
 
 func (s *mysqlStore) RemoveOrganization(id interface{}) error {
-	org, err := s.GetOrganization(id)
+	orgID, err := getOrganizationID(s.db, id)
 	if err != nil {
 		return err
 	}
 
-	err = RemoveData(s.db, TbOrganization, "id=?", org.GetID())
+	err = RemoveData(s.db, TbOrganization, "id=?", orgID)
 	if err != nil {
 		return lang.InternalError(err)
 	}
 
-	s.cache.Remove(org)
+	s.cache.Remove(&Organization{id: orgID})
 	return nil
 }
 
@@ -659,17 +659,6 @@ func (s *mysqlStore) RemoveRole(role interface{}) error {
 	roleID, err := getRoleID(s.db, role)
 	if err != nil {
 		return err
-	}
-
-	policies, _, err := s.GetPolicyList(nil, helper.Role(roleID))
-	if err != nil {
-		return err
-	}
-	for _, p := range policies {
-		err = p.Destroy()
-		if err != nil {
-			return err
-		}
 	}
 
 	err = RemoveData(s.db, TbRoles, "id=?", roleID)
@@ -1478,6 +1467,7 @@ func (s *mysqlStore) RemoveMeasure(measureID int64) error {
 	if err != nil {
 		return err
 	}
+
 	s.cache.Remove(&Measure{id: measureID})
 	return nil
 }
@@ -1863,6 +1853,7 @@ func (s *mysqlStore) RemoveState(stateID int64) error {
 	if err != nil {
 		return err
 	}
+
 	s.cache.Remove(&State{id: stateID})
 	return nil
 }

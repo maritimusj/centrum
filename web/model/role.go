@@ -27,6 +27,8 @@ type Role interface {
 	//对于每个资源，都应该返回一组Policy，表示对该资源的访问权限
 	GetPolicy(res Resource) (map[resource.Action]Policy, error)
 
+	RemovePolicy(res Resource) error
+
 	IsAllow(res Resource, action resource.Action) (bool, error)
 
 	GetUserList(options ...helper.OptionFN) ([]User, int64, error)
