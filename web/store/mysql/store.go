@@ -1873,7 +1873,7 @@ func (s *mysqlStore) GetStateList(options ...helper.OptionFN) ([]model.State, in
 		if userID > 0 {
 			from += fmt.Sprintf(` LEFT JOIN (
 SELECT s.id,p.role_id,p.action,p.effect FROM %s s
-INNER JOIN %s p ON p.resource_class=%d AND p.resource_id=m.id
+INNER JOIN %s p ON p.resource_class=%d AND p.resource_id=s.id
 INNER JOIN %s r ON p.role_id=r.id
 WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 ) b ON s.id=b.id`, TbStates, TbPolicies, resource.State, TbRoles, TbUserRoles, userID)
@@ -1892,7 +1892,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	}
 
 	if option.Kind != resource.AllKind {
-		where += " AND m.kind=?"
+		where += " AND s.kind=?"
 		params = append(params, option.Kind)
 	}
 
@@ -1922,7 +1922,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		params = append(params, option.Offset)
 	}
 
-	log.Trace("SELECT DISTINCT e.id " + from + where)
+	log.Trace("SELECT DISTINCT s.id " + from + where)
 	rows, err := s.db.Query("SELECT DISTINCT s.id "+from+where, params...)
 	if err != nil {
 		return nil, 0, lang.InternalError(err)
