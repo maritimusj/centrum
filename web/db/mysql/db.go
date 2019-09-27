@@ -62,7 +62,7 @@ func Open(ctx context.Context, option map[string]interface{}) (db2.WithTransacti
 			ctx: ctx,
 		}, nil
 	}
-	return nil, lang.Error(lang.ErrInvalidConnStr)
+	return nil, lang.Error(lang.ErrInvalidDBConnStr)
 }
 
 func (m *mysqlDB) Close() {

@@ -23,7 +23,7 @@ func TestDevice(t *testing.T) {
 
 	println(model.ID)
 
-	r, err := device.getRealTimeData()
+	r, err := device.GetRealTimeData()
 	if err != nil {
 		log.Fatal(err)
 	}

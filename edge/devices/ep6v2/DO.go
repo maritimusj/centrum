@@ -56,6 +56,10 @@ func (do *DO) SetValue(v bool) (bool, error) {
 	return res[0] > 0, nil
 }
 
+func (do *DO) GetConfig() *DOConfig {
+	return do.config
+}
+
 func (c *DOConfig) fetchData(conn modbusClient, index int) error {
 	start := DOCHStartAddress + uint16(index)*CHBlockSize
 	data, err := conn.ReadHoldingRegisters(start, 15)

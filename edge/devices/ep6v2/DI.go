@@ -35,6 +35,10 @@ func (di *DI) GetValue() (bool, error) {
 	return data[0] > 0, nil
 }
 
+func (di *DI) GetConfig() *DIConfig {
+	return di.config
+}
+
 func (c *DIConfig) fetchData(conn modbusClient, index int) error {
 	var address, quantity uint16 = DICHStartAddress + uint16(index)*CHBlockSize, 16
 	data, err := conn.ReadHoldingRegisters(address, quantity)

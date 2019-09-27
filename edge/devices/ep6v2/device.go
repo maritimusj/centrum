@@ -6,6 +6,8 @@ import (
 	"github.com/maritimusj/modbus"
 	"io"
 	"net"
+	"strconv"
+	"strings"
 )
 
 type Connector interface {
@@ -123,7 +125,31 @@ func (device *Device) GetCHNum() (*CHNum, error) {
 	return chNum, nil
 }
 
-func (device *Device) getRealTimeData() (*RealTimeData, error) {
+func (device *Device) Foreach(fn func(ch interface{}, value interface{}, alarm AlarmValue) error) error {
+	r, err := device.GetRealTimeData()
+	if err != nil {
+		return err
+	}
+	for i := 0; i < r.AINum(); i++ {
+		if ai, err := device.GetAI(i); err != nil {
+			return err
+		} else {
+			var err error
+			val, ok := r.GetAIValue(i, ai.config.Point)
+			if ok {
+				err = fn(ai, 0, AlarmInvalid)
+			} else {
+				err = fn(ai, val, ai.CheckAlarm(val))
+			}
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (device *Device) GetRealTimeData() (*RealTimeData, error) {
 	chNum, err := device.GetCHNum()
 	if err != nil {
 		return nil, err
@@ -139,6 +165,13 @@ func (device *Device) getRealTimeData() (*RealTimeData, error) {
 	}
 
 	return data, nil
+}
+
+func (device *Device) SetCH(tag string, value interface{}) error {
+	if strings.HasPrefix(tag, "DO") {
+		do, err := device.GetDOFromTag(tag)
+
+	}
 }
 
 func (device *Device) GetAI(index int) (*AI, error) {
@@ -164,9 +197,10 @@ func (device *Device) GetAI(index int) (*AI, error) {
 	}
 
 	ai := &AI{
-		Index:  index,
-		config: config,
-		conn:   device.client,
+		Index:       index,
+		config:      config,
+		alarmConfig: alarm,
+		conn:        device.client,
 	}
 	device.chAI[index] = ai
 	return ai, nil
@@ -221,6 +255,13 @@ func (device *Device) GetDI(index int) (*DI, error) {
 	}
 	device.chDI[index] = di
 	return di, nil
+}
+
+func (device *Device) GetDOFromTag(tag string) (*DO, error) {
+	tagStr := strings.SplitN(tag, "-")
+	if len(tagStr) > 1 {
+		index, err := strconv.ParseInt(tagStr[0])
+	}
 }
 
 func (device *Device) GetDO(index int) (*DO, error) {

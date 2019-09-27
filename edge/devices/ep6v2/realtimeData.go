@@ -100,7 +100,6 @@ func (r *RealTimeData) fetchData(conn modbusClient) error {
 	r.Lock()
 	defer r.Unlock()
 
-	//读取即时数据，最大读取不能超过124
 	total := r.chNum.Sum() * 2
 	if r.data.Len() < total {
 		r.data.Grow(total)

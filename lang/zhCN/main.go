@@ -200,7 +200,7 @@ var (
 		lang.ErrUnknown:                         "未知错误！",
 		lang.ErrUnknownLang:                     "未知语言区域！",
 		lang.ErrInternal:                        "系统错误: %s，文件：%s，行：%d",
-		lang.ErrInvalidConnStr:                  "数据库连接参数不正确！",
+		lang.ErrInvalidDBConnStr:                "数据库连接参数不正确！",
 		lang.ErrInvalidRequestData:              "不正确的请求数据！",
 		lang.ErrConfirmCodeWrong:                "确认操作输入错误！",
 		lang.ErrTokenExpired:                    "请先登录！",
@@ -234,5 +234,6 @@ var (
 		lang.ErrDeviceOrganizationDifferent:     "设备不属于同一组织机构！",
 		lang.ErrEquipmentOrganizationDifferent:  "自定义设备不属于同一组织机构！",
 		lang.ErrRecursiveDetected:               "检测到循环关系链，请联系管理员！",
+		lang.ErrInvalidDeviceConnStr:            "设备连接参数不正确！",
 	}
 )

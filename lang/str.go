@@ -196,7 +196,7 @@ const (
 	ErrUnknown
 	ErrUnknownLang
 	ErrInternal
-	ErrInvalidConnStr
+	ErrInvalidDBConnStr
 	ErrInvalidRequestData
 	ErrTokenExpired
 	ErrNoPermission
@@ -230,6 +230,7 @@ const (
 	ErrDeviceOrganizationDifferent
 	ErrEquipmentOrganizationDifferent
 	ErrRecursiveDetected
+	ErrInvalidDeviceConnStr
 )
 
 var (

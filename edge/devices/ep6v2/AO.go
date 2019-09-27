@@ -39,6 +39,10 @@ func (ao *AO) GetValue() (float32, error) {
 	panic("implement me")
 }
 
+func (ao *AO) GetConfig() *AOConfig {
+	return ao.config
+}
+
 func (c *AOConfig) fetchData(conn modbusClient, index int) error {
 	start := AOCHStartAddress + uint16(index)*CHBlockSize
 	data, err := conn.ReadHoldingRegisters(start, 16)

@@ -12,27 +12,35 @@ const (
 	AIAlarmStartAddress = 48
 )
 
+type AlarmValue int
+
 const (
-	AlarmHF = 0x10
-	AlarmHH = 0x0c
-	AlarmHI = 0x04
-	AlarmLO = 0x01
-	AlarmLL = 0x03
-	AlarmLF = 0x20
+	AlarmInvalid AlarmValue = 0xFF
+	AlarmError   AlarmValue = 0xFE
+	AlarmNormal  AlarmValue = 0x0
+	AlarmHF      AlarmValue = 0x10
+	AlarmHH      AlarmValue = 0x0c
+	AlarmHI      AlarmValue = 0x04
+	AlarmLO      AlarmValue = 0x01
+	AlarmLL      AlarmValue = 0x03
+	AlarmLF      AlarmValue = 0x20
 )
 
 var (
-	alarmMap = map[int]string{
-		AlarmHF: "HF",
-		AlarmHH: "HH",
-		AlarmHI: "HI",
-		AlarmLO: "LO",
-		AlarmLL: "LL",
-		AlarmLF: "LF",
+	alarmMap = map[AlarmValue]string{
+		AlarmInvalid: "READ..",
+		AlarmError:   "Err..",
+		AlarmNormal:  "",
+		AlarmHF:      "HF",
+		AlarmHH:      "HH",
+		AlarmHI:      "HI",
+		AlarmLO:      "LO",
+		AlarmLL:      "LL",
+		AlarmLF:      "LF",
 	}
 )
 
-func FormatAlarm(alarm int) string {
+func FormatAlarm(alarm AlarmValue) string {
 	if alarm == 0 {
 		return "Ok"
 	} else if v, ok := alarmMap[alarm]; ok {
@@ -48,8 +56,9 @@ const (
 )
 
 type AI struct {
-	Index  int
-	config *AIConfig
+	Index       int
+	config      *AIConfig
+	alarmConfig *AIAlarmConfig
 
 	conn modbusClient
 }
@@ -129,23 +138,70 @@ type AIConfig struct {
 	Alarm *AIAlarmConfig //警报设置
 }
 
-func (ai *AI) GetValue() (float32, int, error) {
+func (ai *AI) GetValue() (float32, error) {
 	var address, quantity uint16 = uint16(AIValueStartAddress + ai.Index*2), 2
 	data, err := ai.conn.ReadInputRegisters(address, quantity)
 	if err != nil {
-		return 0, 0, err
+		return 0, err
 	}
 
 	v := ToFloat32(ToSingle(data), ai.config.Point)
+	return v, nil
+}
 
-	//alarm
-	address = uint16(AIAlarmStartAddress + ai.Index)
-	data, err = ai.conn.ReadInputRegisters(address, 1)
+func (ai *AI) GetConfig() *AIConfig {
+	return ai.config
+}
+
+func (ai *AI) GetAlarmState() (AlarmValue, error) {
+	address := uint16(AIAlarmStartAddress + ai.Index)
+	data, err := ai.conn.ReadInputRegisters(address, 1)
 	if err != nil {
-		return v, 0, err
+		return 0, err
+	}
+	return AlarmValue(data[1]), nil
+}
+
+func (ai *AI) getAlarmConfig() (*AIAlarmConfig, error) {
+	if ai.alarmConfig == nil {
+		ai.alarmConfig = &AIAlarmConfig{}
+		err := ai.alarmConfig.fetchData(ai.conn, ai.Index)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return ai.alarmConfig, nil
+}
+func (ai *AI) CheckAlarm(val float32) AlarmValue {
+	cfg, err := ai.getAlarmConfig()
+	if err != nil {
+		return AlarmError
 	}
 
-	return v, int(data[1]), nil
+	if val > cfg.HF.Value && cfg.HF.Style == Alarm {
+		return AlarmHF
+	}
+
+	if val >= cfg.HiHi.Value-cfg.DeadBand && cfg.HiHi.Style == Alarm {
+		return AlarmHH
+	}
+
+	if val >= cfg.HI.Value-cfg.DeadBand && cfg.HI.Style == Alarm {
+		return AlarmHI
+	}
+
+	if val < cfg.LO.Value+cfg.DeadBand && cfg.LO.Style == Alarm {
+		return AlarmLO
+	}
+
+	if val < cfg.LoLo.Value+cfg.DeadBand && cfg.LoLo.Style == Alarm {
+		return AlarmLL
+	}
+
+	if val < cfg.LF.Value {
+		return AlarmLF
+	}
+	return AlarmNormal
 }
 
 func (c *AIConfig) fetchData(conn modbusClient, index int) error {
