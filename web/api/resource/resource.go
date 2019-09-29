@@ -1,6 +1,7 @@
 package resource
 
 import (
+	"fmt"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/lang"
@@ -10,6 +11,8 @@ import (
 	"github.com/maritimusj/centrum/web/model"
 	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
+	"strconv"
+	"strings"
 )
 
 func GroupList() hero.Result {
@@ -139,8 +142,113 @@ func List(classID int, ctx iris.Context) hero.Result {
 				"id":          res.ResourceID(),
 				"title":       res.ResourceTitle(),
 				"desc":        res.ResourceDesc(),
-				"class":       class,
+				"class":       res.ResourceClass(),
 				"class_title": lang.ResourceClassTitle(class),
+				"seg":         fmt.Sprintf("%d_%d", res.ResourceClass(), res.ResourceID()),
+			}
+
+			if role != nil {
+				perm, err := getRolePerm(role, res)
+				if err != nil {
+					return err
+				}
+				entry["perm"] = perm
+			} else if user != nil {
+				entry["perm"] = getUserPerm(user, res)
+			}
+
+			list = append(list, entry)
+		}
+
+		result := iris.Map{
+			"total": total,
+			"list":  list,
+		}
+		if role != nil {
+			result["role"] = role.Brief()
+		}
+		return result
+	})
+}
+
+func GetList(ctx iris.Context) hero.Result {
+	return response.Wrap(func() interface{} {
+		page := ctx.URLParamInt64Default("page", 1)
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+
+		roleID := ctx.URLParamInt64Default("role", 0)
+		userID := ctx.URLParamInt64Default("user", 0)
+		keyword := ctx.URLParam("keyword")
+
+		var params = []helper.OptionFN{
+			helper.Page(page, pageSize),
+		}
+
+		if keyword != "" {
+			params = append(params, helper.Keyword(keyword))
+		}
+
+		s := app.Store()
+
+		var err error
+		var resources []model.Resource
+		var total int64
+
+		seg := ctx.URLParam("seg")
+		if len(seg) == 0 {
+			resources, total, err = s.GetResourceList(resource.Group, params...)
+		} else {
+			pair := strings.SplitN(seg, "_", 2)
+			if len(pair) < 2 {
+				return lang.ErrInvalidRequestData
+			}
+
+			classID, err := strconv.ParseInt(pair[0], 10, 0)
+			if err != nil {
+				return lang.ErrInvalidRequestData
+			}
+			
+			resourceID, err := strconv.ParseInt(pair[1], 10, 0)
+			if err != nil {
+				return lang.ErrInvalidRequestData
+			}
+
+			res, err := s.GetResource(resource.Class(classID), resourceID)
+			if err != nil {
+				return err
+			}
+
+			resources, total, err = res.GetChildrenResources(params...)
+			if err != nil {
+				return err
+			}
+		}
+
+		var role model.Role
+		var user model.User
+
+		if roleID > 0 {
+			role, err = s.GetRole(roleID)
+			if err != nil {
+				return err
+			}
+		} else if userID > 0 {
+			user, err = s.GetUser(userID)
+			if err != nil {
+				return err
+			}
+		}
+
+		var list = make([]model.Map, 0, len(resources))
+		for _, res := range resources {
+			classID := res.ResourceClass()
+			entry := model.Map{
+				"id":          res.ResourceID(),
+				"title":       res.ResourceTitle(),
+				"desc":        res.ResourceDesc(),
+				"class":       classID,
+				"class_title": lang.ResourceClassTitle(classID),
+				"seg":         fmt.Sprintf("%d_%d", classID, res.ResourceID()),
 			}
 
 			if role != nil {

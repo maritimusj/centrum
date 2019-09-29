@@ -1120,7 +1120,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	}
 
 	if option.ParentID != nil {
-		from += " AND g.parent_id=?"
+		where += " AND g.parent_id=?"
 		params = append(params, *option.ParentID)
 	}
 

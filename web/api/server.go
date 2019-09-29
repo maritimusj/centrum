@@ -69,8 +69,9 @@ func (server *server) Start(cfg config.Config) error {
 
 			//资源
 			p.PartyFunc("/resource", func(p router.Party) {
-				p.Get("/", hero.Handler(resource.GroupList)).Name = ResourceDef.ResourceList
 				p.Get("/{groupID:int}/", hero.Handler(resource.List)).Name = ResourceDef.ResourceDetail
+				p.Get("/", hero.Handler(resource.GroupList)).Name = ResourceDef.ResourceList
+				p.Get("/search/", hero.Handler(resource.GetList)).Name = ResourceDef.ResourceDetail
 			})
 
 			//组织
