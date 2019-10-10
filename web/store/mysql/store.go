@@ -332,7 +332,6 @@ func (s *mysqlStore) GetOrganizationList(options ...helper.OptionFN) ([]model.Or
 			}
 			return []model.Organization{}, total, nil
 		}
-
 		ids = append(ids, userID)
 	}
 
@@ -735,7 +734,6 @@ func (s *mysqlStore) GetRoleList(options ...helper.OptionFN) ([]model.Role, int6
 			}
 			return []model.Role{}, total, nil
 		}
-
 		ids = append(ids, roleID)
 	}
 
@@ -988,8 +986,8 @@ func (s *mysqlStore) GetDeviceGroups(deviceID int64) ([]model.Group, error) {
 		_ = rows.Close()
 	}()
 
+	var ids []int64
 	var groupID int64
-	var result []model.Group
 
 	for rows.Next() {
 		err = rows.Scan(&groupID)
@@ -999,13 +997,17 @@ func (s *mysqlStore) GetDeviceGroups(deviceID int64) ([]model.Group, error) {
 			}
 			return []model.Group{}, nil
 		}
+		ids = append(ids, groupID)
+	}
+
+	var result []model.Group
+	for _, groupID := range ids {
 		group, err := s.GetGroup(groupID)
 		if err != nil {
 			return nil, err
 		}
 		result = append(result, group)
 	}
-
 	return result, nil
 }
 
@@ -1022,8 +1024,8 @@ func (s *mysqlStore) GetEquipmentGroups(equipmentID int64) ([]model.Group, error
 		_ = rows.Close()
 	}()
 
+	var ids []int64
 	var groupID int64
-	var result []model.Group
 
 	for rows.Next() {
 		err = rows.Scan(&groupID)
@@ -1033,6 +1035,11 @@ func (s *mysqlStore) GetEquipmentGroups(equipmentID int64) ([]model.Group, error
 			}
 			return []model.Group{}, nil
 		}
+		ids = append(ids, groupID)
+	}
+
+	var result []model.Group
+	for _, groupID := range ids {
 		group, err := s.GetGroup(groupID)
 		if err != nil {
 			return nil, err
@@ -1931,7 +1938,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		_ = rows.Close()
 	}()
 
-	var result []model.State
+	var ids []int64
 	var stateID int64
 
 	for rows.Next() {
@@ -1943,6 +1950,11 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 			return []model.State{}, total, nil
 		}
 
+		ids = append(ids, stateID)
+	}
+
+	var result []model.State
+	for _, stateID := range ids {
 		state, err := s.GetState(stateID)
 		if err != nil {
 			return nil, 0, err
@@ -2169,8 +2181,8 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 		_ = rows.Close()
 	}()
 
-	var resID int64
 	var ids []int64
+	var resID int64
 
 	for rows.Next() {
 		err = rows.Scan(&resID)
