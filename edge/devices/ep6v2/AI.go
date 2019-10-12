@@ -40,7 +40,7 @@ var (
 	}
 )
 
-func FormatAlarm(alarm AlarmValue) string {
+func AlarmDesc(alarm AlarmValue) string {
 	if alarm == 0 {
 		return "Ok"
 	} else if v, ok := alarmMap[alarm]; ok {
@@ -87,7 +87,7 @@ type AIAlarmConfig struct {
 }
 
 func (alarm *AIAlarmConfig) fetchData(conn modbusClient, index int) error {
-	var address, quantity uint16 = uint16(index+1)*CHBlockSize + 47, 11
+	var address, quantity uint16 = uint16(index)*CHBlockSize + 47, 11
 	data, err := conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
 		return err
@@ -102,7 +102,7 @@ func (alarm *AIAlarmConfig) fetchData(conn modbusClient, index int) error {
 
 	alarm.Delay = int(binary.BigEndian.Uint16(data[20:]))
 
-	address, quantity = uint16(index+1)*CHBlockSize+80, 30
+	address, quantity = uint16(index)*CHBlockSize+80, 30
 	data, err = conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
 		return err

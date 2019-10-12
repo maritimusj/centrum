@@ -3,6 +3,8 @@ package ep6v2
 import (
 	"encoding/binary"
 	"math"
+	"reflect"
+	"strings"
 	"unicode/utf16"
 	"unsafe"
 )
@@ -43,4 +45,18 @@ func ToSingle(data []byte) float32 {
 
 func ToFloat32(v float32, point int) float32 {
 	return float32(math.Floor(float64(v)*math.Pow10(point)) / math.Pow10(point))
+}
+
+func IsOn(v interface{}) bool {
+	switch vv := v.(type) {
+	case int8, int16, int32, int64, int:
+		return reflect.ValueOf(v).Int() == 1
+	case string:
+		vv = strings.ToLower(vv)
+		return vv == "true" || vv == "on" || vv == "yes" || vv == "ok"
+	case bool:
+		return vv
+	default:
+		return false
+	}
 }

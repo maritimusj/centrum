@@ -189,50 +189,6 @@ const (
 	UserDeleteEquipmentOk
 )
 
-type ErrorCode int
-
-const (
-	Ok ErrorCode = iota
-	ErrUnknown
-	ErrUnknownLang
-	ErrInternal
-	ErrInvalidDBConnStr
-	ErrInvalidRequestData
-	ErrTokenExpired
-	ErrNoPermission
-	ErrCacheNotFound
-	ErrInvalidUser
-	ErrUserDisabled
-	ErrPasswordWrong
-	ErrConfirmCodeWrong
-	ErrInvalidResourceClassID
-	ErrApiResourceNotFound
-	ErrUnknownRole
-	ErrOrganizationNotFound
-	ErrOrganizationDifferent
-	ErrOrganizationExists
-	ErrFailedRemoveDefaultOrganization
-	ErrUserNotFound
-	ErrUserExists
-	ErrFailedDisableDefaultUser
-	ErrFailedRemoveDefaultUser
-	ErrFailedEditDefaultUser
-	ErrFailedRemoveUserSelf
-	ErrFailedDisableUserSelf
-	ErrRoleNotFound
-	ErrRoleExists
-	ErrPolicyNotFound
-	ErrGroupNotFound
-	ErrDeviceNotFound
-	ErrMeasureNotFound
-	ErrEquipmentNotFound
-	ErrStateNotFound
-	ErrDeviceOrganizationDifferent
-	ErrEquipmentOrganizationDifferent
-	ErrRecursiveDetected
-	ErrInvalidDeviceConnStr
-)
-
 var (
 	resourceGroupsMap map[resource.Class]string
 )

@@ -31,8 +31,8 @@ func TestDevice(t *testing.T) {
 	for i := 0; i < r.AINum(); i++ {
 		v, ok := r.GetAIValue(i, 2)
 		ai, _ := device.GetAI(i)
-		v2, alarm, _ := ai.GetValue()
-		fmt.Printf("%.2f => %.2f (%s), %#v\r\n", v, v2, FormatAlarm(alarm), ok)
+		v2, _ := ai.GetValue()
+		fmt.Printf("%.2f => %.2f  %#v\r\n", v, v2, ok)
 	}
 
 	println("DI:", r.DINum())
@@ -49,6 +49,11 @@ func TestDevice(t *testing.T) {
 		fmt.Printf("%#v , %#v\r\n", v, ok)
 	}
 
+	println("DO:", r.DONum())
+	for i := 0; i < r.DONum(); i++ {
+		v, ok := r.GetDOValue(i)
+		fmt.Printf("%#v , %#v\r\n", v, ok)
+	}
 	//data, err := device.client.ReadInputRegisters(106, 4)
 	//if err != nil {
 	//	log.Fatal(err)

@@ -18,42 +18,6 @@ const (
 	ErrUnknown
 	ErrUnknownLang
 	ErrInternal
-	ErrInvalidDBConnStr
-	ErrInvalidRequestData
-	ErrTokenExpired
-	ErrNoPermission
-	ErrCacheNotFound
-	ErrInvalidUser
-	ErrUserDisabled
-	ErrPasswordWrong
-	ErrConfirmCodeWrong
-	ErrInvalidResourceClassID
-	ErrApiResourceNotFound
-	ErrUnknownRole
-	ErrOrganizationNotFound
-	ErrOrganizationDifferent
-	ErrOrganizationExists
-	ErrFailedRemoveDefaultOrganization
-	ErrUserNotFound
-	ErrUserExists
-	ErrFailedDisableDefaultUser
-	ErrFailedRemoveDefaultUser
-	ErrFailedEditDefaultUser
-	ErrFailedRemoveUserSelf
-	ErrFailedDisableUserSelf
-	ErrRoleNotFound
-	ErrRoleExists
-	ErrPolicyNotFound
-	ErrGroupNotFound
-	ErrDeviceNotFound
-	ErrMeasureNotFound
-	ErrEquipmentNotFound
-	ErrStateNotFound
-	ErrDeviceOrganizationDifferent
-	ErrEquipmentOrganizationDifferent
-	ErrRecursiveDetected
-	ErrInvalidDeviceConnStr
-	ErrDeviceExists
 )
 
 func ErrorStr(code ErrorCode, params ...interface{}) string {

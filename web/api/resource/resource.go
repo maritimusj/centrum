@@ -207,7 +207,7 @@ func GetList(ctx iris.Context) hero.Result {
 			if err != nil {
 				return lang.ErrInvalidRequestData
 			}
-			
+
 			resourceID, err := strconv.ParseInt(pair[1], 10, 0)
 			if err != nil {
 				return lang.ErrInvalidRequestData

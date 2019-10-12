@@ -1,5 +1,6 @@
-centrum.exe
+*.exe
 .idea/
 vtest/
 centrum
 /log.data
+edge/edge.exe~

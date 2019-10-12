@@ -228,6 +228,7 @@ var (
 		lang.ErrPolicyNotFound:                  "策略不存在！",
 		lang.ErrGroupNotFound:                   "设备分组不存在！",
 		lang.ErrDeviceNotFound:                  "设备不存在！",
+		lang.ErrDeviceExists:                    "设备已经存在！",
 		lang.ErrMeasureNotFound:                 "点位不存在！",
 		lang.ErrEquipmentNotFound:               "自定设备不存在！",
 		lang.ErrStateNotFound:                   "自定义点位不存在！",

@@ -1,6 +1,7 @@
 package ep6v2
 
 import (
+	"context"
 	"net"
 	"time"
 )
@@ -15,10 +16,10 @@ func NewTCPConnector() Connector {
 	}
 }
 
-func (c *TCPConnector) Try(addr string) (net.Conn, error) {
+func (c *TCPConnector) Try(ctx context.Context, addr string) (net.Conn, error) {
 	dialer := net.Dialer{Timeout: c.timeout}
 	println("addr:", addr)
-	conn, err := dialer.Dial("tcp", addr)
+	conn, err := dialer.DialContext(ctx, "tcp", addr)
 	if err != nil {
 		return nil, err
 	}

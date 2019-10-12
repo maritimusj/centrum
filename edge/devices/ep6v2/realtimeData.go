@@ -6,10 +6,16 @@ import (
 	"sync"
 )
 
+const (
+	realtimeDataStartAddress  = 4106
+	realtimeStateStartAddress = 8202
+)
+
 type RealTimeData struct {
 	chNum *CHNum
 	data  bytes.Buffer
 	ready bytes.Buffer
+
 	sync.RWMutex
 }
 
@@ -112,7 +118,7 @@ func (r *RealTimeData) fetchData(conn modbusClient) error {
 	r.data.Truncate(0)
 	r.ready.Truncate(0)
 
-	var address uint16 = 4106
+	var address uint16 = realtimeDataStartAddress
 	var quantity uint16
 	var amount = total
 
@@ -134,7 +140,7 @@ func (r *RealTimeData) fetchData(conn modbusClient) error {
 	}
 
 	//读取数据有效状态
-	address = 8202
+	address = realtimeStateStartAddress
 	amount = r.chNum.Sum()
 	for amount > 0 {
 		if amount > 124 {
