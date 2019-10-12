@@ -33,7 +33,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize)
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
@@ -48,7 +48,7 @@ func List(ctx iris.Context) hero.Result {
 
 		if !app.IsDefaultAdminUser(admin) {
 			params = append(params, helper.User(admin.GetID()))
-			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect))
+			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
 		}
 
 		devices, total, err := s.GetDeviceList(params...)
@@ -132,18 +132,17 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 				return err
 			}
 
-			data := event.NewData(event.Device)
-			data.Set("event", event.Created)
-			data.Set("deviceID", device.GetID())
-			data.Set("userID", admin.GetID())
-			data.Set("result", device.Simple())
-
-			return data
+			return event.Data{
+				"event":    event.Created,
+				"deviceID": device.GetID(),
+				"userID":   admin.GetID(),
+				"result":   device.Simple(),
+			}
 		})
 
-		if data, ok := result.(*event.Data); ok {
+		if data, ok := result.(event.Data); ok {
 			result := data.Pop("result")
-			go event.Fire(data)
+			app.Event.Publish(event.DeviceLog, data)
 			return result
 		}
 
@@ -230,16 +229,17 @@ func Update(deviceID int64, ctx iris.Context) hero.Result {
 				return err
 			}
 
-			data := event.NewData(event.Device)
-			data.Set("event", event.Updated)
-			data.Set("deviceID", device.GetID())
-			data.Set("userID", admin.GetID())
+			data := event.Data{
+				"userID":   admin.GetID(),
+				"event":    event.Updated,
+				"deviceID": device.GetID(),
+			}
 
 			return data
 		})
 
-		if data, ok := result.(*event.Data); ok {
-			go event.Fire(data)
+		if data, ok := result.(event.Data); ok {
+			app.Event.Publish(event.DeviceLog, data)
 			return lang.Ok
 		}
 
@@ -258,16 +258,16 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 			admin := s.MustGetUserFromContext(ctx)
 
 			if app.IsDefaultAdminUser(admin) {
-				data := event.NewData(event.Device)
-				data.Set("event", event.Deleted)
-				data.Set("title", device.Title())
-				data.Set("userID", admin.GetID())
+				data := event.Data{
+					"event":  event.Deleted,
+					"title":  device.Title(),
+					"userID": admin.GetID(),
+				}
 
 				err = device.Destroy()
 				if err != nil {
 					return err
 				}
-
 				return data
 			} else {
 				if !app.Allow(admin, device, resource.Ctrl) {
@@ -281,8 +281,8 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 			}
 		})
 
-		if data, ok := result.(*event.Data); ok {
-			go event.Fire(data)
+		if data, ok := result.(event.Data); ok {
+			app.Event.Publish(event.DeviceLog, data)
 			return lang.Ok
 		}
 		return result

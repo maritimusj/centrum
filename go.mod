@@ -7,6 +7,7 @@ require (
 	github.com/Joker/jade v1.0.0 // indirect
 	github.com/Shopify/goreferrer v0.0.0-20181106222321-ec9c9a553398 // indirect
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
+	github.com/asaskevich/EventBus v0.0.0-20180315140547-d46933a94f05
 	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 	github.com/aymerick/raymond v2.0.2+incompatible // indirect
 	github.com/coreos/bbolt v1.3.3 // indirect

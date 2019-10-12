@@ -7,35 +7,6 @@ import (
 )
 import log "github.com/sirupsen/logrus"
 
-func eventProcessor() {
-	ch := event.Sub(Ctx,
-		event.User,
-		event.Device,
-		event.Equipment)
-
-	for {
-		select {
-		case <-Ctx.Done():
-			return
-		case data := <-ch:
-			if data != nil {
-				processLog(data)
-			}
-		}
-	}
-}
-
-func processLog(data *event.Data) {
-	switch data.Code {
-	case event.User:
-		processUserLog(data.Values)
-	case event.Device:
-		processDeviceLog(data.Values)
-	case event.Equipment:
-		processEquipmentLog(data.Values)
-	}
-}
-
 func processDeviceLog(data map[string]interface{}) {
 	var err error
 	var user model.User

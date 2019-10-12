@@ -46,7 +46,7 @@ func getRolePerm(role model.Role, res model.Resource) (interface{}, error) {
 			if v, ok := policies[resource.Invoke]; ok {
 				return v.Effect() == resource.Allow
 			} else {
-				return app.Config.DefaultEffect == resource.Allow
+				return app.Config.DefaultEffect() == resource.Allow
 			}
 		})
 	default:
@@ -54,14 +54,14 @@ func getRolePerm(role model.Role, res model.Resource) (interface{}, error) {
 			if v, ok := policies[resource.View]; ok {
 				return v.Effect() == resource.Allow
 			} else {
-				return app.Config.DefaultEffect
+				return app.Config.DefaultEffect()
 			}
 		})
 		perm["ctrl"] = util.If(role.Name() == lang.RoleSystemAdminName, true, func() interface{} {
 			if v, ok := policies[resource.Ctrl]; ok {
 				return v.Effect() == resource.Allow
 			} else {
-				return app.Config.DefaultEffect == resource.Allow
+				return app.Config.DefaultEffect() == resource.Allow
 			}
 		})
 	}
@@ -71,7 +71,7 @@ func getRolePerm(role model.Role, res model.Resource) (interface{}, error) {
 func List(classID int, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize)
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 		keyword := ctx.URLParam("keyword")
 		roleID := ctx.URLParamInt64Default("role", 0)
 		userID := ctx.URLParamInt64Default("user", 0)
@@ -174,7 +174,7 @@ func List(classID int, ctx iris.Context) hero.Result {
 func GetList(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize)
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 
 		roleID := ctx.URLParamInt64Default("role", 0)
 		userID := ctx.URLParamInt64Default("user", 0)

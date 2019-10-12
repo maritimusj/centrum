@@ -33,7 +33,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize)
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")

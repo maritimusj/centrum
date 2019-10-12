@@ -34,7 +34,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize)
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
@@ -48,7 +48,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		if !app.IsDefaultAdminUser(admin) {
-			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect))
+			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
 			params = append(params, helper.User(admin.GetID()))
 		}
 
@@ -126,18 +126,18 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 				return err
 			}
 
-			data := event.NewData(event.Equipment)
-			data.Set("event", event.Created)
-			data.Set("equipmentID", equipment.GetID())
-			data.Set("userID", admin.GetID())
-			data.Set("result", equipment.Simple())
-
+			data := event.Data{
+				"event":       event.Created,
+				"equipmentID": equipment.GetID(),
+				"userID":      admin.GetID(),
+				"result":      equipment.Simple(),
+			}
 			return data
 		})
 
-		if data, ok := result.(*event.Data); ok {
+		if data, ok := result.(event.Data); ok {
 			result := data.Pop("result")
-			go event.Fire(data)
+			app.Event.Publish(event.EquipmentLog, data)
 			return result
 		}
 
@@ -209,16 +209,17 @@ func Update(equipmentID int64, ctx iris.Context) hero.Result {
 				return err
 			}
 
-			data := event.NewData(event.Equipment)
-			data.Set("event", event.Updated)
-			data.Set("equipmentID", equipment.GetID())
-			data.Set("userID", admin.GetID())
+			data := event.Data{
+				"event":       event.Updated,
+				"equipmentID": equipment.GetID(),
+				"userID":      admin.GetID(),
+			}
 
 			return data
 		})
 
 		if data, ok := result.(*event.Data); ok {
-			go event.Fire(data)
+			app.Event.Publish(event.EquipmentLog, data)
 			return lang.Ok
 		}
 
@@ -239,10 +240,11 @@ func Delete(equipmentID int64, ctx iris.Context) hero.Result {
 				return lang.ErrNoPermission
 			}
 
-			data := event.NewData(event.Equipment)
-			data.Set("event", event.Deleted)
-			data.Set("title", equipment.Title())
-			data.Set("userID", admin.GetID())
+			data := event.Data{
+				"event":  event.Deleted,
+				"title":  equipment.Title(),
+				"userID": admin.GetID(),
+			}
 
 			err = equipment.Destroy()
 			if err != nil {
@@ -250,8 +252,8 @@ func Delete(equipmentID int64, ctx iris.Context) hero.Result {
 			}
 			return data
 		})
-		if data, ok := result.(*event.Data); ok {
-			go event.Fire(data)
+		if data, ok := result.(event.Data); ok {
+			app.Event.Publish(event.EquipmentLog, data)
 			return lang.Ok
 		}
 		return result

@@ -21,12 +21,14 @@ import (
 	"github.com/maritimusj/centrum/web/api/group"
 	"github.com/maritimusj/centrum/web/api/resource"
 	"github.com/maritimusj/centrum/web/api/user"
+
+	configAPI "github.com/maritimusj/centrum/web/api/config"
 	ResourceDef "github.com/maritimusj/centrum/web/resource"
 )
 
 type Server interface {
 	Register(values ...interface{})
-	Start(cfg config.Config) error
+	Start(cfg *config.Config) error
 	Close()
 }
 
@@ -38,9 +40,9 @@ func (server *server) Register(values ...interface{}) {
 	hero.Register(values...)
 }
 
-func (server *server) Start(cfg config.Config) error {
+func (server *server) Start(cfg *config.Config) error {
 	hero.Register(validator.New())
-	server.app.Logger().SetLevel(cfg.LogLevel)
+	server.app.Logger().SetLevel(cfg.LogLevel())
 
 	crs := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"}, // allows everything, use that to change the hosts.
@@ -56,6 +58,11 @@ func (server *server) Start(cfg config.Config) error {
 		p.PartyFunc("/", func(p router.Party) {
 			web.RequireToken(p)
 			p.Use(hero.Handler(perm.CheckApiPerm))
+
+			p.PartyFunc("/config", func(p router.Party) {
+				p.Get("/base", hero.Handler(configAPI.Base)).Name = ResourceDef.ConfigBaseDetail
+				p.Put("/base", hero.Handler(configAPI.UpdateBase)).Name = ResourceDef.ConfigBaseUpdate
+			})
 
 			//我的
 			p.PartyFunc("/my", func(p router.Party) {

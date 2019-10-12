@@ -15,7 +15,7 @@ import (
 func RequireToken(p iris.Party) {
 	jwtHandler := jwtMiddleware.New(jwtMiddleware.Config{
 		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
-			return app.Config.JwtTokenKey, nil
+			return app.Config.JwtTokenKey(), nil
 		},
 		Extractor: func(ctx iris.Context) (string, error) {
 			return ctx.GetHeader("token"), nil
@@ -63,7 +63,7 @@ func Login(ctx iris.Context) hero.Result {
 		claims := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
 			"sub": user.GetID(),
 			"iat": time.Now().Unix(),
-			"exp": time.Now().Add(app.Config.DefaultTokenExpiration).Unix(),
+			"exp": time.Now().Add(app.Config.DefaultTokenExpiration()).Unix(),
 		})
 
 		token, err := claims.SignedString(app.Config.JwtTokenKey)

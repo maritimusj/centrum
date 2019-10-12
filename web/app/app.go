@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/event"
 	"github.com/maritimusj/centrum/lang"
 	logStore "github.com/maritimusj/centrum/logStore/bolt"
 	"github.com/maritimusj/centrum/web/db"
@@ -13,20 +14,23 @@ import (
 	"github.com/maritimusj/centrum/web/store"
 	mysqlStore "github.com/maritimusj/centrum/web/store/mysql"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/asaskevich/EventBus"
 )
 
 var (
-	Config config.Config
+	Config *config.Config
 
 	Ctx, cancel = context.WithCancel(context.Background())
 	DB          db.WithTransaction
+	Event       = EventBus.New()
 
 	LogDBStore = logStore.New()
 	s          store.Store
 )
 
 func IsDefaultAdminUser(user model.User) bool {
-	return user.Name() == Config.DefaultUserName
+	return user.Name() == Config.DefaultUserName()
 }
 
 func Allow(user model.User, res model.Resource, action resource.Action) bool {
@@ -36,7 +40,7 @@ func Allow(user model.User, res model.Resource, action resource.Action) bool {
 
 	allow, err := user.IsAllow(res, action)
 	if err != nil && err == lang.Error(lang.ErrPolicyNotFound) {
-		return Config.DefaultEffect == resource.Allow
+		return Config.DefaultEffect() == resource.Allow
 	}
 	return allow
 }
@@ -72,7 +76,7 @@ func InitDB(params map[string]interface{}) error {
 
 func InitLog(levelStr string) error {
 	if levelStr == "" {
-		levelStr = Config.LogLevel
+		levelStr = Config.LogLevel()
 	}
 
 	level, err := log.ParseLevel(levelStr)
@@ -80,7 +84,7 @@ func InitLog(levelStr string) error {
 		return err
 	}
 
-	Config.LogLevel = levelStr
+	Config.SetLogLevel(levelStr)
 
 	//日志仓库
 	err = LogDBStore.Open(Ctx, map[string]interface{}{
@@ -94,7 +98,21 @@ func InitLog(levelStr string) error {
 	log.AddHook(LogDBStore)
 	log.SetLevel(level)
 
-	go eventProcessor()
+	err = Event.SubscribeAsync(event.DeviceLog, processDeviceLog, false)
+	if err != nil {
+		return err
+	}
+
+	err = Event.SubscribeAsync(event.EquipmentLog, processEquipmentLog, false)
+	if err != nil {
+		return err
+	}
+
+	err = Event.SubscribeAsync(event.UserLog, processUserLog, false)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -106,9 +124,10 @@ func Init(logLevel string) error {
 		return err
 	}
 
+	Config = config.New(Store())
 	err := Config.Load()
 	if err != nil {
-		return err
+		log.Error(err)
 	}
 
 	if err := InitLog(logLevel); err != nil {
@@ -130,7 +149,7 @@ func Init(logLevel string) error {
 		}
 
 		//创建默认组织
-		defaultOrg := Config.DefaultOrganization
+		defaultOrg := Config.DefaultOrganization()
 		org, err := s.GetOrganization(defaultOrg)
 		if err != nil {
 			if err != lang.Error(lang.ErrOrganizationNotFound) {
@@ -160,7 +179,7 @@ func Init(logLevel string) error {
 		}
 
 		//创建默认用户
-		defaultUserName := Config.DefaultUserName
+		defaultUserName := Config.DefaultUserName()
 		_, err = s.GetUser(defaultUserName)
 		if err != nil {
 			if err != lang.Error(lang.ErrUserNotFound) {
@@ -197,13 +216,13 @@ func FlushDB() error {
 }
 
 func ResetDefaultAdminUser() error {
-	user, err := Store().GetUser(Config.DefaultUserName)
+	user, err := Store().GetUser(Config.DefaultUserName())
 	if err != nil {
 		return err
 	}
 
 	user.Enable()
-	user.ResetPassword(Config.DefaultUserName)
+	user.ResetPassword(Config.DefaultUserName())
 	if err = user.Save(); err != nil {
 		return err
 	}

@@ -27,7 +27,7 @@ func StateList(equipmentID int64, ctx iris.Context) hero.Result {
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize)
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 		kind := ctx.URLParamIntDefault("kind", int(resource.AllKind))
 
 		var params = []helper.OptionFN{
@@ -37,7 +37,7 @@ func StateList(equipmentID int64, ctx iris.Context) hero.Result {
 		}
 
 		if !app.IsDefaultAdminUser(admin) {
-			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect))
+			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
 			params = append(params, helper.User(admin.GetID()))
 		}
 

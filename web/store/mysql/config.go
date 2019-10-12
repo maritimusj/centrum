@@ -58,7 +58,7 @@ func (config *Config) SetOption(key string, value interface{}) error {
 			return config.extra
 		})
 
-		return config.Save()
+		return nil
 	}
 	return lang.Error(lang.ErrDeviceNotFound)
 }

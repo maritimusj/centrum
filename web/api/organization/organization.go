@@ -23,7 +23,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize)
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 
 		var params = []helper.OptionFN{
 			helper.Page(page, pageSize),
@@ -163,7 +163,7 @@ func Delete(orgID int64, ctx iris.Context) hero.Result {
 				return err
 			}
 
-			if org.Name() == app.Config.DefaultOrganization {
+			if org.Name() == app.Config.DefaultOrganization() {
 				return lang.ErrFailedRemoveDefaultOrganization
 			}
 

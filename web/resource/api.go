@@ -1,7 +1,11 @@
 package resource
 
 const (
-	Unknown            = ""
+	Unknown = ""
+
+	ConfigBaseDetail = "config.detail"
+	ConfigBaseUpdate = "config.update"
+
 	OrganizationCreate = "org.create"
 	OrganizationList   = "org.list"
 	OrganizationDetail = "org.detail"

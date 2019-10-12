@@ -38,7 +38,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize)
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
@@ -135,18 +135,18 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 				return err
 			}
 
-			data := event.NewData(event.User)
-			data.Set("event", event.Created)
-			data.Set("userID", user.GetID())
-			data.Set("adminID", admin.GetID())
-			data.Set("result", user.Simple())
-
+			data := event.Data{
+				"event":   event.Created,
+				"userID":  user.GetID(),
+				"adminID": admin.GetID(),
+				"result":  user.Simple(),
+			}
 			return data
 		})
 
 		if data, ok := result.(*event.Data); ok {
 			result := data.Pop("result")
-			go event.Fire(data)
+			app.Event.Publish(event.UserLog, data)
 			return result
 		}
 
@@ -237,16 +237,17 @@ func Update(userID int64, ctx iris.Context) hero.Result {
 				return err
 			}
 
-			eventData := event.NewData(event.User)
-			eventData.Set("event", event.Updated)
-			eventData.Set("userID", user.GetID())
-			eventData.Set("adminID", admin.GetID())
+			eventData := event.Data{
+				"event":   event.Updated,
+				"userID":  user.GetID(),
+				"adminID": admin.GetID(),
+			}
 
 			return eventData
 		})
 
-		if data, ok := result.(*event.Data); ok {
-			go event.Fire(data)
+		if data, ok := result.(event.Data); ok {
+			app.Event.Publish(event.UserLog, data)
 			return lang.Ok
 		}
 
@@ -277,10 +278,11 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 				return err
 			}
 
-			data := event.NewData(event.User)
-			data.Set("event", event.Deleted)
-			data.Set("name", user.Name())
-			data.Set("adminID", admin.GetID())
+			data := event.Data{
+				"event":   event.Deleted,
+				"name":    user.Name(),
+				"adminID": admin.GetID(),
+			}
 
 			err = role.Destroy()
 			if err != nil {
@@ -295,8 +297,8 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 			return data
 		})
 
-		if data, ok := result.(*event.Data); ok {
-			go event.Fire(data)
+		if data, ok := result.(event.Data); ok {
+			app.Event.Publish(event.UserLog, data)
 			return lang.Ok
 		}
 		return result
@@ -398,10 +400,11 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 				return nil
 			}
 
-			data := event.NewData(event.User)
-			data.Set("event", event.Updated)
-			data.Set("userID", user.GetID())
-			data.Set("adminID", admin.GetID())
+			data := event.Data{
+				"event":   event.Updated,
+				"userID":  user.GetID(),
+				"adminID": admin.GetID(),
+			}
 
 			for _, role := range roles {
 				if role.Name() == user.Name() {
@@ -416,8 +419,8 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 			return lang.ErrRoleNotFound
 		})
 
-		if data, ok := result.(*event.Data); ok {
-			go event.Fire(data)
+		if data, ok := result.(event.Data); ok {
+			app.Event.Publish(event.UserLog, data)
 			return lang.Ok
 		}
 		return result
