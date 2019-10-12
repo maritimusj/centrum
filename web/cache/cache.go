@@ -10,6 +10,7 @@ type Cache interface {
 	Save(obj interface{}) error
 	Remove(obj interface{})
 
+	LoadConfig(id int64) (model.Config, error)
 	LoadOrganization(id int64) (model.Organization, error)
 	LoadUser(id int64) (model.User, error)
 	LoadRole(id int64) (model.Role, error)

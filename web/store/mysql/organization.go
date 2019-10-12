@@ -73,7 +73,7 @@ func (o *Organization) SetOption(path string, value interface{}) error {
 	}
 
 	o.extra = data
-	o.dirty.Set("options", func() interface{} {
+	o.dirty.Set("extra", func() interface{} {
 		return o.extra
 	})
 

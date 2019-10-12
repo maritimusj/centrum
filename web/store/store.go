@@ -13,6 +13,11 @@ type Store interface {
 	Cache() cache.Cache
 	EraseAllData() error
 
+	CreateConfig(name string, data interface{}) (model.Config, error)
+	RemoveConfig(cfg interface{}) error
+	GetConfig(cfg interface{}) (model.Config, error)
+	GetConfigList(options ...helper.OptionFN) ([]model.Config, int64, error)
+
 	MustGetUserFromContext(ctx iris.Context) model.User
 	InitDefaultRoles(org interface{}) error
 

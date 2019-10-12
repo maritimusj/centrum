@@ -54,6 +54,7 @@ const (
 	ErrRecursiveDetected
 	ErrInvalidDeviceConnStr
 	ErrDeviceExists
+	ErrConfigNotFound
 )
 
 func ErrorStr(code ErrorCode, params ...interface{}) string {

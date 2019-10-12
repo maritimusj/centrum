@@ -25,6 +25,7 @@ import (
 )
 
 const (
+	TbConfig          = "`config`"
 	TbOrganization    = "`organizations`"
 	TbUsers           = "`users`"
 	TbRoles           = "`roles`"
@@ -106,6 +107,179 @@ func (s *mysqlStore) Close() {
 
 func (s *mysqlStore) Cache() cache.Cache {
 	return s.cache
+}
+
+func (s *mysqlStore) loadConfig(id int64) (*Config, error) {
+	var cfg = NewConfig(s, id)
+	err := LoadData(s.db, TbConfig, map[string]interface{}{
+		"name":       &cfg.name,
+		"extra?":     &cfg.extra,
+		"created_at": &cfg.createdAt,
+		"update_at":  &cfg.updateAt,
+	}, "id=?", id)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return nil, lang.InternalError(err)
+		}
+		return nil, lang.Error(lang.ErrConfigNotFound)
+	}
+
+	return cfg, nil
+}
+
+func (s *mysqlStore) GetConfig(cfg interface{}) (model.Config, error) {
+	result := <-synchronized.Do(s.ctx, TbConfig, func() interface{} {
+		var cfgID int64
+		cfgID, err := getConfigID(s.db, cfg)
+		if err != nil {
+			return err
+		}
+
+		cfg, err := s.cache.LoadConfig(cfgID)
+		if err != nil {
+			if err != lang.Error(lang.ErrCacheNotFound) {
+				return err
+			}
+		} else {
+			return cfg
+		}
+
+		cfg, err = s.loadConfig(cfgID)
+		if err != nil {
+			return err
+		}
+
+		err = s.cache.Save(cfg)
+		if err != nil {
+			return err
+		}
+		return cfg
+	})
+
+	if err, ok := result.(error); ok {
+		return nil, err
+	}
+	return result.(model.Config), nil
+}
+
+func (s *mysqlStore) CreateConfig(name string, data interface{}) (model.Config, error) {
+	result := <-synchronized.Do(s.ctx, TbConfig, func() interface{} {
+		now := time.Now()
+		data, err := json.Marshal(util.If(data != nil, data, "{}"))
+		if err != nil {
+			return err
+		}
+		cfgID, err := CreateData(s.db, TbConfig, map[string]interface{}{
+			"name":       name,
+			"extra":      data,
+			"created_at": now,
+			"update_at":  now,
+		})
+		if err != nil {
+			return lang.InternalError(err)
+		}
+
+		cfg, err := s.loadConfig(cfgID)
+		if err != nil {
+			return err
+		}
+
+		err = s.cache.Save(cfg)
+		if err != nil {
+			return err
+		}
+
+		return cfg
+	})
+
+	if err, ok := result.(error); ok {
+		return nil, err
+	}
+	return result.(model.Config), nil
+}
+
+func (s *mysqlStore) RemoveConfig(id interface{}) error {
+	cfgID, err := getConfigID(s.db, id)
+	if err != nil {
+		return err
+	}
+
+	err = RemoveData(s.db, TbConfig, "id=?", cfgID)
+	if err != nil {
+		return lang.InternalError(err)
+	}
+
+	s.cache.Remove(&Config{id: cfgID})
+	return nil
+}
+
+func (s *mysqlStore) GetConfigList(options ...helper.OptionFN) ([]model.Config, int64, error) {
+	option := parseOption(options...)
+	var (
+		fromSQL = "FROM " + TbConfig + " c  WHERE 1"
+	)
+
+	var params []interface{}
+
+	if option.Keyword != "" {
+		fromSQL += " AND c.name REGEXP ?"
+		params = append(params, option.Keyword)
+	}
+
+	var total int64
+	if option.GetTotal == nil || *option.GetTotal {
+		if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
+			return nil, 0, lang.InternalError(err)
+		}
+
+		if total == 0 {
+			return []model.Config{}, 0, nil
+		}
+	}
+
+	fromSQL += " ORDER BY c.id ASC"
+
+	if option.Limit > 0 {
+		fromSQL += " LIMIT ?"
+		params = append(params, option.Limit)
+	}
+
+	if option.Offset > 0 {
+		fromSQL += " OFFSET ?"
+		params = append(params, option.Offset)
+	}
+	rows, err := s.db.Query("SELECT r.id "+fromSQL, params...)
+	if err != nil {
+		return nil, 0, lang.InternalError(err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var ids []int64
+	var cfgID int64
+
+	for rows.Next() {
+		err = rows.Scan(&cfgID)
+		if err != nil {
+			if err != sql.ErrNoRows {
+				return nil, 0, lang.InternalError(err)
+			}
+			return []model.Config{}, total, nil
+		}
+		ids = append(ids, cfgID)
+	}
+
+	var result []model.Config
+	for _, id := range ids {
+		cfg, err := s.GetConfig(id)
+		if err != nil {
+			return nil, 0, err
+		}
+		result = append(result, cfg)
+	}
+
+	return result, total, nil
 }
 
 func (s *mysqlStore) MustGetUserFromContext(ctx iris.Context) model.User {
@@ -242,7 +416,7 @@ func (s *mysqlStore) CreateOrganization(name string, title string) (model.Organi
 			"created_at": time.Now(),
 		})
 		if err != nil {
-			return err
+			return lang.InternalError(err)
 		}
 
 		org, err := s.loadOrganization(orgID)

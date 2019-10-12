@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	PrefixConfig      = "x."
 	PrefixOrg         = "0."
 	PrefixUser        = "1."
 	PrefixRole        = "2."
@@ -86,6 +87,15 @@ func (c *cache) Save(obj interface{}) error {
 
 func (c *cache) Remove(obj interface{}) {
 	c.client.Delete(getKey(obj))
+}
+
+func (c *cache) LoadConfig(id int64) (model.Config, error) {
+	if v, ok := c.client.Get(PrefixConfig + strconv.FormatInt(id, 10)); ok {
+		if u, ok := v.(model.Config); ok {
+			return u, nil
+		}
+	}
+	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
 func (c *cache) LoadOrganization(id int64) (model.Organization, error) {
