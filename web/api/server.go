@@ -180,7 +180,7 @@ func (server *server) Start(cfg *config.Config) error {
 		})
 	})
 
-	addr := fmt.Sprintf("%s:%d", app.Config.APIAddr, app.Config.APIPort)
+	addr := fmt.Sprintf("%s:%d", app.Config.APIAddr(), app.Config.APIPort())
 	return server.app.Run(iris.Addr(addr), iris.WithoutServerError(iris.ErrServerClosed))
 }
 

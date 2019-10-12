@@ -99,7 +99,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 				if form.OrgID > 0 {
 					org = form.OrgID
 				} else {
-					org = app.Config.DefaultOrganization
+					org = app.Config.DefaultOrganization()
 				}
 			} else {
 				org = admin.OrganizationID()
@@ -127,7 +127,6 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			}
 
 			data := event.Data{
-				"event":       event.Created,
 				"equipmentID": equipment.GetID(),
 				"userID":      admin.GetID(),
 				"result":      equipment.Simple(),
@@ -136,9 +135,8 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 		})
 
 		if data, ok := result.(event.Data); ok {
-			result := data.Pop("result")
-			app.Event.Publish(event.EquipmentLog, data)
-			return result
+			app.Event.Publish(event.EquipmentCreated, data.Get("userID"), data.Get("equipmentID"))
+			return data.Pop("result")
 		}
 
 		return result
@@ -210,7 +208,6 @@ func Update(equipmentID int64, ctx iris.Context) hero.Result {
 			}
 
 			data := event.Data{
-				"event":       event.Updated,
 				"equipmentID": equipment.GetID(),
 				"userID":      admin.GetID(),
 			}
@@ -219,7 +216,7 @@ func Update(equipmentID int64, ctx iris.Context) hero.Result {
 		})
 
 		if data, ok := result.(*event.Data); ok {
-			app.Event.Publish(event.EquipmentLog, data)
+			app.Event.Publish(event.EquipmentUpdated, data.Get("userID"), data.Get("equipmentID"))
 			return lang.Ok
 		}
 
@@ -241,7 +238,6 @@ func Delete(equipmentID int64, ctx iris.Context) hero.Result {
 			}
 
 			data := event.Data{
-				"event":  event.Deleted,
 				"title":  equipment.Title(),
 				"userID": admin.GetID(),
 			}
@@ -253,7 +249,7 @@ func Delete(equipmentID int64, ctx iris.Context) hero.Result {
 			return data
 		})
 		if data, ok := result.(event.Data); ok {
-			app.Event.Publish(event.EquipmentLog, data)
+			app.Event.Publish(event.EquipmentDeleted, data.Get("userID"), data.Get("title"))
 			return lang.Ok
 		}
 		return result

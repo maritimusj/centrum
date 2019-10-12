@@ -99,7 +99,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			}
 
 			//创建用户同名的role，并设置guest权限
-			role, err := s.CreateRole(app.Config.DefaultOrganization, form.Username, form.Username, lang.Str(lang.UserDefaultRoleDesc))
+			role, err := s.CreateRole(app.Config.DefaultOrganization(), form.Username, form.Username, lang.Str(lang.UserDefaultRoleDesc))
 			if err != nil {
 				return err
 			}
@@ -124,7 +124,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 				if form.OrgID > 0 {
 					org = form.OrgID
 				} else {
-					org = app.Config.DefaultOrganization
+					org = app.Config.DefaultOrganization()
 				}
 			} else {
 				org = admin.OrganizationID()
@@ -136,7 +136,6 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			}
 
 			data := event.Data{
-				"event":   event.Created,
 				"userID":  user.GetID(),
 				"adminID": admin.GetID(),
 				"result":  user.Simple(),
@@ -145,9 +144,8 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 		})
 
 		if data, ok := result.(*event.Data); ok {
-			result := data.Pop("result")
-			app.Event.Publish(event.UserLog, data)
-			return result
+			app.Event.Publish(event.UserCreated, data.Get("adminID"), data.Get("userID"))
+			return data.Pop("result")
 		}
 
 		return result
@@ -238,7 +236,6 @@ func Update(userID int64, ctx iris.Context) hero.Result {
 			}
 
 			eventData := event.Data{
-				"event":   event.Updated,
 				"userID":  user.GetID(),
 				"adminID": admin.GetID(),
 			}
@@ -247,7 +244,7 @@ func Update(userID int64, ctx iris.Context) hero.Result {
 		})
 
 		if data, ok := result.(event.Data); ok {
-			app.Event.Publish(event.UserLog, data)
+			app.Event.Publish(event.UserUpdated, data.Get("adminID"), data.Get("userID"))
 			return lang.Ok
 		}
 
@@ -279,7 +276,6 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 			}
 
 			data := event.Data{
-				"event":   event.Deleted,
 				"name":    user.Name(),
 				"adminID": admin.GetID(),
 			}
@@ -298,7 +294,7 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 		})
 
 		if data, ok := result.(event.Data); ok {
-			app.Event.Publish(event.UserLog, data)
+			app.Event.Publish(event.UserDeleted, data.Get("adminID"), data.Get("name"))
 			return lang.Ok
 		}
 		return result
@@ -401,7 +397,6 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 			}
 
 			data := event.Data{
-				"event":   event.Updated,
 				"userID":  user.GetID(),
 				"adminID": admin.GetID(),
 			}
@@ -420,7 +415,7 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 		})
 
 		if data, ok := result.(event.Data); ok {
-			app.Event.Publish(event.UserLog, data)
+			app.Event.Publish(event.UserUpdated, data.Get("adminID"), data.Get("userID"))
 			return lang.Ok
 		}
 		return result

@@ -66,7 +66,7 @@ func Login(ctx iris.Context) hero.Result {
 			"exp": time.Now().Add(app.Config.DefaultTokenExpiration()).Unix(),
 		})
 
-		token, err := claims.SignedString(app.Config.JwtTokenKey)
+		token, err := claims.SignedString(app.Config.JwtTokenKey())
 		if err != nil {
 			return lang.InternalError(err)
 		}

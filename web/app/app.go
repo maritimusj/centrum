@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"github.com/maritimusj/centrum/config"
-	"github.com/maritimusj/centrum/event"
 	"github.com/maritimusj/centrum/lang"
 	logStore "github.com/maritimusj/centrum/logStore/bolt"
 	"github.com/maritimusj/centrum/web/db"
@@ -88,7 +87,7 @@ func InitLog(levelStr string) error {
 
 	//日志仓库
 	err = LogDBStore.Open(Ctx, map[string]interface{}{
-		"filename": Config.LogFileName,
+		"filename": Config.LogFileName(),
 	})
 	if err != nil {
 		return err
@@ -97,21 +96,6 @@ func InitLog(levelStr string) error {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.AddHook(LogDBStore)
 	log.SetLevel(level)
-
-	err = Event.SubscribeAsync(event.DeviceLog, processDeviceLog, false)
-	if err != nil {
-		return err
-	}
-
-	err = Event.SubscribeAsync(event.EquipmentLog, processEquipmentLog, false)
-	if err != nil {
-		return err
-	}
-
-	err = Event.SubscribeAsync(event.UserLog, processUserLog, false)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -131,6 +115,10 @@ func Init(logLevel string) error {
 	}
 
 	if err := InitLog(logLevel); err != nil {
+		return err
+	}
+
+	if err := initEvent(); err != nil {
 		return err
 	}
 

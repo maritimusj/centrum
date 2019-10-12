@@ -108,7 +108,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 				if form.OrgID > 0 {
 					org = form.OrgID
 				} else {
-					org = app.Config.DefaultOrganization
+					org = app.Config.DefaultOrganization()
 				}
 			} else {
 				org = admin.OrganizationID()

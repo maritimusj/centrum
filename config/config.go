@@ -50,11 +50,15 @@ func New(store store.Store) *Config {
 
 func (c *Config) Load() error {
 	var err error
-	c.BaseConfig, err = c.store.GetConfig(baseConfigPath)
+	base, err := c.store.GetConfig(baseConfigPath)
 	if err != nil {
-		return err
+		base, err = c.store.CreateConfig(baseConfigPath, nil)
+		if err != nil {
+			return err
+		}
 	}
 
+	c.BaseConfig = base
 	return nil
 }
 

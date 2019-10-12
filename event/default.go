@@ -1,14 +1,15 @@
 package event
 
 const (
-	UserLog      = "user::log"
-	DeviceLog    = "device::log"
-	EquipmentLog = "Equipment::log"
-)
+	UserCreated = "user::created"
+	UserUpdated = "user::updated"
+	UserDeleted = "user::deleted"
 
-const (
-	_ = iota
-	Created
-	Updated
-	Deleted
+	DeviceCreated = "device::created"
+	DeviceUpdated = "device::updated"
+	DeviceDeleted = "device::deleted"
+
+	EquipmentCreated = "equipment::created"
+	EquipmentUpdated = "equipment::updated"
+	EquipmentDeleted = "equipment::deleted"
 )

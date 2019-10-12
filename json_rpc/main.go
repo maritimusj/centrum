@@ -74,7 +74,7 @@ func (e *Edge) Remove(r *http.Request, uid *string, result *Result) error {
 	return nil
 }
 
-//SetValue 设置设备一个点位值，目前只支付DO
+//SetValue 设置设备一个点位值，目前只支持DO
 func (e *Edge) SetValue(r *http.Request, val *Value, result *Result) error {
 	return e.sink.SetValue(val)
 }
