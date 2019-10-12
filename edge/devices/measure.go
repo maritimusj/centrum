@@ -12,7 +12,7 @@ type MeasureData struct {
 func NewMeasureData(name string) *MeasureData {
 	return &MeasureData{
 		Name:   name,
-		Tags: map[string]string{},
+		Tags:   map[string]string{},
 		Fields: map[string]interface{}{},
 		Time:   time.Now(),
 	}

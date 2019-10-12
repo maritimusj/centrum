@@ -33,7 +33,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize)
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
@@ -48,7 +48,7 @@ func List(ctx iris.Context) hero.Result {
 
 		if !app.IsDefaultAdminUser(admin) {
 			params = append(params, helper.User(admin.GetID()))
-			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
+			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect))
 		}
 
 		devices, total, err := s.GetDeviceList(params...)
@@ -99,7 +99,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 				if form.OrgID > 0 {
 					org = form.OrgID
 				} else {
-					org = app.Config.DefaultOrganization()
+					org = app.Config.DefaultOrganization
 				}
 			} else {
 				org = admin.OrganizationID()

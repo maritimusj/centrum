@@ -28,7 +28,7 @@ type Conf struct {
 	InfluxDBUserName string
 	InfluxDBPassword string
 	CallbackURL      string
-	LogLevel string
+	LogLevel         string
 }
 
 type CH struct {

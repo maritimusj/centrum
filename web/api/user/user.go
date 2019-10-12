@@ -38,7 +38,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize)
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
@@ -99,7 +99,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 			}
 
 			//创建用户同名的role，并设置guest权限
-			role, err := s.CreateRole(app.Config.DefaultOrganization(), form.Username, form.Username, lang.Str(lang.UserDefaultRoleDesc))
+			role, err := s.CreateRole(app.Config.DefaultOrganization, form.Username, form.Username, lang.Str(lang.UserDefaultRoleDesc))
 			if err != nil {
 				return err
 			}
@@ -124,7 +124,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 				if form.OrgID > 0 {
 					org = form.OrgID
 				} else {
-					org = app.Config.DefaultOrganization()
+					org = app.Config.DefaultOrganization
 				}
 			} else {
 				org = admin.OrganizationID()

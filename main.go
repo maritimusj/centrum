@@ -17,7 +17,7 @@ import (
 
 func main() {
 	//命令行参数
-	logLevel := flag.String("l", webApp.Config.LogLevel(), "log level, [trace,debug,info,warn,error,fatal]")
+	logLevel := flag.String("l", "", "log level, [trace,debug,info,warn,error,fatal]")
 	resetDefaultUserPassword := flag.Bool("reset", false, "reset default user password")
 	flushDB := flag.Bool("flush", false, "erase all data in database")
 

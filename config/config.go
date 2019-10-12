@@ -2,87 +2,70 @@ package config
 
 import (
 	"github.com/maritimusj/centrum/web/resource"
+	"github.com/maritimusj/centrum/web/store"
 	"time"
 )
 
-type Config interface {
-	APIAddr() string
-	APIPort() int
+type Config struct {
+	store store.Store
 
-	LogLevel() string
-	SetLogLevel(string)
+	APIAddr string
+	APIPort int
 
-	LogFileName() string
+	DefaultEffect resource.Effect
 
-	DefaultPageSize() int64
-	DBConnStr() string
-	JwtTokenKey() []byte
-	MaxTokenExpiration() time.Duration
+	DefaultOrganization string
+	DefaultUserName     string
 
-	DefaultOrganization() string
-	DefaultUserName() string
+	DefaultPageSize int64
 
-	DefaultEffect() resource.Effect
+	JwtTokenKey            []byte
+	DefaultTokenExpiration time.Duration
+
+	LogLevel    string
+	LogFileName string
 }
 
-type config struct {
-	jwtTokenKey []byte
-	logLevel    string
-	logFileName string
-}
+func New(store store.Store) *Config {
+	return &Config{
+		APIAddr:         "",
+		APIPort:         9090,
+		DefaultUserName: "admin",
 
-func (c *config) APIAddr() string {
-	return ""
-}
+		DefaultOrganization: "default",
+		DefaultEffect:       resource.Deny,
 
-func (c *config) APIPort() int {
-	return 9090
-}
+		DefaultPageSize:        20,
+		DefaultTokenExpiration: time.Hour * 10,
 
-func (c *config) LogFileName() string {
-	return c.logFileName
-}
+		JwtTokenKey: []byte("util.RandStr(32, util.RandAll)"),
 
-func (c *config) LogLevel() string {
-	return c.logLevel
-}
+		LogLevel:    "error",
+		LogFileName: "./log.data",
 
-func (c *config) SetLogLevel(level string) {
-	c.logLevel = level
-}
-
-func (c *config) DefaultEffect() resource.Effect {
-	return resource.Deny
-}
-
-func (c *config) DefaultOrganization() string {
-	return "default"
-}
-
-func (c *config) DefaultUserName() string {
-	return "admin"
-}
-
-func (c *config) MaxTokenExpiration() time.Duration {
-	return time.Hour * 10
-}
-
-func (c *config) JwtTokenKey() []byte {
-	return c.jwtTokenKey
-}
-
-func (c *config) DBConnStr() string {
-	return "root:12345678@/chuanyan?charset=utf8mb4&parseTime=true&loc=Local"
-}
-
-func (c *config) DefaultPageSize() int64 {
-	return 10
-}
-
-func New() Config {
-	return &config{
-		jwtTokenKey: []byte("util.RandStr(32, util.RandAll)"),
-		logLevel:    "error",
-		logFileName: "./log.data",
+		store: store,
 	}
+}
+
+func (c *Config) Load() error {
+	base, err := c.store.GetConfig("base")
+	if err != nil {
+		return err
+	}
+	c.APIAddr = base.GetOption("api.addr").Str
+	c.APIPort = int(base.GetOption("api.port").Int())
+	c.DefaultUserName = base.GetOption("default.username").Str
+	c.DefaultOrganization = base.GetOption("default.organization").Str
+	c.DefaultEffect = resource.Effect(base.GetOption("default.effect").Int())
+	c.DefaultPageSize = base.GetOption("default.pagesize").Int()
+	c.DefaultTokenExpiration = time.Duration(base.GetOption("default.token.expiration").Int())
+
+	c.LogLevel = base.GetOption("log.level").Str
+	c.LogFileName = base.GetOption("log.filename").Str
+
+	return nil
+}
+
+func (c *Config) Save() error {
+	panic("implement me")
 }

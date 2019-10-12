@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	Config = config.New()
+	Config config.Config
 
 	Ctx, cancel = context.WithCancel(context.Background())
 	DB          db.WithTransaction
@@ -26,7 +26,7 @@ var (
 )
 
 func IsDefaultAdminUser(user model.User) bool {
-	return user.Name() == Config.DefaultUserName()
+	return user.Name() == Config.DefaultUserName
 }
 
 func Allow(user model.User, res model.Resource, action resource.Action) bool {
@@ -36,7 +36,7 @@ func Allow(user model.User, res model.Resource, action resource.Action) bool {
 
 	allow, err := user.IsAllow(res, action)
 	if err != nil && err == lang.Error(lang.ErrPolicyNotFound) {
-		return Config.DefaultEffect() == resource.Allow
+		return Config.DefaultEffect == resource.Allow
 	}
 	return allow
 }
@@ -71,16 +71,20 @@ func InitDB(params map[string]interface{}) error {
 }
 
 func InitLog(levelStr string) error {
+	if levelStr == "" {
+		levelStr = Config.LogLevel
+	}
+
 	level, err := log.ParseLevel(levelStr)
 	if err != nil {
 		return err
 	}
 
-	Config.SetLogLevel(levelStr)
+	Config.LogLevel = levelStr
 
 	//日志仓库
 	err = LogDBStore.Open(Ctx, map[string]interface{}{
-		"filename": Config.LogFileName(),
+		"filename": Config.LogFileName,
 	})
 	if err != nil {
 		return err
@@ -95,14 +99,19 @@ func InitLog(levelStr string) error {
 }
 
 func Init(logLevel string) error {
-	if err := InitLog(logLevel); err != nil {
+	//数据库连接
+	if err := InitDB(map[string]interface{}{
+		"connStr": "root:12345678@/chuanyan?charset=utf8mb4&parseTime=true&loc=Local",
+	}); err != nil {
 		return err
 	}
 
-	//数据库连接
-	if err := InitDB(map[string]interface{}{
-		"connStr": Config.DBConnStr(),
-	}); err != nil {
+	err := Config.Load()
+	if err != nil {
+		return err
+	}
+
+	if err := InitLog(logLevel); err != nil {
 		return err
 	}
 
@@ -121,7 +130,7 @@ func Init(logLevel string) error {
 		}
 
 		//创建默认组织
-		defaultOrg := Config.DefaultOrganization()
+		defaultOrg := Config.DefaultOrganization
 		org, err := s.GetOrganization(defaultOrg)
 		if err != nil {
 			if err != lang.Error(lang.ErrOrganizationNotFound) {
@@ -151,7 +160,7 @@ func Init(logLevel string) error {
 		}
 
 		//创建默认用户
-		defaultUserName := Config.DefaultUserName()
+		defaultUserName := Config.DefaultUserName
 		_, err = s.GetUser(defaultUserName)
 		if err != nil {
 			if err != lang.Error(lang.ErrUserNotFound) {
@@ -188,13 +197,13 @@ func FlushDB() error {
 }
 
 func ResetDefaultAdminUser() error {
-	user, err := Store().GetUser(Config.DefaultUserName())
+	user, err := Store().GetUser(Config.DefaultUserName)
 	if err != nil {
 		return err
 	}
 
 	user.Enable()
-	user.ResetPassword(Config.DefaultUserName())
+	user.ResetPassword(Config.DefaultUserName)
 	if err = user.Save(); err != nil {
 		return err
 	}

@@ -9,11 +9,11 @@ import (
 )
 
 type Config struct {
-	id int64
-	name string
-	extra   []byte
+	id        int64
+	name      string
+	extra     []byte
 	createdAt time.Time
-	updateAt time.Time
+	updateAt  time.Time
 
 	dirty *dirty.Dirty
 	store *mysqlStore
@@ -21,9 +21,9 @@ type Config struct {
 
 func NewConfig(store *mysqlStore, id int64) *Config {
 	return &Config{
-		id:        id,
-		dirty:     dirty.New(),
-		store:     store,
+		id:    id,
+		dirty: dirty.New(),
+		store: store,
 	}
 }
 

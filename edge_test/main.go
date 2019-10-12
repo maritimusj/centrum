@@ -77,7 +77,6 @@ func main() {
 		os.Exit(0)
 	}
 
-
 	if *c != "" {
 		result, err := invoke("Edge.GetValue", &CH{
 			UID: *uid,

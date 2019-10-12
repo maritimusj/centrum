@@ -40,7 +40,7 @@ func (server *server) Register(values ...interface{}) {
 
 func (server *server) Start(cfg config.Config) error {
 	hero.Register(validator.New())
-	server.app.Logger().SetLevel(cfg.LogLevel())
+	server.app.Logger().SetLevel(cfg.LogLevel)
 
 	crs := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"}, // allows everything, use that to change the hosts.
@@ -173,7 +173,7 @@ func (server *server) Start(cfg config.Config) error {
 		})
 	})
 
-	addr := fmt.Sprintf("%s:%d", app.Config.APIAddr(), app.Config.APIPort())
+	addr := fmt.Sprintf("%s:%d", app.Config.APIAddr, app.Config.APIPort)
 	return server.app.Run(iris.Addr(addr), iris.WithoutServerError(iris.ErrServerClosed))
 }
 

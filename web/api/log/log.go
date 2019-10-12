@@ -72,7 +72,7 @@ func GetLogList(ctx iris.Context, orgID int64, src string) interface{} {
 	level := ctx.URLParam("level")
 	start := ctx.URLParamInt64Default("start", 0)
 	page := ctx.URLParamInt64Default("page", 1)
-	pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+	pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize)
 
 	admin := app.Store().MustGetUserFromContext(ctx)
 

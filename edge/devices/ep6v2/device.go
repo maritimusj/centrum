@@ -95,7 +95,6 @@ func (device *Device) Close() {
 	}
 }
 
-
 func (device *Device) GetStatus() int {
 	return device.status
 }
