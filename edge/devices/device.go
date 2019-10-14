@@ -68,7 +68,7 @@ func New() *Runner {
 
 func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 	if v, ok := runner.adapters.Load(uid); ok {
-		info := make(map[string]interface{})
+		baseInfo := make(map[string]interface{})
 
 		adapter := v.(*Adapter)
 		model, err := adapter.client.GetModel()
@@ -76,19 +76,19 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 			return nil, err
 		}
 
-		info["model"] = model.ID
-		info["version"] = model.Version
+		baseInfo["model"] = model.ID
+		baseInfo["version"] = model.Version
 
 		addr, err := adapter.client.GetAddr()
 		if err != nil {
-			return info, err
+			return baseInfo, err
 		}
 
-		info["addr"] = addr.Ip.String() + "/" + addr.Mask.String()
-		info["mac"] = addr.Mask.String()
+		baseInfo["addr"] = addr.Ip.String() + "/" + addr.Mask.String()
+		baseInfo["mac"] = addr.Mac.String()
 
-		info["status"] = adapter.client.GetStatus()
-		return info, nil
+		baseInfo["status"] = adapter.client.GetStatus()
+		return baseInfo, nil
 	}
 
 	return nil, errors.New("device not exists")

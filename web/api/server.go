@@ -51,6 +51,10 @@ func (server *server) Start(cfg *config.Config) error {
 		AllowCredentials: true,
 	})
 
+	//后台
+	server.app.StaticWeb("/", "./public")
+
+	//v1
 	v1 := server.app.Party("/v1", crs).AllowMethods(iris.MethodOptions)
 	v1.PartyFunc("/web", func(p router.Party) {
 		p.Post("/login", hero.Handler(web.Login))

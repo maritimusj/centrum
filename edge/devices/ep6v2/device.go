@@ -8,6 +8,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type Connector interface {
@@ -35,7 +36,10 @@ type Device struct {
 	chAO map[int]*AO
 	chDI map[int]*DI
 	chDO map[int]*DO
+
+	sync.RWMutex
 }
+
 
 func New() *Device {
 	return &Device{}
@@ -46,38 +50,73 @@ func (device *Device) SetConnector(connector Connector) {
 }
 
 func (device *Device) onDisconnected(err error) {
+	device.Lock()
+	defer device.Unlock()
+
+	device.model = nil
+	device.addr = nil
 	device.client = nil
 	device.handler = nil
 	device.status = Disconnected
 }
 
-func (device *Device) Connect(ctx context.Context, address string) error {
-	device.status = Connecting
-	if device.connector == nil {
-		device.connector = NewTCPConnector()
+func (device *Device) IsConnected() bool {
+	device.RLock()
+	defer device.RUnlock()
+
+	return device != nil && device.client != nil && device.status == Connected
+}
+
+func (device *Device) getModbusClient() (modbusClient, error) {
+	if device.client != nil && device.status == Connected {
+		return device.client, nil
 	}
+	return nil, errors.New("device not connected")
+}
+
+func (device *Device) Connect(ctx context.Context, address string) error {
+	device.Lock()
+	{
+		device.status = Connecting
+		if device.connector == nil {
+			device.connector = NewTCPConnector()
+		}
+	}
+	device.Unlock()
+
 	conn, err := device.connector.Try(ctx, address)
 	if err != nil {
-		device.status = Disconnected
+		device.Lock()
+		{
+			device.status = Disconnected
+		}
+		device.Unlock()
 		return err
 	}
 
-	handler := modbus.NewTCPClientHandlerFrom(conn)
-	client := modbus.NewClient(handler)
+	device.Lock()
+	{
+		handler := modbus.NewTCPClientHandlerFrom(conn)
+		client := modbus.NewClient(handler)
 
-	device.chAI = make(map[int]*AI)
-	device.chAO = make(map[int]*AO)
-	device.chDI = make(map[int]*DI)
-	device.chDO = make(map[int]*DO)
+		device.chAI = make(map[int]*AI)
+		device.chAO = make(map[int]*AO)
+		device.chDI = make(map[int]*DI)
+		device.chDO = make(map[int]*DO)
 
-	device.handler = handler
-	device.client = client
-	device.status = Connected
+		device.handler = handler
+		device.client = client
+		device.status = Connected
+	}
+	device.Unlock()
 
 	return nil
 }
 
 func (device *Device) Close() {
+	device.Lock()
+	defer device.Unlock()
+
 	device.status = Disconnected
 
 	device.model = nil
@@ -100,22 +139,42 @@ func (device *Device) GetStatus() int {
 }
 
 func (device *Device) GetModel() (*Model, error) {
+	device.Lock()
+
 	if device.model == nil {
-		device.model = &Model{}
-		if err := device.model.fetchData(device.client); err != nil {
-			return device.model, err
+		if client, err := device.getModbusClient(); err != nil {
+			device.Unlock()
+			return nil, err
+		} else {
+			device.model = &Model{}
+			device.Unlock()
+			if err := device.model.fetchData(client); err != nil {
+				return device.model, err
+			}
 		}
+	} else {
+		device.Unlock()
 	}
 
 	return device.model, nil
 }
 
 func (device *Device) GetAddr() (*Addr, error) {
-	if device.addr != nil {
-		device.addr = &Addr{}
-		if err := device.addr.fetchData(device.client); err != nil {
+	device.Lock()
+
+	if device.addr == nil {
+		if client, err := device.getModbusClient(); err != nil {
+			device.Unlock()
 			return device.addr, err
+		} else {
+			device.addr = &Addr{}
+			device.Unlock()
+			if err := device.addr.fetchData(client); err != nil {
+				return device.addr, err
+			}
 		}
+	} else {
+		device.Unlock()
 	}
 
 	return device.addr, nil
@@ -123,10 +182,13 @@ func (device *Device) GetAddr() (*Addr, error) {
 
 func (device *Device) GetCHNum() (*CHNum, error) {
 	chNum := &CHNum{}
-	if err := chNum.fetchData(device.client); err != nil {
-		return nil, err
+	if client, err := device.getModbusClient(); err != nil {
+		return chNum, err
+	} else {
+		if err := chNum.fetchData(client); err != nil {
+			return chNum, err
+		}
 	}
-
 	return chNum, nil
 }
 
@@ -140,9 +202,13 @@ func (device *Device) GetRealTimeData() (*RealTimeData, error) {
 		chNum: chNum,
 	}
 
-	err = data.fetchData(device.client)
-	if err != nil {
+	if client, err := device.getModbusClient(); err != nil {
 		return nil, err
+	} else {
+		err = data.fetchData(client)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return data, nil
@@ -273,13 +339,18 @@ func (device *Device) GetAI(index int) (*AI, error) {
 		return ai, nil
 	}
 
+	client, err := device.getModbusClient()
+	if err != nil {
+		return nil, err
+	}
+
 	config := &AIConfig{}
-	if err := config.fetchData(device.client, index); err != nil {
+	if err := config.fetchData(client, index); err != nil {
 		return nil, err
 	}
 
 	alarm := &AIAlarmConfig{}
-	if err := alarm.fetchData(device.client, index); err != nil {
+	if err := alarm.fetchData(client, index); err != nil {
 		return nil, err
 	}
 
@@ -287,7 +358,7 @@ func (device *Device) GetAI(index int) (*AI, error) {
 		Index:       index,
 		config:      config,
 		alarmConfig: alarm,
-		conn:        device.client,
+		conn:        client,
 	}
 
 	device.chAI[index] = ai
@@ -308,14 +379,19 @@ func (device *Device) GetAO(index int) (*AO, error) {
 		return ao, nil
 	}
 
+	client, err := device.getModbusClient()
+	if err != nil {
+		return nil, err
+	}
+
 	config := &AOConfig{}
-	if err := config.fetchData(device.client, index); err != nil {
+	if err := config.fetchData(client, index); err != nil {
 		return nil, err
 	}
 	ao := &AO{
 		Index:  index,
 		config: config,
-		conn:   device.client,
+		conn:   client,
 	}
 	device.chAO[index] = ao
 	return ao, nil
@@ -334,15 +410,20 @@ func (device *Device) GetDI(index int) (*DI, error) {
 		return di, nil
 	}
 
+	client, err := device.getModbusClient()
+	if err != nil {
+		return nil, err
+	}
+
 	config := &DIConfig{}
-	if err := config.fetchData(device.client, index); err != nil {
+	if err := config.fetchData(client, index); err != nil {
 		return nil, err
 	}
 
 	di := &DI{
 		Index:  index,
 		config: config,
-		conn:   device.client,
+		conn:   client,
 	}
 
 	device.chDI[index] = di
@@ -382,15 +463,20 @@ func (device *Device) GetDO(index int) (*DO, error) {
 		return do, nil
 	}
 
+	client, err := device.getModbusClient()
+	if err != nil {
+		return nil, err
+	}
+
 	config := &DOConfig{}
-	if err := config.fetchData(device.client, index); err != nil {
+	if err := config.fetchData(client, index); err != nil {
 		return nil, err
 	}
 
 	do := &DO{
 		config: config,
 		Index:  index,
-		conn:   device.client,
+		conn:   client,
 	}
 
 	device.chDO[index] = do
