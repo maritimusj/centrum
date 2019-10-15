@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	_ "github.com/go-sql-driver/mysql"
 
@@ -23,7 +26,10 @@ func main() {
 
 	flag.Parse()
 
-	if err := webApp.Init(*logLevel); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := webApp.Init(ctx, *logLevel); err != nil {
 		log.Fatal(err)
 	}
 
@@ -55,9 +61,21 @@ func main() {
 	}
 
 	//API服务
-	server := webAPI.New()
-	err := server.Start(webApp.Config)
-	if err != nil {
-		log.Fatal(err)
-	}
+	apiServer := webAPI.New()
+	apiServer.Start(ctx, webApp.Config)
+
+	WaitForExit()
+
+	fmt.Println("exit...")
+
+	cancel()
+
+	apiServer.Wait()
+	webApp.Close()
+}
+
+func WaitForExit() {
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
 }

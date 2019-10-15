@@ -1,15 +1,17 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"github.com/iris-contrib/middleware/cors"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/core/router"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/event"
 	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/centrum/web/api/edge"
-	"github.com/maritimusj/centrum/web/api/log"
+	logStore "github.com/maritimusj/centrum/web/api/log"
 	"github.com/maritimusj/centrum/web/api/my"
 	"github.com/maritimusj/centrum/web/api/organization"
 	"github.com/maritimusj/centrum/web/api/role"
@@ -17,6 +19,10 @@ import (
 	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/perm"
 	"gopkg.in/go-playground/validator.v9"
+	"sync"
+	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/maritimusj/centrum/web/api/device"
 	"github.com/maritimusj/centrum/web/api/equipment"
@@ -30,19 +36,30 @@ import (
 
 type Server interface {
 	Register(values ...interface{})
-	Start(cfg *config.Config) error
-	Close()
+	Start(ctx context.Context, cfg *config.Config)
+	Wait()
 }
 
 type server struct {
 	app *iris.Application
+	wg  sync.WaitGroup
+}
+
+func New() Server {
+	return &server{
+		app: iris.Default(),
+	}
 }
 
 func (server *server) Register(values ...interface{}) {
 	hero.Register(values...)
 }
 
-func (server *server) Start(cfg *config.Config) error {
+func (server *server) Wait() {
+	server.wg.Wait()
+}
+
+func (server *server) Start(ctx context.Context, cfg *config.Config) {
 	hero.Register(validator.New())
 	server.app.Logger().SetLevel(cfg.LogLevel())
 
@@ -182,24 +199,43 @@ func (server *server) Start(cfg *config.Config) error {
 			})
 
 			//日志等级
-			p.Get("/log/level", hero.Handler(log.Level)).Name = ResourceDef.LogLevelList
+			p.Get("/log/level", hero.Handler(logStore.Level)).Name = ResourceDef.LogLevelList
 			//系统日志
 			p.PartyFunc("/syslog", func(p router.Party) {
-				p.Get("/", hero.Handler(log.List)).Name = ResourceDef.LogList
-				p.Delete("/", hero.Handler(log.Delete)).Name = ResourceDef.LogDelete
+				p.Get("/", hero.Handler(logStore.List)).Name = ResourceDef.LogList
+				p.Delete("/", hero.Handler(logStore.Delete)).Name = ResourceDef.LogDelete
 			})
 		})
 	})
 
 	addr := fmt.Sprintf("%s:%d", app.Config.APIAddr(), app.Config.APIPort())
-	return server.app.Run(iris.Addr(addr), iris.WithoutServerError(iris.ErrServerClosed))
-}
+	server.wg.Add(2)
+	go func() {
+		defer server.wg.Done()
 
-func (server *server) Close() {
-}
+		log.Trace("api server start at: ", addr)
+		err := server.app.Run(iris.Addr(addr), iris.WithoutServerError(iris.ErrServerClosed))
+		if err != nil {
+			log.Error("listen: %s\n", err)
+		}
+	}()
 
-func New() Server {
-	return &server{
-		app: iris.Default(),
-	}
+	go func() {
+		defer server.wg.Done()
+
+		select {
+		case <-ctx.Done():
+			timeout, _ := context.WithTimeout(ctx, 6*time.Second)
+			err := server.app.Shutdown(timeout)
+			if err != nil {
+				log.Tracef("shutdown http server: ", err)
+			} else {
+				log.Tracef("http server shutdown.")
+			}
+		}
+	}()
+
+	time.AfterFunc(3*time.Second, func() {
+		app.Event.Publish(event.ApiServerStarted)
+	})
 }

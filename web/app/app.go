@@ -7,6 +7,7 @@ import (
 	logStore "github.com/maritimusj/centrum/logStore/bolt"
 	"github.com/maritimusj/centrum/web/db"
 	mysqlDB "github.com/maritimusj/centrum/web/db/mysql"
+	"github.com/maritimusj/centrum/web/edge"
 	"github.com/maritimusj/centrum/web/helper"
 	"github.com/maritimusj/centrum/web/model"
 	"github.com/maritimusj/centrum/web/resource"
@@ -20,10 +21,11 @@ import (
 var (
 	Config *config.Config
 
-	Ctx, cancel = context.WithCancel(context.Background())
-	DB          db.WithTransaction
-	Event       = EventBus.New()
+	Ctx    context.Context
+	cancel context.CancelFunc
+	DB     db.WithTransaction
 
+	Event      = EventBus.New()
 	LogDBStore = logStore.New()
 	s          store.Store
 )
@@ -100,7 +102,9 @@ func InitLog(levelStr string) error {
 	return nil
 }
 
-func Init(logLevel string) error {
+func Init(ctx context.Context, logLevel string) error {
+	Ctx, cancel = context.WithCancel(ctx)
+
 	//数据库连接
 	if err := InitDB(map[string]interface{}{
 		"connStr": "root:12345678@/chuanyan?charset=utf8mb4&parseTime=true&loc=Local",
@@ -188,8 +192,23 @@ func Init(logLevel string) error {
 	return nil
 }
 
+func BootAllDevices() error {
+	devices, _, err := Store().GetDeviceList()
+	if err != nil {
+		return err
+	}
+	for _, device := range devices {
+		if err := edge.ActiveDevice(device); err != nil {
+			log.Error(err)
+			device.Logger().Error(err)
+		}
+	}
+	return nil
+}
+
 func Close() {
 	cancel()
+	Store().Close()
 	LogDBStore.Wait()
 }
 

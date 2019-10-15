@@ -1,23 +1,19 @@
 package app
 
 import (
-	"fmt"
 	"github.com/maritimusj/centrum/event"
-	"github.com/maritimusj/centrum/global"
-	"github.com/maritimusj/centrum/json_rpc"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/web/edge"
-	"github.com/maritimusj/centrum/web/model"
 	log "github.com/sirupsen/logrus"
 	"strconv"
-	"time"
 )
 
 func initEvent() error {
 	eventsMap := map[string]interface{}{
-		event.UserCreated: eventUserCreated,
-		event.UserUpdated: eventUserUpdated,
-		event.UserDeleted: eventUserDeleted,
+		event.ApiServerStarted: eventApiServerStarted,
+		event.UserCreated:      eventUserCreated,
+		event.UserUpdated:      eventUserUpdated,
+		event.UserDeleted:      eventUserDeleted,
 
 		event.DeviceCreated: eventDeviceCreated,
 		event.DeviceUpdated: eventDeviceUpdated,
@@ -36,6 +32,13 @@ func initEvent() error {
 	}
 
 	return nil
+}
+
+func eventApiServerStarted() {
+	err := BootAllDevices()
+	if err != nil {
+		log.Error("[BootAllDevices] ", err)
+	}
 }
 
 func eventUserCreated(userID int64, newUserID int64) {
@@ -83,28 +86,6 @@ func eventUserDeleted(userID int64, name string) {
 	adminUser.Logger().Warn(lang.Str(lang.AdminDeleteUserOk, adminUser.Name(), name))
 }
 
-func activeFN(device model.Device) error {
-	org, err := device.Organization()
-	if err != nil {
-		return err
-	}
-
-	conf := &json_rpc.Conf{
-		UID:              strconv.FormatInt(device.GetID(), 10),
-		Inverse:          false,
-		Address:          device.GetOption("params.connStr").Str,
-		Interval:         time.Second * time.Duration(device.GetOption("params.interval").Int()),
-		DB:               org.Title(),
-		InfluxDBAddress:  "http://localhost:8086",
-		InfluxDBUserName: "",
-		InfluxDBPassword: "",
-		CallbackURL:      fmt.Sprintf("%s/%d", global.Params.MustGet("callbackURL"), device.GetID()),
-		LogLevel:         "trace",
-	}
-
-	return edge.Active(conf)
-}
-
 func eventDeviceCreated(userID int64, deviceID int64) {
 	user, err := Store().GetUser(userID)
 	if err != nil {
@@ -117,7 +98,7 @@ func eventDeviceCreated(userID int64, deviceID int64) {
 		return
 	}
 
-	err = activeFN(device)
+	err = edge.ActiveDevice(device)
 	if err != nil {
 		log.Error("eventDeviceCreated: active device: ", err)
 	}
@@ -139,7 +120,7 @@ func eventDeviceUpdated(userID int64, deviceID int64) {
 		return
 	}
 
-	err = activeFN(device)
+	err = edge.ActiveDevice(device)
 	if err != nil {
 		log.Error("eventDeviceUpdated: active device: ", err)
 	}
