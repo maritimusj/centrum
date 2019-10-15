@@ -16,17 +16,11 @@ type Connector interface {
 	Try(ctx context.Context, addr string) (net.Conn, error)
 }
 
-const (
-	Disconnected = iota
-	Connecting
-	Connected
-)
-
 type Device struct {
 	model *Model
 	addr  *Addr
 
-	status int
+	status lang.StrIndex
 
 	connector Connector
 
@@ -40,7 +34,6 @@ type Device struct {
 
 	sync.RWMutex
 }
-
 
 func New() *Device {
 	return &Device{}
@@ -58,18 +51,18 @@ func (device *Device) onDisconnected(err error) {
 	device.addr = nil
 	device.client = nil
 	device.handler = nil
-	device.status = Disconnected
+	device.status = lang.Disconnected
 }
 
 func (device *Device) IsConnected() bool {
 	device.RLock()
 	defer device.RUnlock()
 
-	return device != nil && device.client != nil && device.status == Connected
+	return device != nil && device.client != nil && device.status == lang.Connected
 }
 
 func (device *Device) getModbusClient() (modbusClient, error) {
-	if device.client != nil && device.status == Connected {
+	if device.client != nil && device.status == lang.Connected {
 		return device.client, nil
 	}
 	return nil, errors.New("device not connected")
@@ -78,7 +71,7 @@ func (device *Device) getModbusClient() (modbusClient, error) {
 func (device *Device) Connect(ctx context.Context, address string) error {
 	device.Lock()
 	{
-		device.status = Connecting
+		device.status = lang.Connecting
 		if device.connector == nil {
 			device.connector = NewTCPConnector()
 		}
@@ -89,7 +82,7 @@ func (device *Device) Connect(ctx context.Context, address string) error {
 	if err != nil {
 		device.Lock()
 		{
-			device.status = Disconnected
+			device.status = lang.Disconnected
 		}
 		device.Unlock()
 		return err
@@ -107,7 +100,7 @@ func (device *Device) Connect(ctx context.Context, address string) error {
 
 		device.handler = handler
 		device.client = client
-		device.status = Connected
+		device.status = lang.Connected
 	}
 	device.Unlock()
 
@@ -118,7 +111,7 @@ func (device *Device) Close() {
 	device.Lock()
 	defer device.Unlock()
 
-	device.status = Disconnected
+	device.status = lang.Disconnected
 
 	device.model = nil
 	device.addr = nil
@@ -136,11 +129,11 @@ func (device *Device) Close() {
 }
 
 func (device *Device) GetStatus() int {
-	return device.status
+	return int(device.status)
 }
 
 func (device *Device) GetStatusTitle() string {
-	return lang.Str(lang.StrIndex(device.status))
+	return lang.Str(device.status)
 }
 
 func (device *Device) GetModel() (*Model, error) {

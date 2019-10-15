@@ -22,16 +22,29 @@ import (
 )
 
 type Adapter struct {
-	client *ep6v2.Device
-	conf   *json_rpc.Conf
-	ch     chan *MeasureData
-	logger *log.Logger
-	done   chan struct{}
-	wg     sync.WaitGroup
+	client        *ep6v2.Device
+	conf          *json_rpc.Conf
+	measureDataCH chan *MeasureData
+	logger        *log.Logger
+	done          chan struct{}
+	wg            sync.WaitGroup
+}
+
+func (adapter *Adapter) IsDone() bool {
+	select {
+	case <-adapter.done:
+		return true
+	default:
+		return false
+	}
 }
 
 func (adapter *Adapter) Close() {
-	if adapter != nil && adapter.done != nil {
+	if adapter != nil {
+		if adapter.client != nil {
+			adapter.client.Close()
+		}
+
 		close(adapter.done)
 		adapter.wg.Wait()
 	}
@@ -39,9 +52,12 @@ func (adapter *Adapter) Close() {
 
 func (adapter *Adapter) OnDeviceStatusChanged(index lang.StrIndex) {
 	if adapter.conf.CallbackURL != "" {
-		data, _ := json.Marshal(map[string]string{
-			"uid":    adapter.conf.UID,
-			"status": lang.Str(index),
+		data, _ := json.Marshal(map[string]interface{}{
+			"status": map[string]interface{}{
+				"uid":   adapter.conf.UID,
+				"index": index,
+				"title": lang.Str(index),
+			},
 		})
 
 		req, err := http.NewRequest("POST", adapter.conf.CallbackURL, bytes.NewReader(data))
@@ -101,7 +117,8 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 		baseInfo["addr"] = addr.Ip.String() + "/" + addr.Mask.String()
 		baseInfo["mac"] = addr.Mac.String()
 
-		baseInfo["status"] = adapter.client.GetStatusTitle()
+		baseInfo["status_index"] = adapter.client.GetStatus()
+		baseInfo["status_title"] = adapter.client.GetStatusTitle()
 		return baseInfo, nil
 	}
 
@@ -132,6 +149,8 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 		}
 
 		loggerHook := httpLoggerStore.New()
+		loggerHook.SetUID(conf.UID)
+
 		logger.SetLevel(level)
 		logger.AddHook(loggerHook)
 
@@ -142,11 +161,11 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 	}
 
 	adapter := &Adapter{
-		client: ep6v2.New(),
-		conf:   conf,
-		logger: logger,
-		ch:     make(chan *MeasureData, 100),
-		done:   make(chan struct{}),
+		client:        ep6v2.New(),
+		conf:          conf,
+		logger:        logger,
+		measureDataCH: make(chan *MeasureData, 100),
+		done:          make(chan struct{}),
 	}
 
 	if _, ok := runner.adapters.LoadOrStore(conf.UID, adapter); !ok {
@@ -251,7 +270,6 @@ func (runner *Runner) GetRealtimeData(uid string) ([]interface{}, error) {
 }
 
 func (runner *Runner) Remove(uid string) {
-	fmt.Println("stop device: ", uid)
 	if v, ok := runner.adapters.Load(uid); ok {
 		adapter := v.(*Adapter)
 		adapter.Close()
@@ -289,14 +307,14 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 		return err
 	}
 
-	getDataFN := func() error {
+	getMeasureDataFN := func() error {
 		bp, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
 			Precision: "ns",
 			Database:  adapter.conf.DB,
 		})
 		for {
 			select {
-			case data := <-adapter.ch:
+			case data := <-adapter.measureDataCH:
 				if data == nil {
 					return errors.New("got nil data")
 				}
@@ -334,7 +352,7 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 			case <-adapter.done:
 				return
 			default:
-				err := getDataFN()
+				err := getMeasureDataFN()
 				if err != nil {
 					adapter.logger.Error(err)
 					return
@@ -345,7 +363,7 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 
 	go func() {
 		defer func() {
-			close(adapter.ch)
+			close(adapter.measureDataCH)
 			adapter.wg.Done()
 			adapter.logger.Warnln("fetch data routine exit!")
 		}()
@@ -434,7 +452,7 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 				data.AddTag("title", ai.GetConfig().Title)
 				data.AddTag("alarm", ep6v2.AlarmDesc(ai.CheckAlarm(v)))
 				data.AddField("val", v)
-				adapter.ch <- data
+				adapter.measureDataCH <- data
 				log.Printf("%s => %#v", ai.GetConfig().TagName, v)
 			}
 			return nil
@@ -458,7 +476,7 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 				data.AddTag("tag", di.GetConfig().TagName)
 				data.AddTag("title", di.GetConfig().Title)
 				data.AddField("val", v)
-				adapter.ch <- data
+				adapter.measureDataCH <- data
 				log.Printf("%s => %#v", di.GetConfig().TagName, v)
 			}
 			return nil
@@ -482,7 +500,7 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 				data.AddTag("tag", ao.GetConfig().TagName)
 				data.AddTag("title", ao.GetConfig().Title)
 				data.AddField("val", v)
-				adapter.ch <- data
+				adapter.measureDataCH <- data
 				log.Printf("%s => %#v", ao.GetConfig().TagName, v)
 			}
 			return nil
@@ -506,7 +524,7 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 				data.AddTag("tag", do.GetConfig().TagName)
 				data.AddTag("title", do.GetConfig().Title)
 				data.AddField("val", v)
-				adapter.ch <- data
+				adapter.measureDataCH <- data
 				log.Printf("%s => %#v", do.GetConfig().TagName, v)
 			}
 			return nil

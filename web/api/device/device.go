@@ -4,14 +4,17 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/event"
+	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/web/app"
+	"github.com/maritimusj/centrum/web/edge"
 	"github.com/maritimusj/centrum/web/helper"
 	"github.com/maritimusj/centrum/web/model"
 	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
 	"github.com/maritimusj/centrum/web/store"
 	"gopkg.in/go-playground/validator.v9"
+	"strconv"
 )
 
 func List(ctx iris.Context) hero.Result {
@@ -63,6 +66,13 @@ func List(ctx iris.Context) hero.Result {
 				"view": true,
 				"ctrl": app.Allow(admin, device, resource.Ctrl),
 			}
+			index, title := global.GetDeviceStatus(device)
+			brief["status"] = iris.Map{
+				"index": index,
+				"title": title,
+			}
+			baseInfo, _ := edge.GetBaseInfo(strconv.FormatInt(device.GetID(), 10))
+			brief["edge"] = baseInfo
 			result = append(result, brief)
 		}
 
@@ -236,7 +246,7 @@ func Update(deviceID int64, ctx iris.Context) hero.Result {
 		})
 
 		if data, ok := result.(event.Data); ok {
-			app.Event.Publish(event.DeviceUpdated, data.Get("userID"), data.Get("deviceID"))
+			app.Event.Publish(event.DeviceUpdated, data.GetMulti("userID", "deviceID")...)
 			return lang.Ok
 		}
 
@@ -254,7 +264,8 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 
 			admin := s.MustGetUserFromContext(ctx)
 			data := event.Data{
-				"uid": device.UID(),
+				"id":     device.GetID(),
+				"uid":    device.UID(),
 				"title":  device.Title(),
 				"userID": admin.GetID(),
 			}
@@ -276,7 +287,7 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 		})
 
 		if data, ok := result.(event.Data); ok {
-			app.Event.Publish(event.DeviceDeleted, data.Get("userID"), data.Get("uid"), data.Get("title"))
+			app.Event.Publish(event.DeviceDeleted, data.GetMulti("userID", "id", "uid", "title")...)
 			return lang.Ok
 		}
 		return result

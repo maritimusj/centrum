@@ -38,7 +38,7 @@ func Invoke(cmd string, request interface{}) (*Result, error) {
 func GetBaseInfo(uid string) (map[string]interface{}, error) {
 	result, err := Invoke("Edge.GetBaseInfo", uid)
 	if err != nil {
-		return nil, err
+		return map[string]interface{}{}, err
 	}
 	return result.Data.(map[string]interface{}), nil
 }

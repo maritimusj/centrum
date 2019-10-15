@@ -5,13 +5,14 @@ import (
 
 	"flag"
 	"fmt"
+	"net/http"
+
 	"github.com/gorilla/mux"
 	"github.com/gorilla/rpc"
 	"github.com/gorilla/rpc/json"
 	"github.com/maritimusj/centrum/edge/devices"
 	"github.com/maritimusj/centrum/json_rpc"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func main() {
@@ -24,9 +25,7 @@ func main() {
 	server.RegisterCodec(json.NewCodec(), "application/json")
 	server.RegisterCodec(json.NewCodec(), "application/json;charset=UTF-8")
 
-	runner := devices.New()
-	edge := json_rpc.New(runner)
-
+	edge := json_rpc.New(devices.New())
 	err := server.RegisterService(edge, "")
 	if err != nil {
 		log.Fatal(err)

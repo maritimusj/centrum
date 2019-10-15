@@ -13,6 +13,15 @@ func (data Data) Get(key string) interface{} {
 	return nil
 }
 
+func (data Data) GetMulti(keys ...string) []interface{} {
+	var result = make([]interface{}, 0, len(keys))
+	for _, key := range keys {
+		v, _ := data[key]
+		result = append(result, v)
+	}
+	return result
+}
+
 func (data Data) Pop(key string) interface{} {
 	if v, ok := data[key]; ok {
 		delete(data, key)

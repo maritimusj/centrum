@@ -99,7 +99,7 @@ func activeFN(device model.Device) error {
 		InfluxDBUserName: "",
 		InfluxDBPassword: "",
 		CallbackURL:      fmt.Sprintf("%s/%d", global.Params.MustGet("callbackURL"), device.GetID()),
-		LogLevel:         "",
+		LogLevel:         "trace",
 	}
 
 	return edge.Active(conf)
@@ -149,14 +149,14 @@ func eventDeviceUpdated(userID int64, deviceID int64) {
 	device.Logger().Info(lang.Str(lang.UserUpdateDeviceOk, user.Name(), device.Title()))
 }
 
-func eventDeviceDeleted(userID int64, uid string, title string) {
+func eventDeviceDeleted(userID int64, id int64, uid string, title string) {
 	user, err := Store().GetUser(userID)
 	if err != nil {
-		log.Error("eventDeviceDeleted: ", err)
+		log.Error("eventDeviceDeleted: ", uid, err)
 		return
 	}
 
-	edge.Remove(uid)
+	edge.Remove(strconv.FormatInt(id, 10))
 
 	log.Warn(lang.Str(lang.UserDeleteDeviceOk, user.Name(), title))
 	user.Logger().Warn(lang.Str(lang.UserDeleteDeviceOk, user.Name(), title))

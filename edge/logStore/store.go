@@ -9,6 +9,8 @@ type Store interface {
 	Open(ctx context.Context, url string) error
 	Close()
 
+	SetUID(uid string)
+
 	//interface for logrus hook
 	Levels() []logrus.Level
 	Fire(entry *logrus.Entry) error
