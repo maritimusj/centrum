@@ -9,7 +9,7 @@ import (
 
 func TestDevice(t *testing.T) {
 	device := New()
-	err := device.Connect(context.Background(), "192.168.1.50:502")
+	err := device.Connect(context.Background(), "192.168.10.181:502")
 	if err != nil {
 		log.Fatal(err)
 	}

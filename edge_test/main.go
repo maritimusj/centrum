@@ -4,14 +4,16 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/gorilla/rpc/json"
-	"github.com/kr/pretty"
-	. "github.com/maritimusj/centrum/json_rpc"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/rpc/json"
+	"github.com/kr/pretty"
+	. "github.com/maritimusj/centrum/json_rpc"
 )
 
 const (
@@ -32,8 +34,17 @@ func invoke(cmd string, request interface{}) (*Result, error) {
 		_ = resp.Body.Close()
 	}()
 
+	//for log
+	var data []byte
+	data, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("%s\r\n", string(data))
+
 	var reply Result
-	err = json.DecodeClientResponse(resp.Body, &reply)
+	err = json.DecodeClientResponse(bytes.NewReader(data), &reply)
 	if err != nil {
 		return nil, err
 	}
@@ -67,6 +78,13 @@ func main() {
 		}
 		fmt.Printf("%# v", pretty.Formatter(result))
 	}
+
+	result, err := invoke("Edge.GetBaseInfo", *uid)
+	if err != nil {
+		log.Fatal("get base info:", err)
+	}
+
+	fmt.Printf("%# v", pretty.Formatter(result))
 
 	if *s {
 		result, err := invoke("Edge.Remove", *uid)

@@ -7,6 +7,8 @@ import (
 	"github.com/kataras/iris/core/router"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/config"
+	"github.com/maritimusj/centrum/global"
+	"github.com/maritimusj/centrum/web/api/edge"
 	"github.com/maritimusj/centrum/web/api/log"
 	"github.com/maritimusj/centrum/web/api/my"
 	"github.com/maritimusj/centrum/web/api/organization"
@@ -58,6 +60,11 @@ func (server *server) Start(cfg *config.Config) error {
 	v1 := server.app.Party("/v1", crs).AllowMethods(iris.MethodOptions)
 	v1.PartyFunc("/web", func(p router.Party) {
 		p.Post("/login", hero.Handler(web.Login))
+
+		p.PartyFunc("/edge", func(p router.Party) {
+			global.Params.Set("callbackURL", fmt.Sprintf("http://localhost:%d%s", app.Config.APIPort(), p.GetRelPath()))
+			p.Post("/{id:int64}", hero.Handler(edge.Feedback))
+		})
 
 		p.PartyFunc("/", func(p router.Party) {
 			web.RequireToken(p)

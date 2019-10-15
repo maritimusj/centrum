@@ -39,7 +39,7 @@ func NewUser(s *mysqlStore, id int64) *User {
 	}
 }
 
-func (u *User) LogUID() string {
+func (u *User) UID() string {
 	if u != nil {
 		return fmt.Sprintf("user:%d", u.id)
 	}
@@ -49,7 +49,7 @@ func (u *User) LogUID() string {
 func (u *User) Logger() *log.Entry {
 	return log.WithFields(log.Fields{
 		"org": u.OrganizationID(),
-		"src": u.LogUID(),
+		"src": u.UID(),
 	})
 }
 

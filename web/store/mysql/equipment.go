@@ -42,14 +42,14 @@ func (e *Equipment) Organization() (model.Organization, error) {
 	return e.store.GetOrganization(e.orgID)
 }
 
-func (e *Equipment) LogUID() string {
+func (e *Equipment) UID() string {
 	return fmt.Sprintf("equipment:%d", e.id)
 }
 
 func (e *Equipment) Logger() *log.Entry {
 	return log.WithFields(log.Fields{
 		"org": e.OrganizationID(),
-		"src": e.LogUID(),
+		"src": e.UID(),
 	})
 }
 
@@ -118,7 +118,7 @@ func (e *Equipment) Destroy() error {
 		}
 	}
 
-	err = e.SetGroups(nil)
+	err = e.SetGroups()
 	if err != nil {
 		return err
 	}

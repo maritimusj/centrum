@@ -9,9 +9,10 @@ import (
 	"github.com/kr/pretty"
 	"github.com/maritimusj/centrum/edge/devices/ep6v2"
 	"github.com/maritimusj/centrum/edge/lang"
-	httpLogger "github.com/maritimusj/centrum/edge/logStore/http"
+	httpLoggerStore "github.com/maritimusj/centrum/edge/logStore/http"
 	"github.com/maritimusj/centrum/json_rpc"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
@@ -36,21 +37,34 @@ func (adapter *Adapter) Close() {
 	}
 }
 
-func (adapter *Adapter) OnDeviceStatusChange(index lang.StrIndex) {
+func (adapter *Adapter) OnDeviceStatusChanged(index lang.StrIndex) {
 	if adapter.conf.CallbackURL != "" {
 		data, _ := json.Marshal(map[string]string{
 			"uid":    adapter.conf.UID,
 			"status": lang.Str(index),
 		})
-		req, err := http.NewRequest("post", adapter.conf.CallbackURL, bytes.NewReader(data))
+
+		req, err := http.NewRequest("POST", adapter.conf.CallbackURL, bytes.NewReader(data))
 		if err != nil {
-			log.Errorf("[OnDeviceStatusChange] %s", err)
+			log.Errorf("[OnDeviceStatusChanged] %s", err)
 			return
 		}
-		_, err = httpLogger.DefaultHttpClient().Do(req)
+
+		resp, err := httpLoggerStore.DefaultHttpClient().Do(req)
 		if err != nil {
-			log.Errorf("[OnDeviceStatusChange] %s", err)
+			log.Errorf("[OnDeviceStatusChanged] %s", err)
+			return
 		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+
+		data, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Error(err)
+		}
+
+		println(adapter.conf.CallbackURL, req, err, string(data))
 	}
 }
 
@@ -87,7 +101,7 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 		baseInfo["addr"] = addr.Ip.String() + "/" + addr.Mask.String()
 		baseInfo["mac"] = addr.Mac.String()
 
-		baseInfo["status"] = adapter.client.GetStatus()
+		baseInfo["status"] = adapter.client.GetStatusTitle()
 		return baseInfo, nil
 	}
 
@@ -117,14 +131,14 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 			return err
 		}
 
-		loggerHook := httpLogger.New()
+		loggerHook := httpLoggerStore.New()
+		logger.SetLevel(level)
+		logger.AddHook(loggerHook)
+
 		err = loggerHook.Open(runner.ctx, conf.CallbackURL)
 		if err != nil {
 			return err
 		}
-
-		logger.SetLevel(level)
-		logger.AddHook(loggerHook)
 	}
 
 	adapter := &Adapter{
@@ -169,6 +183,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
+		adapter.logger.Info("GetRealtimeData: ", uid)
 		values := make([]interface{}, 0)
 		for i := 0; i < r.AINum(); i++ {
 			ai, err := adapter.client.GetAI(i)
@@ -245,10 +260,10 @@ func (runner *Runner) Remove(uid string) {
 }
 
 func (runner *Runner) Serve(adapter *Adapter) error {
-	adapter.OnDeviceStatusChange(lang.AdapterInitializing)
+	go adapter.OnDeviceStatusChanged(lang.AdapterInitializing)
 
 	fmt.Printf("%# v", pretty.Formatter(adapter.conf))
-	log.Info("start influx http client")
+	adapter.logger.Info("start influx http client")
 
 	c, err := influx.NewHTTPClient(influx.HTTPConfig{
 		Addr:     adapter.conf.InfluxDBAddress,
@@ -263,19 +278,20 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 		return err
 	}
 
-	log.Info("create influx db: ", adapter.conf.DB)
+	adapter.logger.Info("create influx db: ", adapter.conf.DB)
 
 	_, err = c.Query(influx.Query{
 		Database: adapter.conf.DB,
 		Command:  fmt.Sprintf("CREATE DATABASE \"%s\"", adapter.conf.DB),
 	})
 	if err != nil {
+		adapter.logger.Error(err)
 		return err
 	}
 
 	getDataFN := func() error {
 		bp, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
-			Precision: "s",
+			Precision: "ns",
 			Database:  adapter.conf.DB,
 		})
 		for {
@@ -307,7 +323,7 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 	adapter.wg.Add(2)
 	go func() {
 		defer func() {
-			log.Warnln("influx routine exit!")
+			adapter.logger.Warnln("influx routine exit!")
 			adapter.wg.Done()
 		}()
 
@@ -320,7 +336,7 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 			default:
 				err := getDataFN()
 				if err != nil {
-					log.Error(err)
+					adapter.logger.Error(err)
 					return
 				}
 			}
@@ -331,14 +347,14 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 		defer func() {
 			close(adapter.ch)
 			adapter.wg.Done()
-			log.Warnln("fetch data routine exit!")
+			adapter.logger.Warnln("fetch data routine exit!")
 		}()
 
 	makeConnection:
 		client := adapter.client
 		for {
-			log.Info("try connect to :", adapter.conf.Address)
-			adapter.OnDeviceStatusChange(lang.Connecting)
+			adapter.logger.Info("try connect to :", adapter.conf.Address)
+			go adapter.OnDeviceStatusChanged(lang.Connecting)
 
 			err := client.Connect(runner.ctx, adapter.conf.Address)
 			if err != nil {
@@ -352,11 +368,13 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 					continue
 				}
 			} else {
-				break
+				if client.IsConnected() {
+					break
+				}
 			}
 		}
 
-		adapter.OnDeviceStatusChange(lang.Connecting)
+		go adapter.OnDeviceStatusChanged(lang.Connected)
 
 		for {
 			select {
@@ -365,11 +383,11 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 			case <-adapter.done:
 				return
 			case <-time.After(adapter.conf.Interval):
-				log.Info("start fetch data from: ", adapter.conf.Address)
+				adapter.logger.Info("start fetch data from: ", adapter.conf.Address)
 				err := runner.fetchData(adapter)
 				if err != nil {
-					log.Error(err)
-					adapter.OnDeviceStatusChange(lang.Disconnected)
+					adapter.logger.Error(err)
+					go adapter.OnDeviceStatusChanged(lang.Disconnected)
 					adapter.client.Close()
 					goto makeConnection
 				}

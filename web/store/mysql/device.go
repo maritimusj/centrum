@@ -1,6 +1,7 @@
 package mysqlStore
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/maritimusj/centrum/lang"
@@ -51,7 +52,7 @@ func (d *Device) Organization() (model.Organization, error) {
 	return nil, lang.Error(lang.ErrDeviceNotFound)
 }
 
-func (d *Device) LogUID() string {
+func (d *Device) UID() string {
 	if d != nil {
 		return fmt.Sprintf("device:%d", d.id)
 	}
@@ -61,7 +62,7 @@ func (d *Device) LogUID() string {
 func (d *Device) Logger() *log.Entry {
 	return log.WithFields(log.Fields{
 		"org": d.OrganizationID(),
-		"src": d.LogUID(),
+		"src": d.UID(),
 	})
 }
 
@@ -182,7 +183,9 @@ func (d *Device) SetGroups(groups ...interface{}) error {
 	if d != nil {
 		err := RemoveData(d.store.db, TbDeviceGroups, "device_id=?", d.id)
 		if err != nil {
-			return err
+			if err != sql.ErrNoRows {
+				return lang.InternalError(err)
+			}
 		}
 		now := time.Now()
 		for _, group := range groups {
@@ -208,6 +211,8 @@ func (d *Device) SetGroups(groups ...interface{}) error {
 				return lang.InternalError(err)
 			}
 		}
+		println("d::SetGroups:", groups)
+
 		return nil
 	}
 	return lang.Error(lang.ErrDeviceNotFound)
@@ -261,7 +266,7 @@ func (d *Device) Destroy() error {
 		}
 	}
 
-	err = d.SetGroups(nil)
+	err = d.SetGroups()
 	if err != nil {
 		return err
 	}

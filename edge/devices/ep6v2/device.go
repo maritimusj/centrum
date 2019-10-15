@@ -3,6 +3,7 @@ package ep6v2
 import (
 	"context"
 	"errors"
+	"github.com/maritimusj/centrum/edge/lang"
 	"github.com/maritimusj/modbus"
 	"io"
 	"net"
@@ -136,6 +137,10 @@ func (device *Device) Close() {
 
 func (device *Device) GetStatus() int {
 	return device.status
+}
+
+func (device *Device) GetStatusTitle() string {
+	return lang.Str(lang.StrIndex(device.status))
 }
 
 func (device *Device) GetModel() (*Model, error) {

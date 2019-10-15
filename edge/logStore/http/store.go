@@ -13,7 +13,6 @@ import (
 
 type Logger struct {
 	cache chan []byte
-	url   string
 	done  chan struct{}
 	wg    sync.WaitGroup
 }
@@ -39,6 +38,8 @@ func (logger *Logger) write(url string, data []byte) error {
 		return err
 	}
 	_, err = defaultHttpClient.Do(req)
+
+	fmt.Printf("%s => %s, %#v\r\n", url, string(data), err)
 	if err != nil {
 		return err
 	}
@@ -46,6 +47,7 @@ func (logger *Logger) write(url string, data []byte) error {
 }
 
 func (logger *Logger) Open(ctx context.Context, url string) error {
+	println("logger open: ", url)
 	logger.wg.Add(1)
 	go func() {
 		defer func() {
@@ -58,9 +60,11 @@ func (logger *Logger) Open(ctx context.Context, url string) error {
 			case <-ctx.Done():
 				return
 			case data := <-logger.cache:
-				err := logger.write(logger.url, data)
-				if err != nil {
-					fmt.Println(err)
+				if data != nil {
+					err := logger.write(url, data)
+					if err != nil {
+						fmt.Println(err)
+					}
 				}
 			}
 		}
@@ -87,10 +91,12 @@ func (logger *Logger) Levels() []logrus.Level {
 }
 
 func (logger *Logger) Fire(entry *logrus.Entry) error {
+	println("logger Fire...")
 	data, err := json.Marshal(entry.Data)
 	if err != nil {
 		return err
 	}
+	println("logger: ", string(data))
 	select {
 	case <-logger.done:
 		return nil

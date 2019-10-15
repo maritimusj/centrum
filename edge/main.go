@@ -1,6 +1,8 @@
 package main
 
 import (
+	_ "github.com/maritimusj/centrum/edge/lang/zhCN"
+
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"

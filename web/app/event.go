@@ -1,9 +1,16 @@
 package app
 
 import (
+	"fmt"
 	"github.com/maritimusj/centrum/event"
+	"github.com/maritimusj/centrum/global"
+	"github.com/maritimusj/centrum/json_rpc"
 	"github.com/maritimusj/centrum/lang"
+	"github.com/maritimusj/centrum/web/edge"
+	"github.com/maritimusj/centrum/web/model"
 	log "github.com/sirupsen/logrus"
+	"strconv"
+	"time"
 )
 
 func initEvent() error {
@@ -76,6 +83,28 @@ func eventUserDeleted(userID int64, name string) {
 	adminUser.Logger().Warn(lang.Str(lang.AdminDeleteUserOk, adminUser.Name(), name))
 }
 
+func activeFN(device model.Device) error {
+	org, err := device.Organization()
+	if err != nil {
+		return err
+	}
+
+	conf := &json_rpc.Conf{
+		UID:              strconv.FormatInt(device.GetID(), 10),
+		Inverse:          false,
+		Address:          device.GetOption("params.connStr").Str,
+		Interval:         time.Second * time.Duration(device.GetOption("params.interval").Int()),
+		DB:               org.Title(),
+		InfluxDBAddress:  "http://localhost:8086",
+		InfluxDBUserName: "",
+		InfluxDBPassword: "",
+		CallbackURL:      fmt.Sprintf("%s/%d", global.Params.MustGet("callbackURL"), device.GetID()),
+		LogLevel:         "",
+	}
+
+	return edge.Active(conf)
+}
+
 func eventDeviceCreated(userID int64, deviceID int64) {
 	user, err := Store().GetUser(userID)
 	if err != nil {
@@ -86,6 +115,11 @@ func eventDeviceCreated(userID int64, deviceID int64) {
 	if err != nil {
 		log.Error("eventDeviceCreated: ", err)
 		return
+	}
+
+	err = activeFN(device)
+	if err != nil {
+		log.Error("eventDeviceCreated: active device: ", err)
 	}
 
 	log.Info(lang.Str(lang.UserCreateDeviceOk, user.Name(), device.Title()))
@@ -105,17 +139,24 @@ func eventDeviceUpdated(userID int64, deviceID int64) {
 		return
 	}
 
+	err = activeFN(device)
+	if err != nil {
+		log.Error("eventDeviceUpdated: active device: ", err)
+	}
+
 	log.Info(lang.Str(lang.UserUpdateDeviceOk, user.Name(), device.Title()))
 	user.Logger().Info(lang.Str(lang.UserUpdateDeviceOk, user.Name(), device.Title()))
 	device.Logger().Info(lang.Str(lang.UserUpdateDeviceOk, user.Name(), device.Title()))
 }
 
-func eventDeviceDeleted(userID int64, title string) {
+func eventDeviceDeleted(userID int64, uid string, title string) {
 	user, err := Store().GetUser(userID)
 	if err != nil {
 		log.Error("eventDeviceDeleted: ", err)
 		return
 	}
+
+	edge.Remove(uid)
 
 	log.Warn(lang.Str(lang.UserDeleteDeviceOk, user.Name(), title))
 	user.Logger().Warn(lang.Str(lang.UserDeleteDeviceOk, user.Name(), title))

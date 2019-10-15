@@ -23,7 +23,7 @@ func LogList(deviceID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		return log.GetLogList(ctx, device.OrganizationID(), device.LogUID())
+		return log.GetLogList(ctx, device.OrganizationID(), device.UID())
 	})
 }
 
@@ -40,6 +40,6 @@ func LogDelete(deviceID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		return log.DeleteLog(ctx, device.OrganizationID(), device.LogUID())
+		return log.DeleteLog(ctx, device.OrganizationID(), device.UID())
 	})
 }

@@ -253,18 +253,16 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 			}
 
 			admin := s.MustGetUserFromContext(ctx)
-
+			data := event.Data{
+				"uid": device.UID(),
+				"title":  device.Title(),
+				"userID": admin.GetID(),
+			}
 			if app.IsDefaultAdminUser(admin) {
-				data := event.Data{
-					"title":  device.Title(),
-					"userID": admin.GetID(),
-				}
-
 				err = device.Destroy()
 				if err != nil {
 					return err
 				}
-				return data
 			} else {
 				if !app.Allow(admin, device, resource.Ctrl) {
 					return lang.ErrNoPermission
@@ -273,12 +271,12 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 				if err != nil {
 					return err
 				}
-				return lang.Ok
 			}
+			return data
 		})
 
 		if data, ok := result.(event.Data); ok {
-			app.Event.Publish(event.DeviceDeleted, data.Get("userID"), data.Get("title"))
+			app.Event.Publish(event.DeviceDeleted, data.Get("userID"), data.Get("uid"), data.Get("title"))
 			return lang.Ok
 		}
 		return result

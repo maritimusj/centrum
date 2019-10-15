@@ -34,7 +34,7 @@ type Profile interface {
 }
 
 type LogEntry interface {
-	LogUID() string
+	UID() string
 	Logger() *logrus.Entry
 }
 
