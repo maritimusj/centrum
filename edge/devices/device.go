@@ -27,7 +27,9 @@ type Adapter struct {
 	measureDataCH chan *MeasureData
 	logger        *log.Logger
 	done          chan struct{}
-	wg            sync.WaitGroup
+
+	mu sync.Mutex
+	wg sync.WaitGroup
 }
 
 func (adapter *Adapter) IsDone() bool {
@@ -41,8 +43,12 @@ func (adapter *Adapter) IsDone() bool {
 
 func (adapter *Adapter) Close() {
 	if adapter != nil {
+		adapter.mu.Lock()
+		defer adapter.mu.Unlock()
+
 		if adapter.client != nil {
 			adapter.client.Close()
+			adapter.client = nil
 		}
 
 		close(adapter.done)
@@ -101,6 +107,9 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 		baseInfo := make(map[string]interface{})
 
 		adapter := v.(*Adapter)
+		adapter.mu.Lock()
+		defer adapter.mu.Unlock()
+
 		model, err := adapter.client.GetModel()
 		if err != nil {
 			return nil, err
@@ -178,6 +187,9 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 func (runner *Runner) GetValue(ch *json_rpc.CH) (interface{}, error) {
 	if v, ok := runner.adapters.Load(ch.UID); ok {
 		adapter := v.(*Adapter)
+		adapter.mu.Lock()
+		defer adapter.mu.Unlock()
+
 		v, err := adapter.client.GetCHValue(ch.Tag)
 		if err != nil {
 			return nil, err
@@ -190,6 +202,9 @@ func (runner *Runner) GetValue(ch *json_rpc.CH) (interface{}, error) {
 func (runner *Runner) SetValue(val *json_rpc.Value) error {
 	if v, ok := runner.adapters.Load(val.UID); ok {
 		adapter := v.(*Adapter)
+		adapter.mu.Lock()
+		defer adapter.mu.Unlock()
+
 		return adapter.client.SetCHValue(val.Tag, val.V)
 	}
 	return errors.New("device not exists")
@@ -198,6 +213,9 @@ func (runner *Runner) SetValue(val *json_rpc.Value) error {
 func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, error) {
 	if v, ok := runner.adapters.Load(uid); ok {
 		adapter := v.(*Adapter)
+		adapter.mu.Lock()
+		defer adapter.mu.Unlock()
+
 		r, err := adapter.client.GetRealTimeData()
 		if err != nil {
 			return nil, err
@@ -260,6 +278,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 					"tag":   do.GetConfig().TagName,
 					"title": do.GetConfig().Title,
 					"value": v,
+					"ctrl":  true,
 				})
 			}
 		}
@@ -273,6 +292,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 func (runner *Runner) Remove(uid string) {
 	if v, ok := runner.adapters.Load(uid); ok {
 		adapter := v.(*Adapter)
+
 		adapter.Close()
 		runner.adapters.Delete(uid)
 	}
@@ -454,7 +474,7 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 				data.AddTag("alarm", ep6v2.AlarmDesc(ai.CheckAlarm(v)))
 				data.AddField("val", v)
 				adapter.measureDataCH <- data
-				log.Printf("%s => %#v", ai.GetConfig().TagName, v)
+				log.Tracef("%s => %#v", ai.GetConfig().TagName, v)
 			}
 			return nil
 		})
@@ -478,7 +498,7 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 				data.AddTag("title", di.GetConfig().Title)
 				data.AddField("val", v)
 				adapter.measureDataCH <- data
-				log.Printf("%s => %#v", di.GetConfig().TagName, v)
+				log.Tracef("%s => %#v", di.GetConfig().TagName, v)
 			}
 			return nil
 		})
@@ -502,7 +522,7 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 				data.AddTag("title", ao.GetConfig().Title)
 				data.AddField("val", v)
 				adapter.measureDataCH <- data
-				log.Printf("%s => %#v", ao.GetConfig().TagName, v)
+				log.Tracef("%s => %#v", ao.GetConfig().TagName, v)
 			}
 			return nil
 		})
@@ -526,7 +546,7 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 				data.AddTag("title", do.GetConfig().Title)
 				data.AddField("val", v)
 				adapter.measureDataCH <- data
-				log.Printf("%s => %#v", do.GetConfig().TagName, v)
+				log.Tracef("%s => %#v", do.GetConfig().TagName, v)
 			}
 			return nil
 		})
