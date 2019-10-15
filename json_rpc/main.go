@@ -11,7 +11,7 @@ type Sink interface {
 	Active(conf *Conf) error
 	SetValue(val *Value) error
 	GetValue(ch *CH) (interface{}, error)
-	GetRealtimeData(uid string) ([]interface{}, error)
+	GetRealtimeData(uid string) ([]map[string]interface{}, error)
 }
 
 type Edge struct {

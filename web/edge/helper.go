@@ -30,3 +30,23 @@ func ActiveDevice(device model.Device) error {
 
 	return Active(conf)
 }
+
+func GetStatus(device model.Device) (map[string]interface{}, error) {
+	return GetBaseInfo(strconv.FormatInt(device.GetID(), 10))
+}
+
+func GetData(device model.Device) ([]interface{}, error) {
+	return GetRealtimeData(strconv.FormatInt(device.GetID(), 10))
+}
+
+func RemoveDevice(device model.Device) {
+	Remove(strconv.FormatInt(device.GetID(), 10))
+}
+
+func SetCHValue(device model.Device, chTagName string, v interface{}) error {
+	return SetValue(strconv.FormatInt(device.GetID(), 10), chTagName, v)
+}
+
+func GetCHValue(device model.Device, chTagName string) (map[string]interface{}, error) {
+	return GetValue(strconv.FormatInt(device.GetID(), 10), chTagName)
+}

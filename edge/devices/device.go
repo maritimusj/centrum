@@ -195,7 +195,7 @@ func (runner *Runner) SetValue(val *json_rpc.Value) error {
 	return errors.New("device not exists")
 }
 
-func (runner *Runner) GetRealtimeData(uid string) ([]interface{}, error) {
+func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, error) {
 	if v, ok := runner.adapters.Load(uid); ok {
 		adapter := v.(*Adapter)
 		r, err := adapter.client.GetRealTimeData()
@@ -203,7 +203,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]interface{}, error) {
 			return nil, err
 		}
 		adapter.logger.Info("GetRealtimeData: ", uid)
-		values := make([]interface{}, 0)
+		values := make([]map[string]interface{}, 0)
 		for i := 0; i < r.AINum(); i++ {
 			ai, err := adapter.client.GetAI(i)
 			if err != nil {
@@ -266,6 +266,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]interface{}, error) {
 
 		return values, nil
 	}
+
 	return nil, errors.New("device not exists")
 }
 

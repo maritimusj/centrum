@@ -80,10 +80,10 @@ func GetValue(uid string, tag string) (map[string]interface{}, error) {
 	return result.Data.(map[string]interface{}), nil
 }
 
-func GetRealtimeData(uid string) ([]map[string]interface{}, error) {
+func GetRealtimeData(uid string) ([]interface{}, error) {
 	result, err := Invoke("Edge.GetRealtimeData", uid)
 	if err != nil {
 		return nil, err
 	}
-	return result.Data.([]map[string]interface{}), nil
+	return result.Data.([]interface{}), nil
 }

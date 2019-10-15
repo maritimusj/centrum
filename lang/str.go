@@ -87,6 +87,16 @@ const (
 	ResourceEquipmentLogDeleteTitle
 	ResourceEquipmentLogDeleteDesc
 
+	ResourceDeviceStatusTitle
+	ResourceDeviceDataTitle
+	ResourceDeviceCtrlTitle
+	ResourceGetCHValueTitle
+
+	ResourceDeviceStatusDesc
+	ResourceDeviceDataDesc
+	ResourceDeviceCtrlDesc
+	ResourceGetCHValueDesc
+
 	ResourceUserListTitle
 	ResourceUserListDesc
 	ResourceUserCreateTitle
@@ -264,6 +274,11 @@ func ApiResourcesMap() [][3]string {
 		{resource.DeviceLogDelete, Str(ResourceDeviceLogDeleteTitle), Str(ResourceDeviceLogDeleteDesc)},
 		{resource.EquipmentLogList, Str(ResourceEquipmentLogListTitle), Str(ResourceEquipmentLogListDesc)},
 		{resource.EquipmentLogDelete, Str(ResourceEquipmentLogDeleteTitle), Str(ResourceEquipmentLogDeleteDesc)},
+
+		{resource.DeviceStatus, Str(ResourceDeviceStatusTitle), Str(ResourceDeviceStatusDesc)},
+		{resource.DeviceData, Str(ResourceDeviceDataTitle), Str(ResourceDeviceDataDesc)},
+		{resource.DeviceCtrl, Str(ResourceDeviceCtrlTitle), Str(ResourceDeviceCtrlDesc)},
+		{resource.GetCHValue, Str(ResourceGetCHValueTitle), Str(ResourceGetCHValueDesc)},
 
 		{resource.UserList, Str(ResourceUserListTitle), Str(ResourceUserListDesc)},
 		{resource.UserCreate, Str(ResourceUserCreateTitle), Str(ResourceUserCreateDesc)},
