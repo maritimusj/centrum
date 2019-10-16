@@ -66,13 +66,18 @@ func List(ctx iris.Context) hero.Result {
 				"view": true,
 				"ctrl": app.Allow(admin, device, resource.Ctrl),
 			}
-			index, title := global.GetDeviceStatus(device)
-			brief["status"] = iris.Map{
-				"index": index,
-				"title": title,
+			if baseInfo, err := edge.GetBaseInfo(strconv.FormatInt(device.GetID(), 10)); err != nil {
+				index, title := global.GetDeviceStatus(device)
+				brief["edge"] = iris.Map{
+					"status": iris.Map{
+						"index": index,
+						"title": title,
+					},
+				}
+			} else {
+				brief["edge"] = baseInfo
 			}
-			baseInfo, _ := edge.GetBaseInfo(strconv.FormatInt(device.GetID(), 10))
-			brief["edge"] = baseInfo
+
 			result = append(result, brief)
 		}
 

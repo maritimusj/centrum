@@ -64,7 +64,9 @@ func List(ctx iris.Context) hero.Result {
 				"view": true,
 				"ctrl": app.Allow(admin, equipment, resource.Ctrl),
 			}
-			brief["status"] = getEquipmentSimpleStatus(equipment)
+			brief["edge"] = iris.Map{
+				"status": getEquipmentSimpleStatus(equipment),
+			}
 			result = append(result, brief)
 		}
 

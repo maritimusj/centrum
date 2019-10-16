@@ -102,8 +102,10 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 		baseInfo["addr"] = addr.Ip.String() + "/" + addr.Mask.String()
 		baseInfo["mac"] = addr.Mac.String()
 
-		baseInfo["status_index"] = adapter.client.GetStatus()
-		baseInfo["status_title"] = adapter.client.GetStatusTitle()
+		baseInfo["status"] = map[string]interface{}{
+			"index": adapter.client.GetStatus(),
+			"title": adapter.client.GetStatusTitle(),
+		}
 		return baseInfo, nil
 	}
 

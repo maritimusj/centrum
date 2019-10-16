@@ -90,15 +90,17 @@ func Status(equipmentID int64, ctx iris.Context) hero.Result {
 				if err != nil {
 					index, title := global.GetDeviceStatus(device)
 					if index != 0 {
-						dataMap["device"] = map[string]interface{}{
-							"index": index,
-							"title": title,
+						dataMap["edge"] = map[string]interface{}{
+							"status": map[string]interface{}{
+								"index": index,
+								"title": title,
+							},
 						}
 					} else {
 						dataMap["error"] = err.Error()
 					}
 				} else {
-					dataMap["device"] = baseInfo
+					dataMap["edge"] = baseInfo
 				}
 			}
 
