@@ -2,6 +2,7 @@ package ep6v2
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 )
 
@@ -36,7 +37,7 @@ type AOConfig struct {
 }
 
 func (ao *AO) GetValue() (float32, error) {
-	panic("implement me")
+	return 0, errors.New("implement me")
 }
 
 func (ao *AO) GetConfig() *AOConfig {

@@ -172,14 +172,14 @@ func Data(equipmentID int64, ctx iris.Context) hero.Result {
 
 func Ctrl(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		equipmentID, err := ctx.URLParamInt64("id")
+		equipmentID, err := ctx.Params().GetInt64("id")
 		if err != nil {
-			return lang.ErrInvalidRequestData
+			return err
 		}
 
-		stateID, err := ctx.URLParamInt64("stateID")
+		stateID, err := ctx.Params().GetInt64("stateID")
 		if err != nil {
-			return lang.ErrInvalidRequestData
+			return err
 		}
 
 		equipment, err := app.Store().GetEquipment(equipmentID)
@@ -230,12 +230,12 @@ func Ctrl(ctx iris.Context) hero.Result {
 
 func GetCHValue(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		equipmentID, err := ctx.URLParamInt64("id")
+		equipmentID, err := ctx.Params().GetInt64("id")
 		if err != nil {
 			return lang.ErrInvalidRequestData
 		}
 
-		stateID, err := ctx.URLParamInt64("stateID")
+		stateID, err := ctx.Params().GetInt64("stateID")
 		if err != nil {
 			return lang.ErrInvalidRequestData
 		}

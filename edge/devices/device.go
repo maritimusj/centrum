@@ -59,7 +59,7 @@ func (adapter *Adapter) OnDeviceStatusChanged(index lang.StrIndex) {
 }
 
 func (adapter *Adapter) OnMeasureDiscovered(tagName, title string) {
-	key := "tag:" + tagName
+	key := "tag:" + adapter.conf.UID + ":" + tagName
 	if v, ok := global.Params.Get(key); !ok || v.(string) != title {
 		global.Params.Set(key, title)
 		event.Publish(event.MeasureDiscovered, adapter.conf, tagName, title)
