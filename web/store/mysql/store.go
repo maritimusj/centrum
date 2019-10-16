@@ -2104,10 +2104,10 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		params = append(params, option.EquipmentID)
 	}
 
-	if option.Kind != resource.AllKind {
-		where += " AND s.kind=?"
-		params = append(params, option.Kind)
-	}
+	//if option.Kind != resource.AllKind {
+	//	where += " AND s.kind=?"
+	//	params = append(params, option.Kind)
+	//}
 
 	if option.Keyword != "" {
 		where += " AND s.title REGEXP ?"

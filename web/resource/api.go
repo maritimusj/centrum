@@ -27,10 +27,15 @@ const (
 	EquipmentLogList   = "equip.log.list"
 	EquipmentLogDelete = "equip.log.delete"
 
-	DeviceStatus = "device.status"
-	DeviceData   = "device.data"
-	DeviceCtrl   = "device.ctrl"
-	GetCHValue   = "device.val"
+	DeviceStatus  = "device.status"
+	DeviceData    = "device.data"
+	DeviceCtrl    = "device.ctrl"
+	DeviceCHValue = "device.val"
+
+	EquipmentStatus  = "equipment.status"
+	EquipmentData    = "equipment.data"
+	EquipmentCtrl    = "equipment.ctrl"
+	EquipmentCHValue = "equipment.val"
 
 	UserList   = "user.list"
 	UserCreate = "user.create"
@@ -125,7 +130,12 @@ var (
 		DeviceStatus,
 		DeviceData,
 		DeviceCtrl,
-		GetCHValue,
+		DeviceCHValue,
+
+		EquipmentStatus,
+		EquipmentData,
+		EquipmentCtrl,
+		EquipmentCHValue,
 
 		MeasureList,
 		MeasureCreate,
@@ -163,9 +173,14 @@ var (
 var (
 	MenuRoleGallery = []string{
 		Unknown,
+
 		DeviceStatus,
 		DeviceData,
-		GetCHValue,
+		DeviceCHValue,
+
+		EquipmentStatus,
+		EquipmentData,
+		EquipmentCHValue,
 	}
 
 	MenuRoleDevices = []string{
@@ -184,7 +199,12 @@ var (
 		DeviceStatus,
 		DeviceData,
 		DeviceCtrl,
-		GetCHValue,
+		DeviceCHValue,
+
+		EquipmentStatus,
+		EquipmentData,
+		EquipmentCtrl,
+		EquipmentCHValue,
 
 		MeasureList,
 		MeasureCreate,

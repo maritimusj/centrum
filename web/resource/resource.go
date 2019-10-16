@@ -40,8 +40,8 @@ const (
 type MeasureKind int
 
 const (
-	UnknownKind = 0
-	AllKind MeasureKind = iota
+	UnknownKind             = 0
+	AllKind     MeasureKind = iota
 	AI
 	AO
 	DI

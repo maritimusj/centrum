@@ -90,12 +90,22 @@ const (
 	ResourceDeviceStatusTitle
 	ResourceDeviceDataTitle
 	ResourceDeviceCtrlTitle
-	ResourceGetCHValueTitle
+	ResourceDeviceCHValueTitle
 
 	ResourceDeviceStatusDesc
 	ResourceDeviceDataDesc
 	ResourceDeviceCtrlDesc
-	ResourceGetCHValueDesc
+	ResourceDeviceCHValueDesc
+
+	ResourceEquipmentStatusTitle
+	ResourceEquipmentDataTitle
+	ResourceEquipmentCtrlTitle
+	ResourceEquipmentCHValueTitle
+
+	ResourceEquipmentStatusDesc
+	ResourceEquipmentDataDesc
+	ResourceEquipmentCtrlDesc
+	ResourceEquipmentCHValueDesc
 
 	ResourceUserListTitle
 	ResourceUserListDesc
@@ -278,7 +288,12 @@ func ApiResourcesMap() [][3]string {
 		{resource.DeviceStatus, Str(ResourceDeviceStatusTitle), Str(ResourceDeviceStatusDesc)},
 		{resource.DeviceData, Str(ResourceDeviceDataTitle), Str(ResourceDeviceDataDesc)},
 		{resource.DeviceCtrl, Str(ResourceDeviceCtrlTitle), Str(ResourceDeviceCtrlDesc)},
-		{resource.GetCHValue, Str(ResourceGetCHValueTitle), Str(ResourceGetCHValueDesc)},
+		{resource.DeviceCHValue, Str(ResourceDeviceCHValueTitle), Str(ResourceDeviceCHValueDesc)},
+
+		{resource.EquipmentStatus, Str(ResourceEquipmentStatusTitle), Str(ResourceEquipmentStatusDesc)},
+		{resource.EquipmentData, Str(ResourceEquipmentDataTitle), Str(ResourceEquipmentDataDesc)},
+		{resource.EquipmentCtrl, Str(ResourceEquipmentCtrlTitle), Str(ResourceEquipmentCtrlDesc)},
+		{resource.EquipmentCHValue, Str(ResourceEquipmentCHValueTitle), Str(ResourceEquipmentCHValueDesc)},
 
 		{resource.UserList, Str(ResourceUserListTitle), Str(ResourceUserListDesc)},
 		{resource.UserCreate, Str(ResourceUserCreateTitle), Str(ResourceUserCreateDesc)},

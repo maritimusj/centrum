@@ -107,7 +107,7 @@ func (m *Measure) SetTitle(title string) {
 	}
 }
 
-func (m *Measure) Tag() string {
+func (m *Measure) TagName() string {
 	return m.tag
 }
 

@@ -154,15 +154,25 @@ var (
 		lang.ResourceEquipmentDeleteTitle: "删除自定义设备",
 		lang.ResourceEquipmentDeleteDesc:  "删除一个自定设备",
 
-		lang.ResourceDeviceStatusTitle: "",
-		lang.ResourceDeviceDataTitle:   "",
-		lang.ResourceDeviceCtrlTitle:   "",
-		lang.ResourceGetCHValueTitle:   "",
+		lang.ResourceDeviceStatusTitle:  "",
+		lang.ResourceDeviceDataTitle:    "",
+		lang.ResourceDeviceCtrlTitle:    "",
+		lang.ResourceDeviceCHValueTitle: "",
 
-		lang.ResourceDeviceStatusDesc: "",
-		lang.ResourceDeviceDataDesc:   "",
-		lang.ResourceDeviceCtrlDesc:   "",
-		lang.ResourceGetCHValueDesc:   "",
+		lang.ResourceDeviceStatusDesc:  "",
+		lang.ResourceDeviceDataDesc:    "",
+		lang.ResourceDeviceCtrlDesc:    "",
+		lang.ResourceDeviceCHValueDesc: "",
+
+		lang.ResourceEquipmentStatusTitle:  "",
+		lang.ResourceEquipmentDataTitle:    "",
+		lang.ResourceEquipmentCtrlTitle:    "",
+		lang.ResourceEquipmentCHValueTitle: "",
+
+		lang.ResourceEquipmentStatusDesc:  "",
+		lang.ResourceEquipmentDataDesc:    "",
+		lang.ResourceEquipmentCtrlDesc:    "",
+		lang.ResourceEquipmentCHValueDesc: "",
 
 		lang.ResourceStateListTitle:   "自定义点位列表",
 		lang.ResourceStateListDesc:    "查看自定义点位列表",

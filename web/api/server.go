@@ -172,7 +172,7 @@ func (server *server) Start(ctx context.Context, cfg *config.Config) {
 				p.Get("/{id:int64}/status", hero.Handler(device.Status)).Name = ResourceDef.DeviceStatus
 				p.Get("/{id:int64}/data", hero.Handler(device.Data)).Name = ResourceDef.DeviceData
 				p.Put("/{id:int64}/{tagName:string}", hero.Handler(device.Ctrl)).Name = ResourceDef.DeviceCtrl
-				p.Get("/{id:int64}/{tagName:string}", hero.Handler(device.GetCHValue)).Name = ResourceDef.GetCHValue
+				p.Get("/{id:int64}/{tagName:string}", hero.Handler(device.GetCHValue)).Name = ResourceDef.DeviceCHValue
 			})
 			//物理点位
 			p.PartyFunc("/measure", func(p router.Party) {
@@ -195,6 +195,12 @@ func (server *server) Start(ctx context.Context, cfg *config.Config) {
 				//日志
 				p.Get("/{id:int64}/log", hero.Handler(equipment.LogList)).Name = ResourceDef.EquipmentLogList
 				p.Delete("/{id:int64}/log", hero.Handler(equipment.LogDelete)).Name = ResourceDef.EquipmentLogDelete
+
+				//实时状态
+				p.Get("/{id:int64}/status", hero.Handler(equipment.Status)).Name = ResourceDef.EquipmentStatus
+				p.Get("/{id:int64}/data", hero.Handler(equipment.Data)).Name = ResourceDef.EquipmentData
+				p.Put("/{id:int64}/{stateID:int64}", hero.Handler(equipment.Ctrl)).Name = ResourceDef.EquipmentCtrl
+				p.Get("/{id:int64}/{stateID:int64}", hero.Handler(equipment.GetCHValue)).Name = ResourceDef.EquipmentCHValue
 			})
 
 			//自定义点位

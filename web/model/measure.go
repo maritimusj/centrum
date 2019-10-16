@@ -15,6 +15,6 @@ type Measure interface {
 	Title() string
 	SetTitle(title string)
 
-	Tag() string
+	TagName() string
 	Kind() resource.MeasureKind
 }
