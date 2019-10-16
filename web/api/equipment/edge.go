@@ -13,9 +13,10 @@ import (
 	"github.com/maritimusj/centrum/web/response"
 
 	edgeLang "github.com/maritimusj/centrum/edge/lang"
+	_ "github.com/maritimusj/centrum/edge/lang/zhCN"
 )
 
-func RangeEquipmentStates(equipment model.Equipment, fn func(device model.Device, measure model.Measure, state model.State) error) error {
+func rangeEquipmentStates(equipment model.Equipment, fn func(device model.Device, measure model.Measure, state model.State) error) error {
 	states, _, err := equipment.GetStateList()
 	if err != nil {
 		return err
@@ -37,6 +38,30 @@ func RangeEquipmentStates(equipment model.Equipment, fn func(device model.Device
 	return nil
 }
 
+func getEquipmentSimpleStatus(equipment model.Equipment) interface{} {
+	res := map[string]interface{}{
+		"index": edgeLang.Connected,
+		"title": edgeLang.Str(edgeLang.Connected),
+	}
+	_ = rangeEquipmentStates(equipment, func(device model.Device, measure model.Measure, state model.State) error {
+		if device == nil {
+			res["index"] = edgeLang.MalFunctioned
+			return lang.Error(lang.ErrDeviceNotFound)
+		} else if measure == nil {
+			res["index"] = edgeLang.MalFunctioned
+			return lang.Error(lang.ErrMeasureNotFound)
+		}
+		index, title := global.GetDeviceStatus(device)
+		if index != int(edgeLang.Connected) {
+			res["index"] = index
+			res["title"] = title
+			return errors.New(edgeLang.Str(edgeLang.StrIndex(index)))
+		}
+		return nil
+	})
+	return res
+}
+
 func Status(equipmentID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		equipment, err := app.Store().GetEquipment(equipmentID)
@@ -50,32 +75,11 @@ func Status(equipmentID int64, ctx iris.Context) hero.Result {
 		}
 
 		if ctx.URLParamExists("simple") {
-			res := map[string]interface{}{
-				"index": edgeLang.Connected,
-				"title": edgeLang.Str(edgeLang.Connected),
-			}
-			_ = RangeEquipmentStates(equipment, func(device model.Device, measure model.Measure, state model.State) error {
-				if device == nil {
-					res["index"] = edgeLang.MalFunctioned
-					return lang.Error(lang.ErrDeviceNotFound)
-				} else if measure == nil {
-					res["index"] = edgeLang.MalFunctioned
-					return lang.Error(lang.ErrMeasureNotFound)
-				}
-				index, title := global.GetDeviceStatus(device)
-				if index != int(edgeLang.Connected) {
-					res["index"] = index
-					res["title"] = title
-					return errors.New(edgeLang.Str(edgeLang.StrIndex(index)))
-				}
-				return nil
-			})
-
-			return res
+			return getEquipmentSimpleStatus(equipment)
 		}
 
 		devices := make([]map[string]interface{}, 0)
-		err = RangeEquipmentStates(equipment, func(device model.Device, measure model.Measure, state model.State) error {
+		err = rangeEquipmentStates(equipment, func(device model.Device, measure model.Measure, state model.State) error {
 			dataMap := map[string]interface{}{
 				"id":    state.GetID(),
 				"title": state.Title(),
@@ -84,10 +88,17 @@ func Status(equipmentID int64, ctx iris.Context) hero.Result {
 			if device != nil {
 				baseInfo, err := edge.GetStatus(device)
 				if err != nil {
-					dataMap["error"] = err.Error()
+					index, title := global.GetDeviceStatus(device)
+					if index != 0 {
+						dataMap["device"] = map[string]interface{}{
+							"index": index,
+							"title": title,
+						}
+					} else {
+						dataMap["error"] = err.Error()
+					}
 				} else {
 					dataMap["device"] = baseInfo
-					devices = append(devices, dataMap)
 				}
 			}
 
@@ -97,6 +108,7 @@ func Status(equipmentID int64, ctx iris.Context) hero.Result {
 				dataMap["error"] = lang.Error(lang.ErrMeasureNotFound)
 			}
 
+			devices = append(devices, dataMap)
 			return nil
 		})
 
@@ -120,36 +132,34 @@ func Data(equipmentID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		states, _, err := equipment.GetStateList()
-		if err != nil {
-			return err
-		}
-
-		devices := make([]interface{}, 0, len(states))
-		for _, state := range states {
+		devices := make([]interface{}, 0)
+		err = rangeEquipmentStates(equipment, func(device model.Device, measure model.Measure, state model.State) error {
 			dataMap := map[string]interface{}{
 				"id":    state.GetID(),
 				"title": state.Title(),
 			}
-			measure := state.Measure()
-			if measure == nil {
-				dataMap["error"] = lang.Error(lang.ErrMeasureNotFound)
-				continue
-			}
 
-			device := measure.Device()
 			if device == nil {
 				dataMap["error"] = lang.Error(lang.ErrDeviceNotFound)
-				continue
+			} else if measure == nil {
+				dataMap["error"] = lang.Error(lang.ErrMeasureNotFound)
 			}
 
-			data, err := edge.GetCHValue(device, measure.TagName())
-			if err != nil {
-				dataMap["error"] = err.Error()
-				continue
+			if device != nil && measure != nil {
+				data, err := edge.GetCHValue(device, measure.TagName())
+				if err != nil {
+					dataMap["error"] = err.Error()
+				} else {
+					dataMap["data"] = data
+				}
 			}
-			dataMap["data"] = data
+
 			devices = append(devices, dataMap)
+			return nil
+		})
+
+		if err != nil {
+			return err
 		}
 
 		return devices

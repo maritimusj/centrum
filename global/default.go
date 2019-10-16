@@ -19,18 +19,3 @@ func GetDeviceStatus(device model.Device) (int, string) {
 	}
 	return 0, ""
 }
-
-func UpdateEquipmentStatus(equipment model.Equipment, index int, title string) {
-	key := fmt.Sprintf("equipment:%d", equipment.GetID())
-	Stats.Set(key, [2]interface{}{index, title})
-}
-
-func GetEquipmentStatus(equipment model.Equipment) (int, string) {
-	key := fmt.Sprintf("equipment:%d", equipment.GetID())
-	if v, ok := Stats.Get(key); ok {
-		if vv, ok := v.([2]interface{}); ok {
-			return vv[0].(int), vv[1].(string)
-		}
-	}
-	return 0, ""
-}
