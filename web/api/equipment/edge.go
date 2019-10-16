@@ -152,7 +152,9 @@ func Data(equipmentID int64, ctx iris.Context) hero.Result {
 				if err != nil {
 					dataMap["error"] = err.Error()
 				} else {
-					dataMap["data"] = data
+					for k, v := range data {
+						dataMap[k] = v
+					}
 				}
 			}
 
