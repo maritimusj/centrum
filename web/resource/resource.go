@@ -40,6 +40,7 @@ const (
 type MeasureKind int
 
 const (
+	UnknownKind = 0
 	AllKind MeasureKind = iota
 	AI
 	AO
@@ -57,6 +58,22 @@ var (
 		"state":     State,
 	}
 )
+
+func ParseMeasureKind(tagName string) MeasureKind {
+	p := strings.SplitN(tagName, "-", 2)
+	switch strings.ToUpper(p[0]) {
+	case "AI":
+		return AI
+	case "AO":
+		return AO
+	case "DI":
+		return DI
+	case "DO":
+		return DO
+	default:
+		return AllKind
+	}
+}
 
 func ParseClass(class string) Class {
 	if v, ok := classTitle[strings.ToLower(class)]; ok {

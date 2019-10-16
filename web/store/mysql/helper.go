@@ -11,7 +11,10 @@ func getConfigID(db db.DB, cfg interface{}) (int64, error) {
 	switch v := cfg.(type) {
 	case int64:
 		if exists, err := IsDataExists(db, TbConfig, "id=?", v); err != nil {
-			return 0, lang.InternalError(err)
+			if err != sql.ErrNoRows {
+				return 0, lang.InternalError(err)
+			}
+			return 0, lang.Error(lang.ErrConfigNotFound)
 		} else if exists {
 			return v, nil
 		}
@@ -22,25 +25,7 @@ func getConfigID(db db.DB, cfg interface{}) (int64, error) {
 			return v.GetID(), nil
 		}
 	}
-	return 0, lang.Error(lang.ErrOrganizationNotFound)
-}
-
-func getOrganizationID(db db.DB, org interface{}) (int64, error) {
-	switch v := org.(type) {
-	case int64:
-		if exists, err := IsDataExists(db, TbOrganization, "id=?", v); err != nil {
-			return 0, lang.InternalError(err)
-		} else if exists {
-			return v, nil
-		}
-	case string:
-		return getOrganizationIDByName(db, v)
-	case model.Organization:
-		if v != nil {
-			return v.GetID(), nil
-		}
-	}
-	return 0, lang.Error(lang.ErrOrganizationNotFound)
+	return 0, lang.Error(lang.ErrConfigNotFound)
 }
 
 func getConfigIDByName(db db.DB, name string) (int64, error) {
@@ -55,6 +40,27 @@ func getConfigIDByName(db db.DB, name string) (int64, error) {
 		return 0, lang.Error(lang.ErrConfigNotFound)
 	}
 	return cfgID, nil
+}
+
+func getOrganizationID(db db.DB, org interface{}) (int64, error) {
+	switch v := org.(type) {
+	case int64:
+		if exists, err := IsDataExists(db, TbOrganization, "id=?", v); err != nil {
+			if err != sql.ErrNoRows {
+				return 0, lang.InternalError(err)
+			}
+			return 0, lang.Error(lang.ErrOrganizationNotFound)
+		} else if exists {
+			return v, nil
+		}
+	case string:
+		return getOrganizationIDByName(db, v)
+	case model.Organization:
+		if v != nil {
+			return v.GetID(), nil
+		}
+	}
+	return 0, lang.Error(lang.ErrOrganizationNotFound)
 }
 
 func getOrganizationIDByName(db db.DB, name string) (int64, error) {
@@ -75,7 +81,10 @@ func getRoleID(db db.DB, role interface{}) (int64, error) {
 	switch v := role.(type) {
 	case int64:
 		if exists, err := IsDataExists(db, TbRoles, "id=?", v); err != nil {
-			return 0, lang.InternalError(err)
+			if err != sql.ErrNoRows {
+				return 0, lang.InternalError(err)
+			}
+			return 0, lang.Error(lang.ErrRoleNotFound)
 		} else if exists {
 			return v, nil
 		}
@@ -145,4 +154,37 @@ func getUserIDByName(db db.DB, name string) (int64, error) {
 		return 0, lang.Error(lang.ErrUserNotFound)
 	}
 	return userID, nil
+}
+
+func getMeasureID(db db.DB, deviceID int64, tag interface{}) (int64, error) {
+	switch v := tag.(type) {
+	case int64:
+		if exists, err := IsDataExists(db, TbMeasures, "id=?", v); err != nil {
+			if err != sql.ErrNoRows {
+				return 0, lang.InternalError(err)
+			}
+			return 0, lang.Error(lang.ErrMeasureNotFound)
+		} else if exists {
+			return v, nil
+		}
+	case string:
+		return getMeasureIDByTagName(db, deviceID, v)
+	case model.Measure:
+		return v.GetID(), nil
+	}
+	return 0, lang.Error(lang.ErrMeasureNotFound)
+}
+
+func getMeasureIDByTagName(db db.DB, deviceID int64, tagName string) (int64, error) {
+	var measureID int64
+	err := LoadData(db, TbMeasures, map[string]interface{}{
+		"id": &measureID,
+	}, "device_id=? AND tag=?", deviceID, tagName)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return 0, lang.InternalError(err)
+		}
+		return 0, lang.Error(lang.ErrMeasureNotFound)
+	}
+	return measureID, nil
 }

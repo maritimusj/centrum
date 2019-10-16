@@ -1582,6 +1582,38 @@ func (s *mysqlStore) loadMeasure(id int64) (model.Measure, error) {
 	return &measure, nil
 }
 
+func (s *mysqlStore) GetMeasureFromTagName(deviceID int64, tagName string) (model.Measure, error) {
+	result := <-synchronized.Do(s.ctx, TbMeasures, func() interface{} {
+		measureID, err := getMeasureID(s.db, deviceID, tagName)
+		if err != nil {
+			return err
+		}
+		if measure, err := s.cache.LoadMeasure(measureID); err != nil {
+			if err != lang.Error(lang.ErrCacheNotFound) {
+				return lang.InternalError(err)
+			}
+		} else {
+			return measure
+		}
+
+		measure, err := s.loadMeasure(measureID)
+		if err != nil {
+			return err
+		}
+
+		err = s.cache.Save(measure)
+		if err != nil {
+			return err
+		}
+		return measure
+	})
+
+	if err, ok := result.(error); ok {
+		return nil, err
+	}
+	return result.(model.Measure), nil
+}
+
 func (s *mysqlStore) GetMeasure(measureID int64) (model.Measure, error) {
 	result := <-synchronized.Do(s.ctx, TbMeasures, func() interface{} {
 		if measure, err := s.cache.LoadMeasure(measureID); err != nil {

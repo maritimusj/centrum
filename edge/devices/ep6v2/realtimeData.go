@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"sync"
+	"time"
 )
 
 const (
@@ -15,6 +16,8 @@ type RealTimeData struct {
 	chNum *CHNum
 	data  bytes.Buffer
 	ready bytes.Buffer
+
+	lastFetchTime time.Time
 
 	sync.RWMutex
 }
@@ -106,6 +109,10 @@ func (r *RealTimeData) fetchData(conn modbusClient) error {
 	r.Lock()
 	defer r.Unlock()
 
+	if time.Now().Sub(r.lastFetchTime) < 1*time.Second {
+		return nil
+	}
+
 	total := r.chNum.Sum() * 2
 	if r.data.Len() < total {
 		r.data.Grow(total)
@@ -163,5 +170,6 @@ func (r *RealTimeData) fetchData(conn modbusClient) error {
 		address += quantity
 	}
 
+	r.lastFetchTime = time.Now()
 	return nil
 }

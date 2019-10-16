@@ -3,6 +3,7 @@ package device
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
+	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/edge"
@@ -20,6 +21,14 @@ func Status(deviceID int64, ctx iris.Context) hero.Result {
 		admin := app.Store().MustGetUserFromContext(ctx)
 		if !app.Allow(admin, device, resource.View) {
 			return lang.ErrNoPermission
+		}
+
+		if ctx.URLParamExists("simple") {
+			index, title := global.GetDeviceStatus(device)
+			return iris.Map{
+				"index": index,
+				"title": title,
+			}
 		}
 
 		baseInfo, err := edge.GetStatus(device)

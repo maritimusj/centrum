@@ -1,7 +1,7 @@
 package event
 
 const (
-	ApiServerStarted = "api.server.started"
+	ApiServerStarted = "api::server::started"
 
 	UserCreated = "user::created"
 	UserUpdated = "user::updated"

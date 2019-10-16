@@ -1,24 +1,22 @@
 package devices
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kr/pretty"
-	"github.com/maritimusj/centrum/edge/devices/ep6v2"
-	"github.com/maritimusj/centrum/edge/lang"
-	httpLoggerStore "github.com/maritimusj/centrum/edge/logStore/http"
-	"github.com/maritimusj/centrum/json_rpc"
-	log "github.com/sirupsen/logrus"
-	"io/ioutil"
-	"net/http"
+	"github.com/maritimusj/centrum/global"
 	"sync"
 	"time"
 
 	_ "github.com/influxdata/influxdb1-client"
 	influx "github.com/influxdata/influxdb1-client/v2"
+	"github.com/kr/pretty"
+	"github.com/maritimusj/centrum/edge/devices/ep6v2"
+	"github.com/maritimusj/centrum/edge/devices/event"
+	"github.com/maritimusj/centrum/edge/lang"
+	httpLoggerStore "github.com/maritimusj/centrum/edge/logStore/http"
+	"github.com/maritimusj/centrum/json_rpc"
+	log "github.com/sirupsen/logrus"
 )
 
 type Adapter struct {
@@ -57,36 +55,14 @@ func (adapter *Adapter) Close() {
 }
 
 func (adapter *Adapter) OnDeviceStatusChanged(index lang.StrIndex) {
-	if adapter.conf.CallbackURL != "" {
-		data, _ := json.Marshal(map[string]interface{}{
-			"status": map[string]interface{}{
-				"uid":   adapter.conf.UID,
-				"index": index,
-				"title": lang.Str(index),
-			},
-		})
+	event.Publish(event.DeviceStatusChanged, adapter.conf, index)
+}
 
-		req, err := http.NewRequest("POST", adapter.conf.CallbackURL, bytes.NewReader(data))
-		if err != nil {
-			log.Errorf("[OnDeviceStatusChanged] %s", err)
-			return
-		}
-
-		resp, err := httpLoggerStore.DefaultHttpClient().Do(req)
-		if err != nil {
-			log.Errorf("[OnDeviceStatusChanged] %s", err)
-			return
-		}
-		defer func() {
-			_ = resp.Body.Close()
-		}()
-
-		data, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Error(err)
-		}
-
-		println(adapter.conf.CallbackURL, req, err, string(data))
+func (adapter *Adapter) OnMeasureDiscovered(tagName, title string) {
+	key := "tag:" + tagName
+	if v, ok := global.Params.Get(key); !ok || v.(string) != title {
+		global.Params.Set(key, title)
+		event.Publish(event.MeasureDiscovered, adapter.conf, tagName, title)
 	}
 }
 
@@ -134,14 +110,34 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 	return nil, errors.New("device not exists")
 }
 
+func needRestartAdapter(conf *json_rpc.Conf, newConf *json_rpc.Conf) bool {
+	return conf.Address != newConf.Address ||
+		conf.InfluxDBAddress != newConf.InfluxDBAddress ||
+		conf.InfluxDBUserName != newConf.InfluxDBUserName ||
+		conf.InfluxDBPassword != newConf.InfluxDBPassword ||
+		conf.DB != newConf.DB ||
+		conf.CallbackURL != newConf.CallbackURL
+}
+
 func (runner *Runner) Active(conf *json_rpc.Conf) error {
 	if v, ok := runner.adapters.Load(conf.UID); ok {
 		adapter := v.(*Adapter)
-		if adapter.conf.Address != conf.Address {
+		if needRestartAdapter(adapter.conf, conf) {
 			adapter.Close()
 			runner.adapters.Delete(conf.UID)
 		} else {
 			adapter.conf.Interval = conf.Interval
+			if adapter.conf.LogLevel != conf.LogLevel {
+				adapter.conf.LogLevel = conf.LogLevel
+
+				level, err := log.ParseLevel(conf.LogLevel)
+				if err != nil {
+					return err
+				}
+				adapter.logger.SetLevel(level)
+			}
+
+			adapter.OnDeviceStatusChanged(adapter.client.GetStatus())
 			return nil
 		}
 	}
@@ -236,6 +232,8 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 					"alarm": ep6v2.AlarmDesc(av),
 					"value": v,
 				})
+
+				adapter.OnMeasureDiscovered(ai.GetConfig().TagName, ai.GetConfig().Title)
 			}
 		}
 
@@ -251,6 +249,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 					"unit":  ao.GetConfig().Uint,
 					"value": v,
 				})
+				adapter.OnMeasureDiscovered(ao.GetConfig().TagName, ao.GetConfig().Title)
 			}
 		}
 
@@ -265,6 +264,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 					"title": di.GetConfig().Title,
 					"value": v,
 				})
+				adapter.OnMeasureDiscovered(di.GetConfig().TagName, di.GetConfig().Title)
 			}
 		}
 
@@ -280,6 +280,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 					"value": v,
 					"ctrl":  true,
 				})
+				adapter.OnMeasureDiscovered(do.GetConfig().TagName, do.GetConfig().Title)
 			}
 		}
 
@@ -299,7 +300,7 @@ func (runner *Runner) Remove(uid string) {
 }
 
 func (runner *Runner) Serve(adapter *Adapter) error {
-	go adapter.OnDeviceStatusChanged(lang.AdapterInitializing)
+	adapter.OnDeviceStatusChanged(lang.AdapterInitializing)
 
 	fmt.Printf("%# v", pretty.Formatter(adapter.conf))
 	adapter.logger.Info("start influx http client")
@@ -393,17 +394,20 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 		client := adapter.client
 		for {
 			adapter.logger.Info("try connect to :", adapter.conf.Address)
-			go adapter.OnDeviceStatusChanged(lang.Connecting)
+			adapter.OnDeviceStatusChanged(lang.Connecting)
 
 			err := client.Connect(runner.ctx, adapter.conf.Address)
 			if err != nil {
 				if err == runner.ctx.Err() {
 					return
 				}
+
+				adapter.OnDeviceStatusChanged(lang.Disconnected)
+
 				select {
 				case <-adapter.done:
 					return
-				case <-time.After(6 * time.Second):
+				case <-time.After(adapter.conf.Interval):
 					continue
 				}
 			} else {
@@ -413,7 +417,7 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 			}
 		}
 
-		go adapter.OnDeviceStatusChanged(lang.Connected)
+		adapter.OnDeviceStatusChanged(lang.Connected)
 
 		for {
 			select {
@@ -474,6 +478,8 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 				data.AddTag("alarm", ep6v2.AlarmDesc(ai.CheckAlarm(v)))
 				data.AddField("val", v)
 				adapter.measureDataCH <- data
+
+				adapter.OnMeasureDiscovered(ai.GetConfig().TagName, ai.GetConfig().Title)
 				log.Tracef("%s => %#v", ai.GetConfig().TagName, v)
 			}
 			return nil
@@ -498,6 +504,8 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 				data.AddTag("title", di.GetConfig().Title)
 				data.AddField("val", v)
 				adapter.measureDataCH <- data
+
+				adapter.OnMeasureDiscovered(di.GetConfig().TagName, di.GetConfig().Title)
 				log.Tracef("%s => %#v", di.GetConfig().TagName, v)
 			}
 			return nil
@@ -522,6 +530,8 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 				data.AddTag("title", ao.GetConfig().Title)
 				data.AddField("val", v)
 				adapter.measureDataCH <- data
+
+				adapter.OnMeasureDiscovered(ao.GetConfig().TagName, ao.GetConfig().Title)
 				log.Tracef("%s => %#v", ao.GetConfig().TagName, v)
 			}
 			return nil
@@ -546,6 +556,8 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 				data.AddTag("title", do.GetConfig().Title)
 				data.AddField("val", v)
 				adapter.measureDataCH <- data
+
+				adapter.OnMeasureDiscovered(do.GetConfig().TagName, do.GetConfig().Title)
 				log.Tracef("%s => %#v", do.GetConfig().TagName, v)
 			}
 			return nil

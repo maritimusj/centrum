@@ -59,6 +59,7 @@ type Store interface {
 
 	CreateMeasure(deviceID int64, title string, tag string, kind resource.MeasureKind) (model.Measure, error)
 	GetMeasure(measureID int64) (model.Measure, error)
+	GetMeasureFromTagName(deviceID int64, tagName string) (model.Measure, error)
 	RemoveMeasure(measureID int64) error
 	GetMeasureList(options ...helper.OptionFN) ([]model.Measure, int64, error)
 

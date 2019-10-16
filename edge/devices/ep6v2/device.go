@@ -32,6 +32,9 @@ type Device struct {
 	chDI map[int]*DI
 	chDO map[int]*DO
 
+	chNum        *CHNum
+	readTimeData *RealTimeData
+
 	sync.RWMutex
 }
 
@@ -49,6 +52,8 @@ func (device *Device) onDisconnected(err error) {
 
 	device.model = nil
 	device.addr = nil
+	device.chNum = nil
+	device.readTimeData = nil
 	device.client = nil
 	device.handler = nil
 	device.status = lang.Disconnected
@@ -115,6 +120,8 @@ func (device *Device) Close() {
 
 	device.model = nil
 	device.addr = nil
+	device.chNum = nil
+	device.readTimeData = nil
 
 	device.chAI = nil
 	device.chAO = nil
@@ -128,8 +135,8 @@ func (device *Device) Close() {
 	}
 }
 
-func (device *Device) GetStatus() int {
-	return int(device.status)
+func (device *Device) GetStatus() lang.StrIndex {
+	return device.status
 }
 
 func (device *Device) GetStatusTitle() string {
@@ -179,15 +186,22 @@ func (device *Device) GetAddr() (*Addr, error) {
 }
 
 func (device *Device) GetCHNum() (*CHNum, error) {
-	chNum := &CHNum{}
-	if client, err := device.getModbusClient(); err != nil {
-		return chNum, err
-	} else {
-		if err := chNum.fetchData(client); err != nil {
+	device.Lock()
+	defer device.Unlock()
+
+	if device.chNum == nil {
+		chNum := &CHNum{}
+		if client, err := device.getModbusClient(); err != nil {
 			return chNum, err
+		} else {
+			if err := chNum.fetchData(client); err != nil {
+				return chNum, err
+			}
 		}
+		device.chNum = chNum
 	}
-	return chNum, nil
+
+	return device.chNum, nil
 }
 
 func (device *Device) GetRealTimeData() (*RealTimeData, error) {
@@ -196,20 +210,24 @@ func (device *Device) GetRealTimeData() (*RealTimeData, error) {
 		return nil, err
 	}
 
-	data := &RealTimeData{
-		chNum: chNum,
+	device.Lock()
+	if device.readTimeData == nil {
+		device.readTimeData = &RealTimeData{
+			chNum: chNum,
+		}
 	}
+	device.Unlock()
 
 	if client, err := device.getModbusClient(); err != nil {
 		return nil, err
 	} else {
-		err = data.fetchData(client)
+		err = device.readTimeData.fetchData(client)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return data, nil
+	return device.readTimeData, nil
 }
 
 func (device *Device) SetCHValue(tag string, value interface{}) error {
