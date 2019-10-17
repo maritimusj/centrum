@@ -3,6 +3,8 @@ package ep6v2
 import (
 	"context"
 	"errors"
+	"github.com/asaskevich/govalidator"
+	"github.com/maritimusj/centrum/edge/devices/InverseServer"
 	"github.com/maritimusj/centrum/edge/lang"
 	"github.com/maritimusj/modbus"
 	"io"
@@ -78,7 +80,13 @@ func (device *Device) Connect(ctx context.Context, address string) error {
 	{
 		device.status = lang.Connecting
 		if device.connector == nil {
-			device.connector = NewTCPConnector()
+			if govalidator.IsMAC(address) {
+				println("InverseServer.DefaultConnector")
+				device.connector = InverseServer.DefaultConnector()
+			} else {
+				println("NewTCPConnector")
+				device.connector = NewTCPConnector()
+			}
 		}
 	}
 	device.Unlock()

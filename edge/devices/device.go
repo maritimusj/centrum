@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/maritimusj/centrum/edge/devices/InverseServer"
 	"github.com/maritimusj/centrum/global"
 	"sync"
 	"time"
@@ -76,6 +77,10 @@ func New() *Runner {
 		ctx: context.Background(),
 	}
 	return runner
+}
+
+func (runner *Runner) StartInverseServer(conf *json_rpc.InverseConf) error {
+	return InverseServer.Start(runner.ctx, conf.Address, conf.Port)
 }
 
 func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {

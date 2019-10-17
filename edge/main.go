@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"github.com/maritimusj/centrum/edge/devices/InverseServer"
 	_ "github.com/maritimusj/centrum/edge/lang/zhCN"
 
 	"flag"
@@ -18,15 +20,29 @@ import (
 func main() {
 	addr := flag.String("addr", "", "service addr")
 	port := flag.Int("port", 1234, "service port")
+	inversePort := flag.Int("i", 10502, "inverse server port")
+	level := flag.String("l", "error", "log level")
 
 	flag.Parse()
+
+	l, err := log.ParseLevel(*level)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.SetLevel(l)
+
+	err = InverseServer.Start(context.Background(), *addr, *inversePort)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	server := rpc.NewServer()
 	server.RegisterCodec(json.NewCodec(), "application/json")
 	server.RegisterCodec(json.NewCodec(), "application/json;charset=UTF-8")
 
 	edge := json_rpc.New(devices.New())
-	err := server.RegisterService(edge, "")
+	err = server.RegisterService(edge, "")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -34,8 +50,8 @@ func main() {
 	r := mux.NewRouter()
 	r.Handle("/rpc", server)
 
-	log.Println("JSON RPC service listen and serving on port ", *port)
+	log.Println("edge service listen on port ", *port)
 	if err := http.ListenAndServe(fmt.Sprintf("%s:%d", *addr, *port), r); err != nil {
-		log.Fatalf("Error serving: %s", err)
+		log.Fatalf("error serving: %s", err)
 	}
 }

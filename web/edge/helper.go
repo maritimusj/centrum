@@ -17,7 +17,6 @@ func ActiveDevice(device model.Device) error {
 
 	conf := &json_rpc.Conf{
 		UID:              strconv.FormatInt(device.GetID(), 10),
-		Inverse:          false,
 		Address:          device.GetOption("params.connStr").Str,
 		Interval:         time.Second * time.Duration(device.GetOption("params.interval").Int()),
 		DB:               org.Title(),
@@ -37,10 +36,6 @@ func GetStatus(device model.Device) (map[string]interface{}, error) {
 
 func GetData(device model.Device) ([]interface{}, error) {
 	return GetRealtimeData(strconv.FormatInt(device.GetID(), 10))
-}
-
-func RemoveDevice(device model.Device) {
-	Remove(strconv.FormatInt(device.GetID(), 10))
 }
 
 func SetCHValue(device model.Device, chTagName string, v interface{}) error {

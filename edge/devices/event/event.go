@@ -39,6 +39,8 @@ func Publish(topic string, args ...interface{}) {
 func HttpPost(url string, data interface{}) ([]byte, error) {
 	b, _ := json.Marshal(data)
 
+	log.Trace("[http] post ", url, string(b))
+
 	req, err := http.NewRequest("POST", url, bytes.NewReader(b))
 	if err != nil {
 		return nil, err

@@ -6,6 +6,7 @@ import (
 )
 
 type Sink interface {
+	StartInverseServer(conf *InverseConf) error
 	GetBaseInfo(uid string) (map[string]interface{}, error)
 	Remove(uid string)
 	Active(conf *Conf) error
@@ -18,9 +19,13 @@ type Edge struct {
 	sink Sink
 }
 
+type InverseConf struct {
+	Address string
+	Port    int
+}
+
 type Conf struct {
 	UID              string
-	Inverse          bool
 	Address          string
 	Interval         time.Duration
 	DB               string
@@ -51,6 +56,10 @@ func New(sink Sink) *Edge {
 	return &Edge{
 		sink: sink,
 	}
+}
+
+func (e *Edge) StartInverseServer(conf *InverseConf) error {
+	return e.sink.StartInverseServer(conf)
 }
 
 //GetBaseInfo 获取设备基本信息

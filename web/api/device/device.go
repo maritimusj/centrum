@@ -1,6 +1,8 @@
 package device
 
 import (
+	"fmt"
+	"github.com/asaskevich/govalidator"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/event"
@@ -15,6 +17,7 @@ import (
 	"github.com/maritimusj/centrum/web/store"
 	"gopkg.in/go-playground/validator.v9"
 	"strconv"
+	"strings"
 )
 
 func List(ctx iris.Context) hero.Result {
@@ -104,6 +107,14 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 
 		if err := validate.Struct(&form); err != nil {
 			return lang.ErrInvalidRequestData
+		}
+
+		if govalidator.IsIPv4(form.ConnStr) {
+			form.ConnStr += ":502"
+		} else if govalidator.IsIPv6(form.ConnStr) {
+			form.ConnStr = fmt.Sprintf("[%s]:502", form.ConnStr)
+		} else if govalidator.IsMAC(form.ConnStr) {
+			form.ConnStr = strings.ToLower(form.ConnStr)
 		}
 
 		result := app.TransactionDo(func(s store.Store) interface{} {
@@ -211,6 +222,14 @@ func Update(deviceID int64, ctx iris.Context) hero.Result {
 			}
 
 			if form.ConnStr != nil {
+				if govalidator.IsIPv4(*form.ConnStr) {
+					*form.ConnStr += ":502"
+				} else if govalidator.IsIPv6(*form.ConnStr) {
+					*form.ConnStr = fmt.Sprintf("[%s]:502", *form.ConnStr)
+				} else if govalidator.IsMAC(*form.ConnStr) {
+					*form.ConnStr = strings.ToLower(*form.ConnStr)
+				}
+
 				err = device.SetOption("params.connStr", form.ConnStr)
 				if err != nil {
 					return err
