@@ -270,7 +270,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 					"tag":   do.GetConfig().TagName,
 					"title": do.GetConfig().Title,
 					"value": v,
-					"ctrl":  true,
+					"ctrl":  do.GetConfig().IsManual,
 				})
 				adapter.OnMeasureDiscovered(do.GetConfig().TagName, do.GetConfig().Title)
 			}

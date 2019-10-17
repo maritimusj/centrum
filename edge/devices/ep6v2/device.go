@@ -364,7 +364,7 @@ func (device *Device) GetCHValue(tag string) (value map[string]interface{}, err 
 			"title": do.GetConfig().Title,
 			"tag":   do.GetConfig().TagName,
 			"value": v,
-			"ctrl":  true,
+			"ctrl":  do.GetConfig().IsManual,
 		}, nil
 	default:
 		err = errors.New("invalid ch")
