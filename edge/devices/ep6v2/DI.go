@@ -3,6 +3,7 @@ package ep6v2
 import (
 	"encoding/binary"
 	"fmt"
+	"time"
 )
 
 const (
@@ -13,7 +14,9 @@ type DI struct {
 	Index  int
 	config *DIConfig
 
-	conn modbusClient
+	value        bool
+	lastReadTime time.Time
+	conn         modbusClient
 }
 
 type DIConfig struct {
@@ -27,15 +30,31 @@ type DIConfig struct {
 	AlarmDelay int //警报延迟(秒)
 }
 
+func (di *DI) expired() bool {
+	return time.Now().Sub(di.lastReadTime) > 1*time.Second
+}
+
 func (di *DI) GetValue() (bool, error) {
-	data, err := di.conn.ReadDiscreteInputs(uint16(di.Index), 1)
-	if err != nil {
-		return false, err
+	if di.expired() {
+		data, err := di.conn.ReadDiscreteInputs(uint16(di.Index), 1)
+		if err != nil {
+			return false, err
+		}
+		di.value = data[0] > 0
+		di.lastReadTime = time.Now()
 	}
-	return data[0] > 0, nil
+
+	return di.value, nil
 }
 
 func (di *DI) GetConfig() *DIConfig {
+	if di.config == nil {
+		config := &DIConfig{}
+		if err := config.fetchData(di.conn, di.Index); err != nil {
+			return config
+		}
+		di.config = config
+	}
 	return di.config
 }
 

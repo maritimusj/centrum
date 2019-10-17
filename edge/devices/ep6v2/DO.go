@@ -2,6 +2,7 @@ package ep6v2
 
 import (
 	"fmt"
+	"time"
 )
 
 const (
@@ -13,6 +14,9 @@ const (
 type DO struct {
 	Index  int
 	config *DOConfig
+
+	value        bool
+	lastReadTime time.Time
 
 	conn modbusClient
 }
@@ -34,12 +38,21 @@ type DOConfig struct {
 	OffTime      int
 }
 
+func (do *DO) expired() bool {
+	return time.Now().Sub(do.lastReadTime) > 1*time.Second
+}
+
 func (do *DO) GetValue() (bool, error) {
-	data, err := do.conn.ReadCoils(uint16(do.Index), 1)
-	if err != nil {
-		return false, err
+	if do.expired() {
+		data, err := do.conn.ReadCoils(uint16(do.Index), 1)
+		if err != nil {
+			return false, err
+		}
+		do.value = data[0] > 0
+		do.lastReadTime = time.Now()
 	}
-	return data[0] > 0, nil
+
+	return do.value, nil
 }
 
 func (do *DO) SetValue(v bool) (bool, error) {
@@ -57,6 +70,13 @@ func (do *DO) SetValue(v bool) (bool, error) {
 }
 
 func (do *DO) GetConfig() *DOConfig {
+	if do.config == nil {
+		config := &DOConfig{}
+		if err := config.fetchData(do.conn, do.Index); err != nil {
+			return config
+		}
+		do.config = config
+	}
 	return do.config
 }
 

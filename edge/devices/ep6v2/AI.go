@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"time"
 )
 
 const (
@@ -59,6 +60,10 @@ type AI struct {
 	Index       int
 	config      *AIConfig
 	alarmConfig *AIAlarmConfig
+
+	value        float32
+	alarmState   AlarmValue
+	lastReadTime time.Time
 
 	conn modbusClient
 }
@@ -138,40 +143,67 @@ type AIConfig struct {
 	Alarm *AIAlarmConfig //警报设置
 }
 
-func (ai *AI) GetValue() (float32, error) {
+func (ai *AI) expired() bool {
+	return time.Now().Sub(ai.lastReadTime) > 1*time.Second
+}
+
+func (ai *AI) fetchValue() error {
 	var address, quantity uint16 = uint16(AIValueStartAddress + ai.Index*2), 2
 	data, err := ai.conn.ReadInputRegisters(address, quantity)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	v := ToFloat32(ToSingle(data), ai.config.Point)
-	return v, nil
+	ai.value = ToFloat32(ToSingle(data), ai.config.Point)
+	ai.lastReadTime = time.Now()
+	return nil
+}
+
+func (ai *AI) GetValue() (float32, error) {
+	if ai.expired() {
+		if err := ai.fetchValue(); err != nil {
+			return 0, nil
+		}
+	}
+	return ai.value, nil
 }
 
 func (ai *AI) GetConfig() *AIConfig {
+	if ai.config == nil {
+		config := &AIConfig{}
+		if err := config.fetchData(ai.conn, ai.Index); err != nil {
+			return config
+		}
+		ai.config = config
+	}
 	return ai.config
 }
 
 func (ai *AI) GetAlarmState() (AlarmValue, error) {
-	address := uint16(AIAlarmStartAddress + ai.Index)
-	data, err := ai.conn.ReadInputRegisters(address, 1)
-	if err != nil {
-		return 0, err
+	if ai.expired() {
+		address := uint16(AIAlarmStartAddress + ai.Index)
+		data, err := ai.conn.ReadInputRegisters(address, 1)
+		if err != nil {
+			return 0, err
+		}
+		ai.alarmState = AlarmValue(data[1])
 	}
-	return AlarmValue(data[1]), nil
+
+	return ai.alarmState, nil
 }
 
 func (ai *AI) getAlarmConfig() (*AIAlarmConfig, error) {
 	if ai.alarmConfig == nil {
-		ai.alarmConfig = &AIAlarmConfig{}
-		err := ai.alarmConfig.fetchData(ai.conn, ai.Index)
+		alarmConfig := &AIAlarmConfig{}
+		err := alarmConfig.fetchData(ai.conn, ai.Index)
 		if err != nil {
 			return nil, err
 		}
+		ai.alarmConfig = alarmConfig
 	}
 	return ai.alarmConfig, nil
 }
+
 func (ai *AI) CheckAlarm(val float32) AlarmValue {
 	cfg, err := ai.getAlarmConfig()
 	if err != nil {

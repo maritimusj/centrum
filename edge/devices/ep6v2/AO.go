@@ -41,6 +41,13 @@ func (ao *AO) GetValue() (float32, error) {
 }
 
 func (ao *AO) GetConfig() *AOConfig {
+	if ao.config == nil {
+		config := &AOConfig{}
+		if err := config.fetchData(ao.conn, ao.Index); err != nil {
+			return config
+		}
+		ao.config = config
+	}
 	return ao.config
 }
 

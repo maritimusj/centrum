@@ -4,18 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/maritimusj/centrum/edge/devices/InverseServer"
-	"github.com/maritimusj/centrum/global"
 	"sync"
 	"time"
 
 	_ "github.com/influxdata/influxdb1-client"
 	influx "github.com/influxdata/influxdb1-client/v2"
 	"github.com/kr/pretty"
+	"github.com/maritimusj/centrum/edge/devices/InverseServer"
 	"github.com/maritimusj/centrum/edge/devices/ep6v2"
 	"github.com/maritimusj/centrum/edge/devices/event"
 	"github.com/maritimusj/centrum/edge/lang"
 	httpLoggerStore "github.com/maritimusj/centrum/edge/logStore/http"
+	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/centrum/json_rpc"
 	log "github.com/sirupsen/logrus"
 )
@@ -27,7 +27,6 @@ type Adapter struct {
 	logger        *log.Logger
 	done          chan struct{}
 
-	mu sync.Mutex
 	wg sync.WaitGroup
 }
 
@@ -42,9 +41,6 @@ func (adapter *Adapter) IsDone() bool {
 
 func (adapter *Adapter) Close() {
 	if adapter != nil {
-		adapter.mu.Lock()
-		defer adapter.mu.Unlock()
-
 		if adapter.client != nil {
 			adapter.client.Close()
 			adapter.client = nil
@@ -88,9 +84,6 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 		baseInfo := make(map[string]interface{})
 
 		adapter := v.(*Adapter)
-		adapter.mu.Lock()
-		defer adapter.mu.Unlock()
-
 		model, err := adapter.client.GetModel()
 		if err != nil {
 			return nil, err
@@ -114,7 +107,7 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 		return baseInfo, nil
 	}
 
-	return nil, errors.New("device not exists")
+	return nil, lang.Error(lang.ErrDeviceNotExists)
 }
 
 func needRestartAdapter(conf *json_rpc.Conf, newConf *json_rpc.Conf) bool {
@@ -190,35 +183,26 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 func (runner *Runner) GetValue(ch *json_rpc.CH) (interface{}, error) {
 	if v, ok := runner.adapters.Load(ch.UID); ok {
 		adapter := v.(*Adapter)
-		adapter.mu.Lock()
-		defer adapter.mu.Unlock()
-
 		v, err := adapter.client.GetCHValue(ch.Tag)
 		if err != nil {
 			return nil, err
 		}
 		return v, nil
 	}
-	return nil, errors.New("device not exists")
+	return nil,lang.Error(lang.ErrDeviceNotExists)
 }
 
 func (runner *Runner) SetValue(val *json_rpc.Value) error {
 	if v, ok := runner.adapters.Load(val.UID); ok {
 		adapter := v.(*Adapter)
-		adapter.mu.Lock()
-		defer adapter.mu.Unlock()
-
 		return adapter.client.SetCHValue(val.Tag, val.V)
 	}
-	return errors.New("device not exists")
+	return lang.Error(lang.ErrDeviceNotExists)
 }
 
 func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, error) {
 	if v, ok := runner.adapters.Load(uid); ok {
 		adapter := v.(*Adapter)
-		adapter.mu.Lock()
-		defer adapter.mu.Unlock()
-
 		r, err := adapter.client.GetRealTimeData()
 		if err != nil {
 			return nil, err
@@ -294,7 +278,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 		return values, nil
 	}
 
-	return nil, errors.New("device not exists")
+	return nil, lang.Error(lang.ErrDeviceNotExists)
 }
 
 func (runner *Runner) Remove(uid string) {

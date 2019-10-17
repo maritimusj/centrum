@@ -24,5 +24,3 @@ func Start(ctx context.Context, addr string, port int) error {
 func Close() {
 	defaultServer.Close()
 }
-
-

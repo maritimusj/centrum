@@ -62,10 +62,13 @@ func (device *Device) onDisconnected(err error) {
 }
 
 func (device *Device) IsConnected() bool {
-	device.RLock()
-	defer device.RUnlock()
+	if device != nil {
+		device.RLock()
+		defer device.RUnlock()
 
-	return device != nil && device.client != nil && device.status == lang.Connected
+		return device.client != nil && device.status == lang.Connected
+	}
+	return false
 }
 
 func (device *Device) getModbusClient() (modbusClient, error) {
@@ -77,44 +80,36 @@ func (device *Device) getModbusClient() (modbusClient, error) {
 
 func (device *Device) Connect(ctx context.Context, address string) error {
 	device.Lock()
-	{
-		device.status = lang.Connecting
-		if device.connector == nil {
-			if govalidator.IsMAC(address) {
-				println("InverseServer.DefaultConnector")
-				device.connector = InverseServer.DefaultConnector()
-			} else {
-				println("NewTCPConnector")
-				device.connector = NewTCPConnector()
-			}
+	device.status = lang.Connecting
+	if device.connector == nil {
+		if govalidator.IsMAC(address) {
+			println("InverseServer.DefaultConnector")
+			device.connector = InverseServer.DefaultConnector()
+		} else {
+			println("NewTCPConnector")
+			device.connector = NewTCPConnector()
 		}
 	}
 	device.Unlock()
 
 	conn, err := device.connector.Try(ctx, address)
 	if err != nil {
-		device.Lock()
-		{
-			device.status = lang.Disconnected
-		}
-		device.Unlock()
+		device.status = lang.Disconnected
 		return err
 	}
 
 	device.Lock()
-	{
-		handler := modbus.NewTCPClientHandlerFrom(conn)
-		client := modbus.NewClient(handler)
+	handler := modbus.NewTCPClientHandlerFrom(conn)
+	client := modbus.NewClient(handler)
 
-		device.chAI = make(map[int]*AI)
-		device.chAO = make(map[int]*AO)
-		device.chDI = make(map[int]*DI)
-		device.chDO = make(map[int]*DO)
+	device.chAI = make(map[int]*AI)
+	device.chAO = make(map[int]*AO)
+	device.chDI = make(map[int]*DI)
+	device.chDO = make(map[int]*DO)
 
-		device.handler = handler
-		device.client = client
-		device.status = lang.Connected
-	}
+	device.handler = handler
+	device.client = client
+	device.status = lang.Connected
 	device.Unlock()
 
 	return nil
@@ -144,87 +139,105 @@ func (device *Device) Close() {
 }
 
 func (device *Device) GetStatus() lang.StrIndex {
+	device.RLock()
+	defer device.RUnlock()
+
 	return device.status
 }
 
 func (device *Device) GetStatusTitle() string {
+	device.RLock()
+	defer device.RUnlock()
+
 	return lang.Str(device.status)
 }
 
 func (device *Device) GetModel() (*Model, error) {
+	if !device.IsConnected() {
+		return nil, lang.Error(lang.ErrDeviceNotConnected)
+	}
+
 	device.Lock()
+	defer device.Unlock()
 
 	if device.model == nil {
 		if client, err := device.getModbusClient(); err != nil {
-			device.Unlock()
 			return nil, err
 		} else {
-			device.model = &Model{}
-			device.Unlock()
-			if err := device.model.fetchData(client); err != nil {
-				return device.model, err
+			model := &Model{}
+			if err := model.fetchData(client); err != nil {
+				return nil, err
 			}
+			device.model = model
 		}
-	} else {
-		device.Unlock()
 	}
 
 	return device.model, nil
 }
 
 func (device *Device) GetAddr() (*Addr, error) {
+	if !device.IsConnected() {
+		return nil, lang.Error(lang.ErrDeviceNotConnected)
+	}
+
 	device.Lock()
+	defer device.Unlock()
 
 	if device.addr == nil {
 		if client, err := device.getModbusClient(); err != nil {
-			device.Unlock()
-			return device.addr, err
+			return nil, err
 		} else {
-			device.addr = &Addr{}
-			device.Unlock()
-			if err := device.addr.fetchData(client); err != nil {
-				return device.addr, err
+			addr := &Addr{}
+			if err := addr.fetchData(client); err != nil {
+				return nil, err
 			}
+			device.addr = addr
 		}
-	} else {
-		device.Unlock()
 	}
-
 	return device.addr, nil
 }
 
 func (device *Device) GetCHNum() (*CHNum, error) {
+	if !device.IsConnected() {
+		return nil, lang.Error(lang.ErrDeviceNotConnected)
+	}
+
 	device.Lock()
 	defer device.Unlock()
 
 	if device.chNum == nil {
 		chNum := &CHNum{}
 		if client, err := device.getModbusClient(); err != nil {
-			return chNum, err
+			return nil, err
 		} else {
 			if err := chNum.fetchData(client); err != nil {
-				return chNum, err
+				return nil, err
 			}
 		}
 		device.chNum = chNum
 	}
 
-	return device.chNum, nil
+	return device.chNum.Clone(), nil
 }
 
 func (device *Device) GetRealTimeData() (*RealTimeData, error) {
+	if !device.IsConnected() {
+		return nil, lang.Error(lang.ErrDeviceNotConnected)
+	}
+
 	chNum, err := device.GetCHNum()
 	if err != nil {
 		return nil, err
 	}
 
 	device.Lock()
+	defer device.Unlock()
+
 	if device.readTimeData == nil {
 		device.readTimeData = &RealTimeData{
-			chNum: chNum,
+			chNum: chNum.Clone(),
 		}
 	}
-	device.Unlock()
 
 	if client, err := device.getModbusClient(); err != nil {
 		return nil, err
@@ -235,10 +248,14 @@ func (device *Device) GetRealTimeData() (*RealTimeData, error) {
 		}
 	}
 
-	return device.readTimeData, nil
+	return device.readTimeData.Clone(), nil
 }
 
 func (device *Device) SetCHValue(tag string, value interface{}) error {
+	if !device.IsConnected() {
+		return lang.Error(lang.ErrDeviceNotConnected)
+	}
+
 	if strings.HasPrefix(tag, "DO") {
 		do, err := device.GetDOFromTag(tag)
 		if err != nil {
@@ -252,10 +269,15 @@ func (device *Device) SetCHValue(tag string, value interface{}) error {
 
 		return nil
 	}
+
 	return errors.New("invalid ch index")
 }
 
 func (device *Device) GetCHValue(tag string) (value map[string]interface{}, err error) {
+	if !device.IsConnected() {
+		return nil, lang.Error(lang.ErrDeviceNotConnected)
+	}
+
 	seg := strings.SplitN(tag, "-", 2)
 	if len(seg) != 2 {
 		err = errors.New("invalid ch")
@@ -305,7 +327,6 @@ func (device *Device) GetCHValue(tag string) (value map[string]interface{}, err 
 		if err != nil {
 			return
 		}
-
 		return map[string]interface{}{
 			"title": ao.GetConfig().Title,
 			"tag":   ao.GetConfig().TagName,
@@ -352,13 +373,21 @@ func (device *Device) GetCHValue(tag string) (value map[string]interface{}, err 
 }
 
 func (device *Device) GetAI(index int) (*AI, error) {
+	if !device.IsConnected() {
+		return nil, lang.Error(lang.ErrDeviceNotConnected)
+	}
+
 	chNum, err := device.GetCHNum()
 	if err != nil {
 		return nil, err
 	}
+
 	if index >= chNum.AI {
 		return nil, errors.New("invalid AI index")
 	}
+
+	device.Lock()
+	defer device.Unlock()
 
 	if ai, ok := device.chAI[index]; ok {
 		return ai, nil
@@ -387,18 +416,25 @@ func (device *Device) GetAI(index int) (*AI, error) {
 	}
 
 	device.chAI[index] = ai
-
 	return ai, nil
 }
 
 func (device *Device) GetAO(index int) (*AO, error) {
+	if !device.IsConnected() {
+		return nil, lang.Error(lang.ErrDeviceNotConnected)
+	}
+
 	chNum, err := device.GetCHNum()
 	if err != nil {
 		return nil, err
 	}
+
 	if index >= chNum.AO {
 		return nil, errors.New("invalid AO index")
 	}
+
+	device.Lock()
+	defer device.Unlock()
 
 	if ao, ok := device.chAO[index]; ok {
 		return ao, nil
@@ -423,6 +459,10 @@ func (device *Device) GetAO(index int) (*AO, error) {
 }
 
 func (device *Device) GetDI(index int) (*DI, error) {
+	if !device.IsConnected() {
+		return nil, lang.Error(lang.ErrDeviceNotConnected)
+	}
+
 	chNum, err := device.GetCHNum()
 	if err != nil {
 		return nil, err
@@ -430,6 +470,9 @@ func (device *Device) GetDI(index int) (*DI, error) {
 	if index >= chNum.DI {
 		return nil, errors.New("invalid DI index")
 	}
+
+	device.Lock()
+	defer device.Unlock()
 
 	if di, ok := device.chDI[index]; ok {
 		return di, nil
@@ -456,6 +499,10 @@ func (device *Device) GetDI(index int) (*DI, error) {
 }
 
 func (device *Device) GetDOFromTag(tag string) (*DO, error) {
+	if !device.IsConnected() {
+		return nil, lang.Error(lang.ErrDeviceNotConnected)
+	}
+
 	chNum, err := device.GetCHNum()
 	if err != nil {
 		return nil, err
@@ -475,6 +522,10 @@ func (device *Device) GetDOFromTag(tag string) (*DO, error) {
 }
 
 func (device *Device) GetDO(index int) (*DO, error) {
+	if !device.IsConnected() {
+		return nil, lang.Error(lang.ErrDeviceNotConnected)
+	}
+
 	chNum, err := device.GetCHNum()
 	if err != nil {
 		return nil, err
@@ -483,6 +534,9 @@ func (device *Device) GetDO(index int) (*DO, error) {
 	if index >= chNum.DO {
 		return nil, errors.New("invalid DO index")
 	}
+
+	device.Lock()
+	defer device.Unlock()
 
 	if do, ok := device.chDO[index]; ok {
 		return do, nil

@@ -2,6 +2,8 @@ package edge
 
 import (
 	"bytes"
+	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/rpc/json"
@@ -27,8 +29,16 @@ func Invoke(cmd string, request interface{}) (*Result, error) {
 		_ = resp.Body.Close()
 	}()
 
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Errorf("[invoke] %s",err)
+		return nil, err
+	}
+
+	log.Info("[invoke] ", string(data))
+
 	var reply Result
-	err = json.DecodeClientResponse(resp.Body, &reply)
+	err = json.DecodeClientResponse(bytes.NewReader(data), &reply)
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,6 @@ package ep6v2
 import (
 	"bytes"
 	"encoding/binary"
-	"sync"
 	"time"
 )
 
@@ -17,9 +16,21 @@ type RealTimeData struct {
 	data  bytes.Buffer
 	ready bytes.Buffer
 
-	lastFetchTime time.Time
+	lastReadTime time.Time
+}
 
-	sync.RWMutex
+func (r *RealTimeData) Clone() *RealTimeData {
+	rt := &RealTimeData{
+		chNum:        r.chNum,
+		lastReadTime: r.lastReadTime,
+	}
+	rt.data.Write(r.data.Bytes())
+	rt.ready.Write(r.ready.Bytes())
+	return rt
+}
+
+func (r *RealTimeData) expired() bool {
+	return time.Now().Sub(r.lastReadTime) > 1*time.Second
 }
 
 func (r *RealTimeData) AINum() int {
@@ -76,9 +87,6 @@ func (r *RealTimeData) GetVOValue(index int) (bool, bool) {
 }
 
 func (r *RealTimeData) getFloat32(index int) (float32, bool) {
-	r.RLock()
-	defer r.RUnlock()
-
 	pos := index * 4
 	if r.data.Len() > pos+4 && index < r.ready.Len() && r.ready.Bytes()[index] == 0 {
 		return ToSingle(r.data.Bytes()[pos:]), true
@@ -87,9 +95,6 @@ func (r *RealTimeData) getFloat32(index int) (float32, bool) {
 }
 
 func (r *RealTimeData) getInt(index int) (int, bool) {
-	r.RLock()
-	defer r.RUnlock()
-
 	pos := index * 4
 	if r.data.Len() > pos+4 && index < r.ready.Len() && r.ready.Bytes()[index] == 0 {
 		return int(binary.BigEndian.Uint32(r.data.Bytes()[pos:])), true
@@ -106,10 +111,7 @@ func (r *RealTimeData) getBool(index int) (bool, bool) {
 }
 
 func (r *RealTimeData) fetchData(conn modbusClient) error {
-	r.Lock()
-	defer r.Unlock()
-
-	if time.Now().Sub(r.lastFetchTime) < 1*time.Second {
+	if !r.expired() {
 		return nil
 	}
 
@@ -170,6 +172,6 @@ func (r *RealTimeData) fetchData(conn modbusClient) error {
 		address += quantity
 	}
 
-	r.lastFetchTime = time.Now()
+	r.lastReadTime = time.Now()
 	return nil
 }

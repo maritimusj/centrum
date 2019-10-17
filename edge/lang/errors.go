@@ -18,6 +18,9 @@ const (
 	ErrUnknown
 	ErrUnknownLang
 	ErrInternal
+
+	ErrDeviceNotExists
+	ErrDeviceNotConnected
 )
 
 func ErrorStr(code ErrorCode, params ...interface{}) string {

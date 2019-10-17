@@ -64,7 +64,6 @@ func main() {
 	if *addr != "" {
 		result, err := invoke("Edge.Active", Conf{
 			UID:              *uid,
-			Inverse:          false,
 			Address:          *addr,
 			Interval:         6 * time.Second,
 			DB:               "gsd",

@@ -15,6 +15,7 @@ import (
 	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
 	"github.com/maritimusj/centrum/web/store"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/go-playground/validator.v9"
 	"strconv"
 	"strings"
@@ -70,6 +71,7 @@ func List(ctx iris.Context) hero.Result {
 				"ctrl": app.Allow(admin, device, resource.Ctrl),
 			}
 			if baseInfo, err := edge.GetBaseInfo(strconv.FormatInt(device.GetID(), 10)); err != nil {
+				log.Errorf("get base info: %s", err)
 				index, title := global.GetDeviceStatus(device)
 				brief["edge"] = iris.Map{
 					"status": iris.Map{

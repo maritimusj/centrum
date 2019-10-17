@@ -14,6 +14,16 @@ func (ch *CHNum) Sum() int {
 	return ch.AI + ch.DI + ch.DO + ch.AO + ch.VO
 }
 
+func (ch *CHNum) Clone() *CHNum {
+	return &CHNum{
+		AI: ch.AI,
+		DI: ch.DI,
+		DO: ch.DO,
+		AO: ch.AO,
+		VO: ch.VO,
+	}
+}
+
 func (ch *CHNum) fetchData(conn modbusClient) error {
 	data, err := conn.ReadHoldingRegisters(16, 5)
 	if err != nil {
