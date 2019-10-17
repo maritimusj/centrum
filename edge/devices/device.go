@@ -91,6 +91,7 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 
 		baseInfo["model"] = model.ID
 		baseInfo["version"] = model.Version
+		baseInfo["title"] = model.Title
 
 		addr, err := adapter.client.GetAddr()
 		if err != nil {
