@@ -184,7 +184,7 @@ func (m *Measure) Detail() model.Map {
 
 	device := m.Device()
 	if device != nil {
-		detail["device"] = device.Simple()
+		detail["device"] = device.Brief()
 	}
 	return detail
 }

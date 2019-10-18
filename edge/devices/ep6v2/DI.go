@@ -27,6 +27,7 @@ type DIConfig struct {
 	TagName string //频道名称
 	Title   string //中文名称
 
+	AlarmConfig int
 	AlarmDelay int //警报延迟(秒)
 }
 
@@ -43,7 +44,6 @@ func (di *DI) GetValue() (bool, error) {
 		di.value = data[0] > 0
 		di.lastReadTime = time.Now()
 	}
-
 	return di.value, nil
 }
 
@@ -68,7 +68,7 @@ func (c *DIConfig) fetchData(conn modbusClient, index int) error {
 	c.Title = DecodeUtf16String(data[0:32])
 	c.TagName = fmt.Sprintf("DI-%d", index+1)
 
-	address, quantity = DICHStartAddress+uint16(index)*CHBlockSize+32, 5
+	address, quantity = DICHStartAddress+uint16(index)*CHBlockSize+32, 7
 	data, err = conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
 		return err
@@ -78,6 +78,7 @@ func (c *DIConfig) fetchData(conn modbusClient, index int) error {
 	c.AlarmDelay = int(binary.BigEndian.Uint16(data[2:]))
 	c.Inverse = data[7] > 0
 	c.AlarmEnabled = data[9] > 0
-
+	c.AlarmConfig = int(binary.BigEndian.Uint16(data[12:]))
+	fmt.Printf("%#v, %#v, %d", data, c.AlarmEnabled, c.AlarmConfig)
 	return nil
 }

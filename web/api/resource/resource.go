@@ -76,10 +76,12 @@ func List(classID int, ctx iris.Context) hero.Result {
 		roleID := ctx.URLParamInt64Default("role", 0)
 		userID := ctx.URLParamInt64Default("user", 0)
 
-		var err error
+		var (
+			err error
 
-		var role model.Role
-		var user model.User
+			role model.Role
+			user model.User
+		)
 
 		s := app.Store()
 
@@ -190,9 +192,11 @@ func GetList(ctx iris.Context) hero.Result {
 
 		s := app.Store()
 
-		var err error
-		var resources []model.Resource
-		var total int64
+		var (
+			err       error
+			resources []model.Resource
+			total     int64
+		)
 
 		seg := ctx.URLParam("seg")
 		if len(seg) == 0 {
@@ -224,8 +228,10 @@ func GetList(ctx iris.Context) hero.Result {
 			}
 		}
 
-		var role model.Role
-		var user model.User
+		var (
+			role model.Role
+			user model.User
+		)
 
 		if roleID > 0 {
 			role, err = s.GetRole(roleID)
@@ -236,6 +242,9 @@ func GetList(ctx iris.Context) hero.Result {
 			user, err = s.GetUser(userID)
 			if err != nil {
 				return err
+			}
+			if app.IsDefaultAdminUser(user) {
+				return lang.ErrFailedEditDefaultUser
 			}
 		}
 

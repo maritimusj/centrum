@@ -234,7 +234,7 @@ func (s *State) Detail() model.Map {
 
 	measure := s.Measure()
 	if measure != nil {
-		detail["measure"] = measure.Simple()
+		detail["measure"] = measure.Detail()
 	}
 
 	return detail

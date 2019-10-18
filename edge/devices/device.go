@@ -429,8 +429,8 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 				err := runner.fetchData(adapter)
 				if err != nil {
 					adapter.logger.Error(err)
-					go adapter.OnDeviceStatusChanged(lang.Disconnected)
 					adapter.client.Close()
+					go adapter.OnDeviceStatusChanged(lang.Disconnected)
 					goto makeConnection
 				}
 			}

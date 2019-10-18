@@ -41,13 +41,23 @@ func List(ctx iris.Context) hero.Result {
 			params = append(params, helper.Keyword(keyword))
 		}
 
-		userID := ctx.URLParamInt64Default("user", 0)
+		var (
+			userID = ctx.URLParamInt64Default("user", 0)
+			user   model.User
+			err    error
+		)
+
 		matchRoles := hashset.New()
 		if userID > 0 {
-			user, err := s.GetUser(userID)
+			user, err = s.GetUser(userID)
 			if err != nil {
 				return err
 			}
+			
+			if app.IsDefaultAdminUser(user) {
+				return lang.ErrFailedEditDefaultUser
+			}
+
 			roles, err := user.GetRoles()
 			if err != nil {
 				return err
@@ -60,10 +70,11 @@ func List(ctx iris.Context) hero.Result {
 		if err != nil {
 			return err
 		}
+
 		var result = make([]model.Map, 0, len(roles))
 		for _, role := range roles {
 			//普通用户无法查看__sys__角色
-			if app.IsDefaultAdminUser(admin) || role.Name() != lang.RoleSystemAdminName {
+			if role.Name() != lang.RoleSystemAdminName {
 				brief := role.Brief()
 				if userID > 0 {
 					brief["matched"] = matchRoles.Contains(role.GetID())
