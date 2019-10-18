@@ -6,6 +6,7 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/maritimusj/centrum/edge/devices/InverseServer"
 	"github.com/maritimusj/centrum/edge/lang"
+	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/modbus"
 	"io"
 	"net"
@@ -49,16 +50,9 @@ func (device *Device) SetConnector(connector Connector) {
 }
 
 func (device *Device) onDisconnected(err error) {
-	device.Lock()
-	defer device.Unlock()
-
-	device.model = nil
-	device.addr = nil
-	device.chNum = nil
-	device.readTimeData = nil
-	device.client = nil
-	device.handler = nil
-	device.status = lang.Disconnected
+	device.Reset(func() {
+		device.status = lang.Disconnected
+	})
 }
 
 func (device *Device) IsConnected() bool {
@@ -81,6 +75,7 @@ func (device *Device) getModbusClient() (modbusClient, error) {
 func (device *Device) Connect(ctx context.Context, address string) error {
 	device.Lock()
 	device.status = lang.Connecting
+
 	if device.connector == nil {
 		if govalidator.IsMAC(address) {
 			println("InverseServer.DefaultConnector")
@@ -90,6 +85,7 @@ func (device *Device) Connect(ctx context.Context, address string) error {
 			device.connector = NewTCPConnector()
 		}
 	}
+
 	device.Unlock()
 
 	conn, err := device.connector.Try(ctx, address)
@@ -98,43 +94,49 @@ func (device *Device) Connect(ctx context.Context, address string) error {
 		return err
 	}
 
-	device.Lock()
-	handler := modbus.NewTCPClientHandlerFrom(conn)
-	client := modbus.NewClient(handler)
-
-	device.chAI = make(map[int]*AI)
-	device.chAO = make(map[int]*AO)
-	device.chDI = make(map[int]*DI)
-	device.chDO = make(map[int]*DO)
-
-	device.handler = handler
-	device.client = client
-	device.status = lang.Connected
-	device.Unlock()
+	device.Reset(func() {
+		device.status = lang.Connected
+		handler := modbus.NewTCPClientHandlerFrom(conn)
+		client := modbus.NewClient(handler)
+		device.handler = handler
+		device.client = client
+	})
 
 	return nil
 }
 
 func (device *Device) Close() {
+	device.Reset(func() {
+		device.status = lang.Disconnected
+
+		device.client = nil
+		if device.handler != nil {
+			_ = device.handler.Close()
+			device.handler = nil
+		}
+	})
+}
+
+func (device *Device) Reset(otherFN ...func()) {
 	device.Lock()
 	defer device.Unlock()
-
-	device.status = lang.Disconnected
 
 	device.model = nil
 	device.addr = nil
 	device.chNum = nil
 	device.readTimeData = nil
 
-	device.chAI = nil
-	device.chAO = nil
-	device.chDI = nil
-	device.chDO = nil
+	device.chAI = make(map[int]*AI)
+	device.chAO = make(map[int]*AO)
+	device.chDI = make(map[int]*DI)
+	device.chDO = make(map[int]*DO)
 
-	device.client = nil
-	if device.handler != nil {
-		_ = device.handler.Close()
-		device.handler = nil
+	global.Params.Reset()
+
+	for _, fn := range otherFN {
+		if fn != nil {
+			fn()
+		}
 	}
 }
 

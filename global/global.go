@@ -35,3 +35,11 @@ func (stats *stats) Remove(name interface{}) *stats {
 	stats.data.Delete(name)
 	return stats
 }
+
+func (stats *stats) Reset() *stats {
+	stats.data.Range(func(key, _ interface{}) bool {
+		stats.data.Delete(key)
+		return true
+	})
+	return stats
+}

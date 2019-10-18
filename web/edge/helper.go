@@ -30,6 +30,10 @@ func ActiveDevice(device model.Device) error {
 	return Active(conf)
 }
 
+func ResetConfig(device model.Device) {
+	Reset(strconv.FormatInt(device.GetID(), 10))
+}
+
 func GetStatus(device model.Device) (map[string]interface{}, error) {
 	return GetBaseInfo(strconv.FormatInt(device.GetID(), 10))
 }

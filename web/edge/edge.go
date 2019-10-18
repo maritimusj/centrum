@@ -53,6 +53,10 @@ func GetBaseInfo(uid string) (map[string]interface{}, error) {
 	return result.Data.(map[string]interface{}), nil
 }
 
+func Reset(uid string) {
+	_, _ = Invoke("Edge.Reset", uid)
+}
+
 func Remove(uid string) {
 	_, _ = Invoke("Edge.Remove", uid)
 }

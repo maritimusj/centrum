@@ -190,7 +190,7 @@ func (runner *Runner) GetValue(ch *json_rpc.CH) (interface{}, error) {
 		}
 		return v, nil
 	}
-	return nil,lang.Error(lang.ErrDeviceNotExists)
+	return nil, lang.Error(lang.ErrDeviceNotExists)
 }
 
 func (runner *Runner) SetValue(val *json_rpc.Value) error {
@@ -280,6 +280,13 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 	}
 
 	return nil, lang.Error(lang.ErrDeviceNotExists)
+}
+
+func (runner *Runner) Reset(uid string) {
+	if v, ok := runner.adapters.Load(uid); ok {
+		adapter := v.(*Adapter)
+		adapter.client.Reset()
+	}
 }
 
 func (runner *Runner) Remove(uid string) {

@@ -169,6 +169,7 @@ func (server *server) Start(ctx context.Context, cfg *config.Config) {
 				p.Delete("/{id:int64}/log", hero.Handler(device.LogDelete)).Name = ResourceDef.DeviceLogDelete
 
 				//实时状态
+				p.Get("/{id:int64}/reset", hero.Handler(device.Reset)).Name = ResourceDef.DeviceStatus
 				p.Get("/{id:int64}/status", hero.Handler(device.Status)).Name = ResourceDef.DeviceStatus
 				p.Get("/{id:int64}/data", hero.Handler(device.Data)).Name = ResourceDef.DeviceData
 				p.Put("/{id:int64}/{tagName:string}", hero.Handler(device.Ctrl)).Name = ResourceDef.DeviceCtrl

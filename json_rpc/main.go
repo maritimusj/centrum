@@ -7,6 +7,7 @@ import (
 
 type Sink interface {
 	StartInverseServer(conf *InverseConf) error
+	Reset(uid string)
 	GetBaseInfo(uid string) (map[string]interface{}, error)
 	Remove(uid string)
 	Active(conf *Conf) error
@@ -60,6 +61,12 @@ func New(sink Sink) *Edge {
 
 func (e *Edge) StartInverseServer(conf *InverseConf) error {
 	return e.sink.StartInverseServer(conf)
+}
+
+//Reset 重置设备配置和数据
+func (e *Edge) Reset(r *http.Request, uid *string, result *Result) error {
+	e.sink.Reset(*uid)
+	return nil
 }
 
 //GetBaseInfo 获取设备基本信息

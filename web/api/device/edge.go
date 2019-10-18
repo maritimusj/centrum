@@ -11,6 +11,22 @@ import (
 	"github.com/maritimusj/centrum/web/response"
 )
 
+func Reset(deviceID int64, ctx iris.Context) hero.Result {
+	return response.Wrap(func() interface{} {
+		device, err := app.Store().GetDevice(deviceID)
+		if err != nil {
+			return err
+		}
+		admin := app.Store().MustGetUserFromContext(ctx)
+		if !app.Allow(admin, device, resource.View) {
+			return lang.ErrNoPermission
+		}
+
+		edge.ResetConfig(device)
+		return lang.Ok
+	})
+}
+
 func Status(deviceID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		device, err := app.Store().GetDevice(deviceID)
