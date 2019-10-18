@@ -8,6 +8,7 @@ import (
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/edge"
+	"github.com/maritimusj/centrum/web/helper"
 	"github.com/maritimusj/centrum/web/model"
 	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
@@ -16,13 +17,21 @@ import (
 	_ "github.com/maritimusj/centrum/edge/lang/zhCN"
 )
 
-func rangeEquipmentStates(equipment model.Equipment, fn func(device model.Device, measure model.Measure, state model.State) error) error {
-	states, _, err := equipment.GetStateList()
+func rangeEquipmentStates(user model.User, equipment model.Equipment, fn func(device model.Device, measure model.Measure, state model.State) error) error {
+	var params []helper.OptionFN
+	if user != nil && !app.IsDefaultAdminUser(user) {
+		params = append(params, helper.User(user.GetID()))
+	}
+
+	states, _, err := equipment.GetStateList(params...)
 	if err != nil {
 		return err
 	}
-	var device model.Device
-	var measure model.Measure
+
+	var (
+		device  model.Device
+		measure model.Measure
+	)
 
 	for _, state := range states {
 		measure = state.Measure()
@@ -38,12 +47,12 @@ func rangeEquipmentStates(equipment model.Equipment, fn func(device model.Device
 	return nil
 }
 
-func getEquipmentSimpleStatus(equipment model.Equipment) interface{} {
+func getEquipmentSimpleStatus(user model.User, equipment model.Equipment) interface{} {
 	res := map[string]interface{}{
 		"index": edgeLang.Connected,
 		"title": edgeLang.Str(edgeLang.Connected),
 	}
-	_ = rangeEquipmentStates(equipment, func(device model.Device, measure model.Measure, state model.State) error {
+	_ = rangeEquipmentStates(user, equipment, func(device model.Device, measure model.Measure, state model.State) error {
 		if device == nil {
 			res["index"] = edgeLang.MalFunctioned
 			return lang.Error(lang.ErrDeviceNotFound)
@@ -75,11 +84,11 @@ func Status(equipmentID int64, ctx iris.Context) hero.Result {
 		}
 
 		if ctx.URLParamExists("simple") {
-			return getEquipmentSimpleStatus(equipment)
+			return getEquipmentSimpleStatus(admin, equipment)
 		}
 
 		devices := make([]map[string]interface{}, 0)
-		err = rangeEquipmentStates(equipment, func(device model.Device, measure model.Measure, state model.State) error {
+		err = rangeEquipmentStates(admin, equipment, func(device model.Device, measure model.Measure, state model.State) error {
 			dataMap := map[string]interface{}{
 				"id":    state.GetID(),
 				"title": state.Title(),
@@ -134,8 +143,15 @@ func Data(equipmentID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		devices := make([]interface{}, 0)
-		err = rangeEquipmentStates(equipment, func(device model.Device, measure model.Measure, state model.State) error {
+		testCtrlPerm := func(state model.State) bool {
+			if app.IsDefaultAdminUser(admin) {
+				return true
+			}
+			return app.Allow(admin, state, resource.Ctrl)
+		}
+
+		result := make([]interface{}, 0)
+		err = rangeEquipmentStates(admin, equipment, func(device model.Device, measure model.Measure, state model.State) error {
 			dataMap := map[string]interface{}{
 				"id":    state.GetID(),
 				"title": state.Title(),
@@ -156,9 +172,14 @@ func Data(equipmentID int64, ctx iris.Context) hero.Result {
 						dataMap[k] = v
 					}
 				}
+
+				dataMap["perm"] = map[string]bool{
+					"view": true,
+					"ctrl": testCtrlPerm(state),
+				}
 			}
 
-			devices = append(devices, dataMap)
+			result = append(result, dataMap)
 			return nil
 		})
 
@@ -166,7 +187,7 @@ func Data(equipmentID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 
-		return devices
+		return result
 	})
 }
 

@@ -7,6 +7,7 @@ import (
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/edge"
+	"github.com/maritimusj/centrum/web/model"
 	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
 )
@@ -57,12 +58,13 @@ func Status(deviceID int64, ctx iris.Context) hero.Result {
 
 func Data(deviceID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		device, err := app.Store().GetDevice(deviceID)
+		s := app.Store()
+		device, err := s.GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
 
-		admin := app.Store().MustGetUserFromContext(ctx)
+		admin := s.MustGetUserFromContext(ctx)
 		if !app.Allow(admin, device, resource.View) {
 			return lang.ErrNoPermission
 		}
@@ -71,6 +73,34 @@ func Data(deviceID int64, ctx iris.Context) hero.Result {
 		if err != nil {
 			return err
 		}
+
+		testPerm := func(measure model.Measure, action resource.Action) bool {
+			if app.IsDefaultAdminUser(admin) {
+				return true
+			}
+			return app.Allow(admin, measure, action)
+		}
+
+		//过滤掉没有权限的measure
+		var result = make([]interface{}, 0, len(data))
+		for _, entry := range data {
+			if e, ok := entry.(map[string]interface{}); ok {
+				if chTagName, ok := e["tag"].(string); ok {
+					measure, err := s.GetMeasureFromTagName(deviceID, chTagName)
+					if err != nil {
+						continue
+					}
+					if testPerm(measure, resource.View) {
+						e["perm"] = map[string]bool{
+							"view": true,
+							"ctrl": testPerm(measure, resource.Ctrl),
+						}
+						result = append(result, entry)
+					}
+				}
+			}
+		}
+
 		return data
 	})
 }

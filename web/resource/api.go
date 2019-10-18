@@ -176,10 +176,12 @@ var (
 
 		DeviceStatus,
 		DeviceData,
+		DeviceCtrl,
 		DeviceCHValue,
 
 		EquipmentStatus,
 		EquipmentData,
+		EquipmentCtrl,
 		EquipmentCHValue,
 	}
 
