@@ -77,22 +77,27 @@ func Data(deviceID int64, ctx iris.Context) hero.Result {
 
 func Ctrl(deviceID int64, chTagName string, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		device, err := app.Store().GetDevice(deviceID)
-		if err != nil {
-			return err
-		}
-
-		admin := app.Store().MustGetUserFromContext(ctx)
-		if !app.Allow(admin, device, resource.Ctrl) {
-			return lang.ErrNoPermission
-		}
-
 		var form struct {
 			Val bool `form:"value" json:"value"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
 			return lang.ErrInvalidRequestData
+		}
+
+		device, err := app.Store().GetDevice(deviceID)
+		if err != nil {
+			return err
+		}
+
+		measure, err := app.Store().GetMeasureFromTagName(device.GetID(), chTagName)
+		if err != nil {
+			return err
+		}
+
+		admin := app.Store().MustGetUserFromContext(ctx)
+		if !app.Allow(admin, measure, resource.Ctrl) {
+			return lang.ErrNoPermission
 		}
 
 		err = edge.SetCHValue(device, chTagName, form.Val)
@@ -104,6 +109,7 @@ func Ctrl(deviceID int64, chTagName string, ctx iris.Context) hero.Result {
 		if err != nil {
 			return err
 		}
+
 		return val
 	})
 }
@@ -115,8 +121,13 @@ func GetCHValue(deviceID int64, chTagName string, ctx iris.Context) hero.Result 
 			return err
 		}
 
+		measure, err := app.Store().GetMeasureFromTagName(device.GetID(), chTagName)
+		if err != nil {
+			return err
+		}
+
 		admin := app.Store().MustGetUserFromContext(ctx)
-		if !app.Allow(admin, device, resource.View) {
+		if !app.Allow(admin, measure, resource.View) {
 			return lang.ErrNoPermission
 		}
 

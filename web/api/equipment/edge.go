@@ -172,24 +172,18 @@ func Data(equipmentID int64, ctx iris.Context) hero.Result {
 
 func Ctrl(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		equipmentID, err := ctx.Params().GetInt64("id")
-		if err != nil {
-			return err
-		}
+		//equipmentID, err := ctx.Params().GetInt64("id")
+		//if err != nil {
+		//	return err
+		//}
+		//equipment, err := app.Store().GetEquipment(equipmentID)
+		//if err != nil {
+		//	return err
+		//}
 
 		stateID, err := ctx.Params().GetInt64("stateID")
 		if err != nil {
 			return err
-		}
-
-		equipment, err := app.Store().GetEquipment(equipmentID)
-		if err != nil {
-			return err
-		}
-
-		admin := app.Store().MustGetUserFromContext(ctx)
-		if !app.Allow(admin, equipment, resource.Ctrl) {
-			return lang.ErrNoPermission
 		}
 
 		var form struct {
@@ -203,6 +197,11 @@ func Ctrl(ctx iris.Context) hero.Result {
 		state, err := app.Store().GetState(stateID)
 		if err != nil {
 			return err
+		}
+
+		admin := app.Store().MustGetUserFromContext(ctx)
+		if !app.Allow(admin, state, resource.Ctrl) {
+			return lang.ErrNoPermission
 		}
 
 		measure := state.Measure()
@@ -230,29 +229,29 @@ func Ctrl(ctx iris.Context) hero.Result {
 
 func GetCHValue(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		equipmentID, err := ctx.Params().GetInt64("id")
-		if err != nil {
-			return lang.ErrInvalidRequestData
-		}
+		//equipmentID, err := ctx.Params().GetInt64("id")
+		//if err != nil {
+		//	return lang.ErrInvalidRequestData
+		//}
+		//
+		//equipment, err := app.Store().GetEquipment(equipmentID)
+		//if err != nil {
+		//	return err
+		//}
 
 		stateID, err := ctx.Params().GetInt64("stateID")
 		if err != nil {
 			return lang.ErrInvalidRequestData
 		}
 
-		equipment, err := app.Store().GetEquipment(equipmentID)
+		state, err := app.Store().GetState(stateID)
 		if err != nil {
 			return err
 		}
 
 		admin := app.Store().MustGetUserFromContext(ctx)
-		if !app.Allow(admin, equipment, resource.View) {
+		if !app.Allow(admin, state, resource.View) {
 			return lang.ErrNoPermission
-		}
-
-		state, err := app.Store().GetState(stateID)
-		if err != nil {
-			return err
 		}
 
 		measure := state.Measure()
