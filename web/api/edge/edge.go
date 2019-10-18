@@ -64,25 +64,21 @@ func Feedback(deviceID int64, ctx iris.Context) {
 				log.Error("[Feedback]", err)
 				return
 			}
-
 			kind := resource.ParseMeasureKind(form.Measure.TagName)
 			if kind == resource.UnknownKind {
 				log.Error("[Feedback]", lang.Error(lang.ErrMeasureNotFound))
 				return
 			}
-
 			measure, err = app.Store().CreateMeasure(device.GetID(), form.Measure.Title, form.Measure.TagName, kind)
 			if err != nil {
 				log.Error("[Feedback]", err)
 				return
 			}
 		} else {
-			if measure.Title() != form.Measure.Title {
-				measure.SetTitle(form.Measure.Title)
-				err = measure.Save()
-				if err != nil {
-					log.Error("[Feedback]", err)
-				}
+			measure.SetTitle(form.Measure.Title)
+			err = measure.Save()
+			if err != nil {
+				log.Error("[Feedback]", err)
 			}
 		}
 	}

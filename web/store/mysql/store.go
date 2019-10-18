@@ -1564,7 +1564,7 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 }
 
 func (s *mysqlStore) loadMeasure(id int64) (model.Measure, error) {
-	var measure = Measure{id: id, store: s}
+	var measure = NewMeasure(s, id)
 	err := LoadData(s.db, TbMeasures, map[string]interface{}{
 		"enable":     &measure.enable,
 		"device_id":  &measure.deviceID,
@@ -1579,7 +1579,7 @@ func (s *mysqlStore) loadMeasure(id int64) (model.Measure, error) {
 		}
 		return nil, lang.Error(lang.ErrMeasureNotFound)
 	}
-	return &measure, nil
+	return measure, nil
 }
 
 func (s *mysqlStore) GetMeasureFromTagName(deviceID int64, tagName string) (model.Measure, error) {
@@ -1624,16 +1624,16 @@ func (s *mysqlStore) GetMeasure(measureID int64) (model.Measure, error) {
 			return measure
 		}
 
-		role, err := s.loadMeasure(measureID)
+		measure, err := s.loadMeasure(measureID)
 		if err != nil {
 			return err
 		}
 
-		err = s.cache.Save(role)
+		err = s.cache.Save(measure)
 		if err != nil {
 			return err
 		}
-		return role
+		return measure
 	})
 
 	if err, ok := result.(error); ok {
