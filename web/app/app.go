@@ -88,7 +88,7 @@ func InitLog(levelStr string) error {
 	Config.SetLogLevel(levelStr)
 
 	//日志仓库
-	err = LogDBStore.Open(Ctx, map[string]interface{}{
+	err = LogDBStore.Open(map[string]interface{}{
 		"filename": Config.LogFileName(),
 	})
 	if err != nil {
@@ -209,7 +209,7 @@ func BootAllDevices() error {
 func Close() {
 	cancel()
 	Store().Close()
-	LogDBStore.Wait()
+	LogDBStore.Close()
 }
 
 func FlushDB() error {

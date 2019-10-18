@@ -3,14 +3,16 @@ package mysqlStore
 import (
 	"database/sql"
 	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/web/db"
 	"github.com/maritimusj/centrum/web/model"
 )
 
-func getConfigID(db db.DB, cfg interface{}) (int64, error) {
+func (s *mysqlStore) getConfigID(cfg interface{}) (int64, error) {
 	switch v := cfg.(type) {
 	case int64:
-		if exists, err := IsDataExists(db, TbConfig, "id=?", v); err != nil {
+		if _, err := s.cache.LoadConfig(v); err == nil {
+			return v, nil
+		}
+		if exists, err := IsDataExists(s.db, TbConfig, "id=?", v); err != nil {
 			if err != sql.ErrNoRows {
 				return 0, lang.InternalError(err)
 			}
@@ -19,7 +21,7 @@ func getConfigID(db db.DB, cfg interface{}) (int64, error) {
 			return v, nil
 		}
 	case string:
-		return getConfigIDByName(db, v)
+		return s.getConfigIDByName(v)
 	case model.Config:
 		if v != nil {
 			return v.GetID(), nil
@@ -28,9 +30,9 @@ func getConfigID(db db.DB, cfg interface{}) (int64, error) {
 	return 0, lang.Error(lang.ErrConfigNotFound)
 }
 
-func getConfigIDByName(db db.DB, name string) (int64, error) {
+func (s *mysqlStore) getConfigIDByName(name string) (int64, error) {
 	var cfgID int64
-	err := LoadData(db, TbConfig, map[string]interface{}{
+	err := LoadData(s.db, TbConfig, map[string]interface{}{
 		"id": &cfgID,
 	}, "name=?", name)
 	if err != nil {
@@ -42,10 +44,13 @@ func getConfigIDByName(db db.DB, name string) (int64, error) {
 	return cfgID, nil
 }
 
-func getOrganizationID(db db.DB, org interface{}) (int64, error) {
+func (s *mysqlStore) getOrganizationID(org interface{}) (int64, error) {
 	switch v := org.(type) {
 	case int64:
-		if exists, err := IsDataExists(db, TbOrganization, "id=?", v); err != nil {
+		if _, err := s.cache.LoadOrganization(v); err == nil {
+			return v, nil
+		}
+		if exists, err := IsDataExists(s.db, TbOrganization, "id=?", v); err != nil {
 			if err != sql.ErrNoRows {
 				return 0, lang.InternalError(err)
 			}
@@ -54,7 +59,7 @@ func getOrganizationID(db db.DB, org interface{}) (int64, error) {
 			return v, nil
 		}
 	case string:
-		return getOrganizationIDByName(db, v)
+		return s.getOrganizationIDByName(v)
 	case model.Organization:
 		if v != nil {
 			return v.GetID(), nil
@@ -63,9 +68,9 @@ func getOrganizationID(db db.DB, org interface{}) (int64, error) {
 	return 0, lang.Error(lang.ErrOrganizationNotFound)
 }
 
-func getOrganizationIDByName(db db.DB, name string) (int64, error) {
+func (s *mysqlStore) getOrganizationIDByName(name string) (int64, error) {
 	var orgID int64
-	err := LoadData(db, TbOrganization, map[string]interface{}{
+	err := LoadData(s.db, TbOrganization, map[string]interface{}{
 		"id": &orgID,
 	}, "name=?", name)
 	if err != nil {
@@ -77,10 +82,13 @@ func getOrganizationIDByName(db db.DB, name string) (int64, error) {
 	return orgID, nil
 }
 
-func getRoleID(db db.DB, role interface{}) (int64, error) {
+func (s *mysqlStore) getRoleID(role interface{}) (int64, error) {
 	switch v := role.(type) {
 	case int64:
-		if exists, err := IsDataExists(db, TbRoles, "id=?", v); err != nil {
+		if _, err := s.cache.LoadRole(v); err == nil {
+			return v, nil
+		}
+		if exists, err := IsDataExists(s.db, TbRoles, "id=?", v); err != nil {
 			if err != sql.ErrNoRows {
 				return 0, lang.InternalError(err)
 			}
@@ -89,7 +97,7 @@ func getRoleID(db db.DB, role interface{}) (int64, error) {
 			return v, nil
 		}
 	case string:
-		return getRoleIDByName(db, v)
+		return s.getRoleIDByName(v)
 	case model.Role:
 		if v != nil {
 			return v.GetID(), nil
@@ -98,9 +106,9 @@ func getRoleID(db db.DB, role interface{}) (int64, error) {
 	return 0, lang.Error(lang.ErrRoleNotFound)
 }
 
-func getRoleIDByName(db db.DB, name string) (int64, error) {
+func (s *mysqlStore) getRoleIDByName(name string) (int64, error) {
 	var roleID int64
-	err := LoadData(db, TbRoles, map[string]interface{}{
+	err := LoadData(s.db, TbRoles, map[string]interface{}{
 		"id": &roleID,
 	}, "name=?", name)
 	if err != nil {
@@ -112,9 +120,9 @@ func getRoleIDByName(db db.DB, name string) (int64, error) {
 	return roleID, nil
 }
 
-func getUserID(db db.DB, user interface{}) (int64, error) {
+func (s *mysqlStore) getUserID(user interface{}) (int64, error) {
 	checkExists := func(v interface{}) error {
-		if exists, err := IsDataExists(db, TbUsers, "id=?", v); err != nil {
+		if exists, err := IsDataExists(s.db, TbUsers, "id=?", v); err != nil {
 			return lang.InternalError(err)
 		} else if !exists {
 			return lang.Error(lang.ErrUserNotFound)
@@ -123,6 +131,9 @@ func getUserID(db db.DB, user interface{}) (int64, error) {
 	}
 	switch v := user.(type) {
 	case int64:
+		if _, err := s.cache.LoadUser(v); err == nil {
+			return v, nil
+		}
 		if err := checkExists(v); err != nil {
 			return 0, err
 		}
@@ -133,7 +144,7 @@ func getUserID(db db.DB, user interface{}) (int64, error) {
 		}
 		return int64(v), nil
 	case string:
-		return getUserIDByName(db, v)
+		return s.getUserIDByName(v)
 	case model.User:
 		if v != nil {
 			return v.GetID(), nil
@@ -142,9 +153,9 @@ func getUserID(db db.DB, user interface{}) (int64, error) {
 	return 0, lang.Error(lang.ErrUserNotFound)
 }
 
-func getUserIDByName(db db.DB, name string) (int64, error) {
+func (s *mysqlStore) getUserIDByName(name string) (int64, error) {
 	var userID int64
-	err := LoadData(db, TbUsers, map[string]interface{}{
+	err := LoadData(s.db, TbUsers, map[string]interface{}{
 		"id": &userID,
 	}, "name=?", name)
 	if err != nil {
@@ -156,10 +167,13 @@ func getUserIDByName(db db.DB, name string) (int64, error) {
 	return userID, nil
 }
 
-func getMeasureID(db db.DB, deviceID int64, tag interface{}) (int64, error) {
+func (s *mysqlStore) getMeasureID(deviceID int64, tag interface{}) (int64, error) {
 	switch v := tag.(type) {
 	case int64:
-		if exists, err := IsDataExists(db, TbMeasures, "id=?", v); err != nil {
+		if _, err := s.cache.LoadUser(v); err == nil {
+			return v, nil
+		}
+		if exists, err := IsDataExists(s.db, TbMeasures, "id=?", v); err != nil {
 			if err != sql.ErrNoRows {
 				return 0, lang.InternalError(err)
 			}
@@ -168,16 +182,16 @@ func getMeasureID(db db.DB, deviceID int64, tag interface{}) (int64, error) {
 			return v, nil
 		}
 	case string:
-		return getMeasureIDByTagName(db, deviceID, v)
+		return s.getMeasureIDByTagName(deviceID, v)
 	case model.Measure:
 		return v.GetID(), nil
 	}
 	return 0, lang.Error(lang.ErrMeasureNotFound)
 }
 
-func getMeasureIDByTagName(db db.DB, deviceID int64, tagName string) (int64, error) {
+func (s *mysqlStore) getMeasureIDByTagName(deviceID int64, tagName string) (int64, error) {
 	var measureID int64
-	err := LoadData(db, TbMeasures, map[string]interface{}{
+	err := LoadData(s.db, TbMeasures, map[string]interface{}{
 		"id": &measureID,
 	}, "device_id=? AND tag=?", deviceID, tagName)
 	if err != nil {

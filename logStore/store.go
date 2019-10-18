@@ -1,7 +1,6 @@
 package logStore
 
 import (
-	"context"
 	"encoding/json"
 	"time"
 
@@ -29,8 +28,8 @@ func (entry *Entry) Marshal() ([]byte, error) {
 }
 
 type Store interface {
-	Open(ctx context.Context, option map[string]interface{}) error
-	Wait()
+	Open(option map[string]interface{}) error
+	Close()
 
 	GetList(orgID int64, src, level string, start *uint64, offset, limit uint64) (result []*Data, total uint64, err error)
 	Delete(orgID int64, src string) error

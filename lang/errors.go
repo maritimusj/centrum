@@ -18,6 +18,7 @@ const (
 	ErrUnknown
 	ErrUnknownLang
 	ErrInternal
+	ErrServerIsBusy
 	ErrInvalidDBConnStr
 	ErrInvalidRequestData
 	ErrTokenExpired

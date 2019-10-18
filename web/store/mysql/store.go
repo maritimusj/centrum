@@ -128,9 +128,9 @@ func (s *mysqlStore) loadConfig(id int64) (*Config, error) {
 }
 
 func (s *mysqlStore) GetConfig(cfg interface{}) (model.Config, error) {
-	result := <-synchronized.Do(s.ctx, TbConfig, func() interface{} {
+	result := <-synchronized.Do(TbConfig, func() interface{} {
 		var cfgID int64
-		cfgID, err := getConfigID(s.db, cfg)
+		cfgID, err := s.getConfigID(cfg)
 		if err != nil {
 			return err
 		}
@@ -163,7 +163,7 @@ func (s *mysqlStore) GetConfig(cfg interface{}) (model.Config, error) {
 }
 
 func (s *mysqlStore) CreateConfig(name string, data interface{}) (model.Config, error) {
-	result := <-synchronized.Do(s.ctx, TbConfig, func() interface{} {
+	result := <-synchronized.Do(TbConfig, func() interface{} {
 		now := time.Now()
 		data, err := json.Marshal(util.If(data != nil, data, "{}"))
 		if err != nil {
@@ -199,7 +199,7 @@ func (s *mysqlStore) CreateConfig(name string, data interface{}) (model.Config, 
 }
 
 func (s *mysqlStore) RemoveConfig(id interface{}) error {
-	cfgID, err := getConfigID(s.db, id)
+	cfgID, err := s.getConfigID(id)
 	if err != nil {
 		return err
 	}
@@ -295,7 +295,7 @@ func (s *mysqlStore) MustGetUserFromContext(ctx iris.Context) model.User {
 }
 
 func (s *mysqlStore) IsOrganizationExists(org interface{}) (bool, error) {
-	if _, err := getOrganizationID(s.db, org); err != nil {
+	if _, err := s.getOrganizationID(org); err != nil {
 		if err != lang.Error(lang.ErrOrganizationNotFound) {
 			return false, err
 		}
@@ -305,7 +305,7 @@ func (s *mysqlStore) IsOrganizationExists(org interface{}) (bool, error) {
 }
 
 func (s *mysqlStore) IsUserExists(user interface{}) (bool, error) {
-	if _, err := getUserID(s.db, user); err != nil {
+	if _, err := s.getUserID(user); err != nil {
 		if err != lang.Error(lang.ErrUserNotFound) {
 			return false, err
 		}
@@ -315,7 +315,7 @@ func (s *mysqlStore) IsUserExists(user interface{}) (bool, error) {
 }
 
 func (s *mysqlStore) IsRoleExists(role interface{}) (bool, error) {
-	if _, err := getRoleID(s.db, role); err != nil {
+	if _, err := s.getRoleID(role); err != nil {
 		if err != lang.Error(lang.ErrRoleNotFound) {
 			return false, err
 		}
@@ -372,9 +372,9 @@ func (s *mysqlStore) loadOrganization(id int64) (*Organization, error) {
 }
 
 func (s *mysqlStore) GetOrganization(id interface{}) (model.Organization, error) {
-	result := <-synchronized.Do(s.ctx, TbOrganization, func() interface{} {
+	result := <-synchronized.Do(TbOrganization, func() interface{} {
 		var orgID int64
-		orgID, err := getOrganizationID(s.db, id)
+		orgID, err := s.getOrganizationID(id)
 		if err != nil {
 			return err
 		}
@@ -407,7 +407,7 @@ func (s *mysqlStore) GetOrganization(id interface{}) (model.Organization, error)
 }
 
 func (s *mysqlStore) CreateOrganization(name string, title string) (model.Organization, error) {
-	result := <-synchronized.Do(s.ctx, TbOrganization, func() interface{} {
+	result := <-synchronized.Do(TbOrganization, func() interface{} {
 		orgID, err := CreateData(s.db, TbOrganization, map[string]interface{}{
 			"enable":     status.Enable,
 			"name":       name,
@@ -438,7 +438,7 @@ func (s *mysqlStore) CreateOrganization(name string, title string) (model.Organi
 }
 
 func (s *mysqlStore) RemoveOrganization(id interface{}) error {
-	orgID, err := getOrganizationID(s.db, id)
+	orgID, err := s.getOrganizationID(id)
 	if err != nil {
 		return err
 	}
@@ -545,8 +545,8 @@ func (s *mysqlStore) loadUser(id int64) (*User, error) {
 }
 
 func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
-	result := <-synchronized.Do(s.ctx, TbUsers, func() interface{} {
-		userID, err := getUserID(s.db, user)
+	result := <-synchronized.Do(TbUsers, func() interface{} {
+		userID, err := s.getUserID(user)
 		if err != nil {
 			return err
 		}
@@ -579,8 +579,8 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 }
 
 func (s *mysqlStore) CreateUser(org interface{}, name string, password []byte, roles ...interface{}) (model.User, error) {
-	result := <-synchronized.Do(s.ctx, TbUsers, func() interface{} {
-		orgID, err := getOrganizationID(s.db, org)
+	result := <-synchronized.Do(TbUsers, func() interface{} {
+		orgID, err := s.getOrganizationID(org)
 		if err != nil {
 			return err
 		}
@@ -631,7 +631,7 @@ func (s *mysqlStore) CreateUser(org interface{}, name string, password []byte, r
 }
 
 func (s *mysqlStore) RemoveUser(u interface{}) error {
-	userID, err := getUserID(s.db, u)
+	userID, err := s.getUserID(u)
 	if err != nil {
 		return err
 	}
@@ -757,8 +757,8 @@ func (s *mysqlStore) loadRole(id int64) (*Role, error) {
 }
 
 func (s *mysqlStore) GetRole(role interface{}) (model.Role, error) {
-	result := <-synchronized.Do(s.ctx, TbRoles, func() interface{} {
-		roleID, err := getRoleID(s.db, role)
+	result := <-synchronized.Do(TbRoles, func() interface{} {
+		roleID, err := s.getRoleID(role)
 		if err != nil {
 			return err
 		}
@@ -789,8 +789,8 @@ func (s *mysqlStore) GetRole(role interface{}) (model.Role, error) {
 }
 
 func (s *mysqlStore) createRole(db db.DB, org interface{}, name, title, desc string) (model.Role, error) {
-	result := <-synchronized.Do(s.ctx, TbRoles, func() interface{} {
-		orgID, err := getOrganizationID(db, org)
+	result := <-synchronized.Do(TbRoles, func() interface{} {
+		orgID, err := s.getOrganizationID(org)
 		if err != nil {
 			return err
 		}
@@ -829,7 +829,7 @@ func (s *mysqlStore) CreateRole(org interface{}, name, title, desc string) (mode
 }
 
 func (s *mysqlStore) RemoveRole(role interface{}) error {
-	roleID, err := getRoleID(s.db, role)
+	roleID, err := s.getRoleID(role)
 	if err != nil {
 		return err
 	}
@@ -943,7 +943,7 @@ func (s *mysqlStore) loadPolicy(id int64) (model.Policy, error) {
 }
 
 func (s *mysqlStore) GetPolicy(policyID int64) (model.Policy, error) {
-	result := <-synchronized.Do(s.ctx, TbPolicies, func() interface{} {
+	result := <-synchronized.Do(TbPolicies, func() interface{} {
 		if role, err := s.cache.LoadPolicy(policyID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return lang.InternalError(err)
@@ -988,7 +988,7 @@ func (s *mysqlStore) GetPolicyFrom(roleID int64, res model.Resource, action reso
 }
 
 func (s *mysqlStore) CreatePolicy(roleID int64, res model.Resource, action resource.Action, effect resource.Effect) (model.Policy, error) {
-	result := <-synchronized.Do(s.ctx, TbPolicies, func() interface{} {
+	result := <-synchronized.Do(TbPolicies, func() interface{} {
 		policyID, err := CreateData(s.db, TbPolicies, map[string]interface{}{
 			"role_id":        roleID,
 			"resource_class": res.ResourceClass(),
@@ -1121,7 +1121,7 @@ func (s *mysqlStore) loadGroup(id int64) (model.Group, error) {
 }
 
 func (s *mysqlStore) GetGroup(groupID int64) (model.Group, error) {
-	result := <-synchronized.Do(s.ctx, TbGroups, func() interface{} {
+	result := <-synchronized.Do(TbGroups, func() interface{} {
 		if group, err := s.cache.LoadGroup(groupID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return err
@@ -1225,8 +1225,8 @@ func (s *mysqlStore) GetEquipmentGroups(equipmentID int64) ([]model.Group, error
 }
 
 func (s *mysqlStore) CreateGroup(org interface{}, title string, desc string, parentID int64) (model.Group, error) {
-	result := <-synchronized.Do(s.ctx, TbGroups, func() interface{} {
-		orgID, err := getOrganizationID(s.db, org)
+	result := <-synchronized.Do(TbGroups, func() interface{} {
+		orgID, err := s.getOrganizationID(org)
 		if err != nil {
 			return err
 		}
@@ -1387,7 +1387,7 @@ func (s *mysqlStore) loadDevice(id int64) (model.Device, error) {
 }
 
 func (s *mysqlStore) GetDevice(deviceID int64) (model.Device, error) {
-	result := <-synchronized.Do(s.ctx, TbDevices, func() interface{} {
+	result := <-synchronized.Do(TbDevices, func() interface{} {
 		if device, err := s.cache.LoadDevice(deviceID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return err
@@ -1414,8 +1414,8 @@ func (s *mysqlStore) GetDevice(deviceID int64) (model.Device, error) {
 }
 
 func (s *mysqlStore) CreateDevice(org interface{}, title string, data map[string]interface{}) (model.Device, error) {
-	result := <-synchronized.Do(s.ctx, TbDevices, func() interface{} {
-		orgID, err := getOrganizationID(s.db, org)
+	result := <-synchronized.Do(TbDevices, func() interface{} {
+		orgID, err := s.getOrganizationID(org)
 		if err != nil {
 			return err
 		}
@@ -1583,8 +1583,8 @@ func (s *mysqlStore) loadMeasure(id int64) (model.Measure, error) {
 }
 
 func (s *mysqlStore) GetMeasureFromTagName(deviceID int64, tagName string) (model.Measure, error) {
-	result := <-synchronized.Do(s.ctx, TbMeasures, func() interface{} {
-		measureID, err := getMeasureID(s.db, deviceID, tagName)
+	result := <-synchronized.Do(TbMeasures, func() interface{} {
+		measureID, err := s.getMeasureID(deviceID, tagName)
 		if err != nil {
 			return err
 		}
@@ -1615,7 +1615,7 @@ func (s *mysqlStore) GetMeasureFromTagName(deviceID int64, tagName string) (mode
 }
 
 func (s *mysqlStore) GetMeasure(measureID int64) (model.Measure, error) {
-	result := <-synchronized.Do(s.ctx, TbMeasures, func() interface{} {
+	result := <-synchronized.Do(TbMeasures, func() interface{} {
 		if measure, err := s.cache.LoadMeasure(measureID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return lang.InternalError(err)
@@ -1643,7 +1643,7 @@ func (s *mysqlStore) GetMeasure(measureID int64) (model.Measure, error) {
 }
 
 func (s *mysqlStore) CreateMeasure(deviceID int64, title string, tag string, kind resource.MeasureKind) (model.Measure, error) {
-	result := <-synchronized.Do(s.ctx, TbMeasures, func() interface{} {
+	result := <-synchronized.Do(TbMeasures, func() interface{} {
 		data := map[string]interface{}{
 			"enable":     status.Enable,
 			"device_id":  deviceID,
@@ -1804,7 +1804,7 @@ func (s *mysqlStore) loadEquipment(id int64) (model.Equipment, error) {
 }
 
 func (s *mysqlStore) GetEquipment(equipmentID int64) (model.Equipment, error) {
-	result := <-synchronized.Do(s.ctx, TbEquipments, func() interface{} {
+	result := <-synchronized.Do(TbEquipments, func() interface{} {
 		if equipment, err := s.cache.LoadEquipment(equipmentID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return err
@@ -1834,8 +1834,8 @@ func (s *mysqlStore) GetEquipment(equipmentID int64) (model.Equipment, error) {
 }
 
 func (s *mysqlStore) CreateEquipment(org interface{}, title, desc string) (model.Equipment, error) {
-	result := <-synchronized.Do(s.ctx, TbEquipments, func() interface{} {
-		orgID, err := getOrganizationID(s.db, org)
+	result := <-synchronized.Do(TbEquipments, func() interface{} {
+		orgID, err := s.getOrganizationID(org)
 		if err != nil {
 			return err
 		}
@@ -2001,7 +2001,7 @@ func (s *mysqlStore) loadState(id int64) (model.State, error) {
 }
 
 func (s *mysqlStore) GetState(stateID int64) (model.State, error) {
-	result := <-synchronized.Do(s.ctx, TbStates, func() interface{} {
+	result := <-synchronized.Do(TbStates, func() interface{} {
 		if state, err := s.cache.LoadState(stateID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
 				return lang.InternalError(err)
@@ -2029,7 +2029,7 @@ func (s *mysqlStore) GetState(stateID int64) (model.State, error) {
 }
 
 func (s *mysqlStore) CreateState(equipmentID, measureID int64, title, desc, script string) (model.State, error) {
-	result := <-synchronized.Do(s.ctx, TbStates, func() interface{} {
+	result := <-synchronized.Do(TbStates, func() interface{} {
 		data := map[string]interface{}{
 			"enable":       status.Enable,
 			"title":        title,
@@ -2294,7 +2294,7 @@ func (s *mysqlStore) loadApiResource(resID int64) (model.ApiResource, error) {
 }
 
 func (s *mysqlStore) GetApiResource(res interface{}) (model.ApiResource, error) {
-	result := <-synchronized.Do(s.ctx, TbApiResources, func() interface{} {
+	result := <-synchronized.Do(TbApiResources, func() interface{} {
 		var resID int64
 		switch v := res.(type) {
 		case int64:
@@ -2415,7 +2415,7 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 }
 
 func (s *mysqlStore) InitApiResource() error {
-	result := <-synchronized.Do(s.ctx, TbApiResources, func() interface{} {
+	result := <-synchronized.Do(TbApiResources, func() interface{} {
 		err := RemoveData(s.db, TbApiResources, "1")
 		if err != nil {
 			return err

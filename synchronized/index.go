@@ -1,7 +1,6 @@
 package synchronized
 
 import (
-	"context"
 	"errors"
 	"sync"
 )
@@ -14,8 +13,8 @@ func Close() {
 	defaultSynchronized.Close()
 }
 
-func Do(ctx context.Context, obj interface{}, fn func() interface{}) <-chan interface{} {
-	return defaultSynchronized.Do(ctx, obj, fn)
+func Do(obj interface{}, fn func() interface{}) <-chan interface{} {
+	return defaultSynchronized.Do(obj, fn)
 }
 
 type data struct {
@@ -43,7 +42,7 @@ func (data *data) Close() {
 	data.wg.Wait()
 }
 
-func (data *data) Do(ctx context.Context, obj interface{}, fn func() interface{}) <-chan interface{} {
+func (data *data) Do(obj interface{}, fn func() interface{}) <-chan interface{} {
 	data.mu.Lock()
 	defer data.mu.Unlock()
 
@@ -72,9 +71,6 @@ func (data *data) Do(ctx context.Context, obj interface{}, fn func() interface{}
 		}()
 
 		select {
-		case <-ctx.Done():
-			resultChan <- ctx.Err()
-			return
 		case <-data.done:
 			resultChan <- errors.New("synchronized Do() exit")
 			return

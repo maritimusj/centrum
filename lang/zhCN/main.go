@@ -220,6 +220,7 @@ var (
 		lang.ErrUnknown:                         "未知错误！",
 		lang.ErrUnknownLang:                     "未知语言区域！",
 		lang.ErrInternal:                        "系统错误: %s，文件：%s，行：%d",
+		lang.ErrServerIsBusy:                    "服务器忙，请稍后再试！",
 		lang.ErrInvalidDBConnStr:                "数据库连接参数不正确！",
 		lang.ErrInvalidRequestData:              "不正确的请求数据！",
 		lang.ErrConfirmCodeWrong:                "确认操作输入错误！",

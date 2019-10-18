@@ -3,20 +3,19 @@ package user
 import (
 	"fmt"
 	"github.com/emirpasic/gods/sets/hashset"
-	"github.com/maritimusj/centrum/event"
-	"github.com/maritimusj/centrum/synchronized"
-	"github.com/maritimusj/centrum/web/app"
-	"github.com/maritimusj/centrum/web/resource"
-	"github.com/maritimusj/centrum/web/store"
-
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
+	"github.com/maritimusj/centrum/event"
+	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/util"
+	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/helper"
 	"github.com/maritimusj/centrum/web/model"
+	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
 	"github.com/maritimusj/centrum/web/status"
+	"github.com/maritimusj/centrum/web/store"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -305,123 +304,129 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 
 func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		result := <-synchronized.Do(app.Ctx, fmt.Sprintf("updatePerm:%d", userID), func() interface{} {
-			return app.TransactionDo(func(s store.Store) interface{} {
-				user, err := s.GetUser(userID)
-				if err != nil {
-					return err
-				}
+		key := fmt.Sprintf("UpdatePerm:%d", userID)
+		if _, ok := global.Params.Get(key); ok {
+			return lang.ErrServerIsBusy
+		}
 
-				if app.IsDefaultAdminUser(user) {
-					return lang.ErrFailedEditDefaultUser
-				}
+		global.Params.Set(key, true)
+		result := app.TransactionDo(func(s store.Store) interface{} {
+			user, err := s.GetUser(userID)
+			if err != nil {
+				return err
+			}
 
-				roles, err := user.GetRoles()
-				if err != nil {
-					return err
-				}
+			if app.IsDefaultAdminUser(user) {
+				return lang.ErrFailedEditDefaultUser
+			}
 
-				type P struct {
-					ResourceClass int   `json:"class"`
-					ResourceID    int64 `json:"id"`
-					View          *bool `json:"view"`   //是否可以观察资源
-					Ctrl          *bool `json:"ctrl"`   //是否可以控制资源
-					Enable        *bool `json:"enable"` //角色是否启用
-				}
-				var form struct {
-					Policies []P `json:"policies"`
-				}
-				if err = ctx.ReadJSON(&form); err != nil {
-					return lang.ErrInvalidRequestData
-				}
+			roles, err := user.GetRoles()
+			if err != nil {
+				return err
+			}
 
-				newRoles := hashset.New()
-				for _, role := range roles {
-					newRoles.Add(role.GetID())
+			type P struct {
+				ResourceClass int   `json:"class"`
+				ResourceID    int64 `json:"id"`
+				View          *bool `json:"view"`   //是否可以观察资源
+				Ctrl          *bool `json:"ctrl"`   //是否可以控制资源
+				Enable        *bool `json:"enable"` //角色是否启用
+			}
+			var form struct {
+				Policies []P `json:"policies"`
+			}
+			if err = ctx.ReadJSON(&form); err != nil {
+				return lang.ErrInvalidRequestData
+			}
+
+			newRoles := hashset.New()
+			for _, role := range roles {
+				newRoles.Add(role.GetID())
+			}
+
+			admin := s.MustGetUserFromContext(ctx)
+
+			//先处理角色设定
+			for _, p := range form.Policies {
+				if p.Enable != nil {
+					role, err := s.GetRole(p.ResourceID)
+					if err != nil {
+						return err
+					}
+					if app.IsDefaultAdminUser(admin) || role.Name() != lang.RoleSystemAdminName {
+						if *p.Enable {
+							newRoles.Add(role.GetID())
+						} else {
+							newRoles.Remove(role.GetID())
+						}
+					}
 				}
+			}
+			err = user.SetRoles(newRoles.Values()...)
+			if err != nil {
+				return err
+			}
 
-				admin := s.MustGetUserFromContext(ctx)
-
-				//先处理角色设定
+			update := func(role model.Role) interface{} {
 				for _, p := range form.Policies {
+					//角色设置，则跳过
 					if p.Enable != nil {
-						role, err := s.GetRole(p.ResourceID)
+						continue
+					}
+
+					res, err := s.GetResource(resource.Class(p.ResourceClass), p.ResourceID)
+					if err != nil {
+						return err
+					}
+
+					//Api权限不允许单独分配（只能通过角色分配）
+					if res.ResourceClass() == resource.Api {
+						return lang.ErrNoPermission
+					}
+
+					if p.View != nil {
+						effect := util.If(*p.View, resource.Allow, resource.Deny).(resource.Effect)
+						_, err = role.SetPolicy(res, resource.View, effect, make(map[model.Resource]struct{}))
 						if err != nil {
 							return err
 						}
-						if app.IsDefaultAdminUser(admin) || role.Name() != lang.RoleSystemAdminName {
-							if *p.Enable {
-								newRoles.Add(role.GetID())
-							} else {
-								newRoles.Remove(role.GetID())
-							}
-						}
 					}
-				}
-				err = user.SetRoles(newRoles.Values()...)
-				if err != nil {
-					return err
-				}
-
-				update := func(role model.Role) interface{} {
-					for _, p := range form.Policies {
-						//角色设置，则跳过
-						if p.Enable != nil {
-							continue
-						}
-
-						res, err := s.GetResource(resource.Class(p.ResourceClass), p.ResourceID)
+					if p.Ctrl != nil {
+						effect := util.If(*p.Ctrl, resource.Allow, resource.Deny).(resource.Effect)
+						_, err = role.SetPolicy(res, resource.Ctrl, effect, make(map[model.Resource]struct{}))
 						if err != nil {
 							return err
 						}
-
-						//Api权限不允许单独分配（只能通过角色分配）
-						if res.ResourceClass() == resource.Api {
-							return lang.ErrNoPermission
-						}
-
-						if p.View != nil {
-							effect := util.If(*p.View, resource.Allow, resource.Deny).(resource.Effect)
-							_, err = role.SetPolicy(res, resource.View, effect, make(map[model.Resource]struct{}))
-							if err != nil {
-								return err
-							}
-						}
-						if p.Ctrl != nil {
-							effect := util.If(*p.Ctrl, resource.Allow, resource.Deny).(resource.Effect)
-							_, err = role.SetPolicy(res, resource.Ctrl, effect, make(map[model.Resource]struct{}))
-							if err != nil {
-								return err
-							}
-						}
-					}
-
-					return nil
-				}
-
-				data := event.Data{
-					"userID":  user.GetID(),
-					"adminID": admin.GetID(),
-				}
-
-				for _, role := range roles {
-					if role.Name() == user.Name() {
-						err := update(role)
-						if err != nil {
-							return err
-						}
-						return data
 					}
 				}
 
-				return lang.ErrRoleNotFound
-			})
+				return nil
+			}
+
+			data := event.Data{
+				"userID":  user.GetID(),
+				"adminID": admin.GetID(),
+			}
+
+			for _, role := range roles {
+				if role.Name() == user.Name() {
+					err := update(role)
+					if err != nil {
+						return err
+					}
+					return data
+				}
+			}
+
+			return lang.ErrRoleNotFound
 		})
 
+		global.Params.Remove(key)
 		if data, ok := result.(event.Data); ok {
 			app.Event.Publish(event.UserUpdated, data.Get("adminID"), data.Get("userID"))
 			return lang.Ok
 		}
+
 		return result
 	})
 }

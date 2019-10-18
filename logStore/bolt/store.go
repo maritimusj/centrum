@@ -1,7 +1,6 @@
 package bolt
 
 import (
-	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -17,13 +16,12 @@ type store struct {
 	db    *bolt.DB
 	cache chan *logStore.Entry
 
-	routine context.CancelFunc
-
 	entryPool   *sync.Pool
 	encoderPool *sync.Pool
 
-	wg sync.WaitGroup
-	mu sync.RWMutex
+	done chan struct{}
+	wg   sync.WaitGroup
+	mu   sync.RWMutex
 }
 
 func New() logStore.Store {
@@ -38,6 +36,7 @@ func New() logStore.Store {
 				return NewJsonCopier()
 			},
 		},
+		done: make(chan struct{}),
 	}
 }
 
@@ -52,20 +51,11 @@ func b2i(v []byte) uint64 {
 	return binary.BigEndian.Uint64(v)
 }
 
-func (store *store) Wait() {
-	store.wg.Wait()
-}
-
-func (store *store) Open(ctx context.Context, option map[string]interface{}) error {
-	store.Close()
-
+func (store *store) Open(option map[string]interface{}) error {
 	filename, _ := option["filename"].(string)
 	if filename == "" {
 		return errors.New("invalid log filename")
 	}
-
-	store.mu.Lock()
-	defer store.mu.Unlock()
 
 	store.cache = make(chan *logStore.Entry, 1000)
 
@@ -74,23 +64,10 @@ func (store *store) Open(ctx context.Context, option map[string]interface{}) err
 		return err
 	}
 
-	db.Stats()
-
 	store.db = db
 
-	routineCtx, cancel := context.WithCancel(ctx)
-	store.routine = cancel
-
-	store.wg.Add(2)
-	go store.worker(routineCtx, db, store.cache)
-
-	go func() {
-		defer store.wg.Done()
-		select {
-		case <-ctx.Done():
-			store.Close()
-		}
-	}()
+	store.wg.Add(1)
+	go store.worker(db, store.cache)
 
 	return nil
 }
@@ -112,18 +89,16 @@ func (store *store) releaseEntry(entry map[string]interface{}) {
 }
 
 func (store *store) Close() {
-	store.mu.Lock()
-	defer store.mu.Unlock()
+	close(store.done)
 
-	if store.cache != nil {
+	store.mu.Lock()
+	{
 		close(store.cache)
 		store.cache = nil
 	}
+	store.mu.Unlock()
 
-	if store.routine != nil {
-		store.routine()
-		store.routine = nil
-	}
+	store.wg.Wait()
 }
 
 func (store *store) Delete(orgID int64, src string) error {
@@ -132,6 +107,10 @@ func (store *store) Delete(orgID int64, src string) error {
 
 	if src == "" {
 		src = logStore.SystemLog
+	}
+
+	if store.db == nil {
+		return errors.New("db closed")
 	}
 
 	return store.db.Update(func(tx *bolt.Tx) error {
@@ -167,34 +146,49 @@ func (store *store) Fire(entry *logrus.Entry) error {
 	store.mu.RLock()
 	defer store.mu.RUnlock()
 
-	if store.cache != nil {
-		encoder := store.getEncoder()
-		defer store.releaseEncoder(encoder)
-
-		err := encoder.encode(entry.Data)
-		if err != nil {
-			return err
-		}
-
-		e := store.getEntry()
-		err = encoder.decode(&e)
-		if err != nil {
-			store.releaseEntry(e)
-			return err
-		}
-
-		store.cache <- &logStore.Entry{
-			Level:     entry.Level.String(),
-			Message:   entry.Message,
-			Fields:    e,
-			CreatedAt: entry.Time,
-		}
+	if store.cache == nil {
+		return nil
 	}
+
+	encoder := store.getEncoder()
+	defer store.releaseEncoder(encoder)
+
+	err := encoder.encode(entry.Data)
+	if err != nil {
+		return err
+	}
+
+	e := store.getEntry()
+	err = encoder.decode(&e)
+	if err != nil {
+		store.releaseEntry(e)
+		return err
+	}
+
+	store.wg.Add(1)
+	go func() {
+		defer store.wg.Done()
+		select {
+		case <-store.done:
+			return
+		default:
+			store.mu.RLock()
+			if store.cache != nil {
+				store.cache <- &logStore.Entry{
+					Level:     entry.Level.String(),
+					Message:   entry.Message,
+					Fields:    e,
+					CreatedAt: entry.Time,
+				}
+			}
+			store.mu.RUnlock()
+		}
+	}()
 
 	return nil
 }
 
-func (store *store) worker(ctx context.Context, db *bolt.DB, cache <-chan *logStore.Entry) {
+func (store *store) worker(db *bolt.DB, cache <-chan *logStore.Entry) {
 	defer func() {
 		store.wg.Done()
 	}()
@@ -209,9 +203,14 @@ func (store *store) worker(ctx context.Context, db *bolt.DB, cache <-chan *logSt
 
 	for {
 		select {
-		case <-ctx.Done():
-			for entry := range cache {
-				write(entry)
+		case <-store.done:
+			if len(store.done) > 0 {
+				fmt.Print("write log to db")
+				for entry := range cache {
+					fmt.Print(".")
+					write(entry)
+				}
+				fmt.Println("Ok")
 			}
 			err := db.Close()
 			if err != nil {
