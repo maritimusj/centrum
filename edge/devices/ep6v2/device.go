@@ -362,6 +362,11 @@ func (device *Device) GetCHValue(tag string) (value map[string]interface{}, err 
 		if err != nil {
 			return
 		}
+		device.Lock()
+		if device.readTimeData != nil {
+			device.readTimeData.SetDOValue(do.Index, v)
+		}
+		device.Unlock()
 		return map[string]interface{}{
 			"title": do.GetConfig().Title,
 			"tag":   do.GetConfig().TagName,

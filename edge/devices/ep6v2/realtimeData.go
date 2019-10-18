@@ -74,6 +74,16 @@ func (r *RealTimeData) GetDOValue(index int) (bool, bool) {
 	return false, false
 }
 
+func (r *RealTimeData) SetDOValue(index int, value bool) {
+	var v uint32
+	if value {
+		v = 1
+	} else {
+		v = 0
+	}
+	r.setInt(r.chNum.AI + r.chNum.DI + index, v)
+}
+
 func (r *RealTimeData) GetAOValue(index int) (float32, bool) {
 	return r.getFloat32(r.chNum.AI + r.chNum.DI + r.chNum.DO + index)
 }
@@ -100,6 +110,13 @@ func (r *RealTimeData) getInt(index int) (int, bool) {
 		return int(binary.BigEndian.Uint32(r.data.Bytes()[pos:])), true
 	}
 	return 0, false
+}
+
+func (r *RealTimeData) setInt(index int, value uint32) {
+	pos := index * 4
+	if r.data.Len() > pos+4 && index < r.ready.Len() && r.ready.Bytes()[index] == 0 {
+		binary.BigEndian.PutUint32(r.data.Bytes()[pos:], value)
+	}
 }
 
 func (r *RealTimeData) getBool(index int) (bool, bool) {
