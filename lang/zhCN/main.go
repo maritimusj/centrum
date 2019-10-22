@@ -258,5 +258,6 @@ var (
 		lang.ErrRecursiveDetected:               "检测到循环关系链，请联系管理员！",
 		lang.ErrInvalidDeviceConnStr:            "设备连接参数不正确！",
 		lang.ErrConfigNotFound:                  "没找到这个配置项！",
+		lang.ErrAlarmNotFound:                   "没有找到这个警报数据！",
 	}
 )

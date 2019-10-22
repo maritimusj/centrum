@@ -2,6 +2,8 @@ package ep6v2
 
 import (
 	"fmt"
+	"github.com/maritimusj/centrum/edge/devices/modbus"
+	"github.com/maritimusj/centrum/edge/devices/util"
 	"time"
 )
 
@@ -18,7 +20,7 @@ type DO struct {
 	value        bool
 	lastReadTime time.Time
 
-	conn modbusClient
+	conn modbus.Client
 }
 
 type DOConfig struct {
@@ -80,7 +82,7 @@ func (do *DO) GetConfig() *DOConfig {
 	return do.config
 }
 
-func (c *DOConfig) fetchData(conn modbusClient, index int) error {
+func (c *DOConfig) fetchData(conn modbus.Client, index int) error {
 	start := DOCHStartAddress + uint16(index)*CHBlockSize
 	data, err := conn.ReadHoldingRegisters(start, 15)
 	if err != nil {
@@ -88,7 +90,7 @@ func (c *DOConfig) fetchData(conn modbusClient, index int) error {
 	}
 
 	c.TagName = fmt.Sprintf("DO-%d", index+1)
-	c.Title = DecodeUtf16String(data[0:])
+	c.Title = util.DecodeUtf16String(data[0:])
 
 	data, err = conn.ReadHoldingRegisters(start+32, 5)
 	if err != nil {

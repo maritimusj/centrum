@@ -73,6 +73,12 @@ type Store interface {
 	RemoveState(stateID int64) error
 	GetStateList(options ...helper.OptionFN) ([]model.State, int64, error)
 
+	GetAlarm(alarmID int64) (model.Alarm, error)
+	CreateAlarm(device model.Device, measureID int64, data map[string]interface{}) (model.Alarm, error)
+	RemoveAlarm(alarmID int64) error
+	GetAlarmList(options ...helper.OptionFN) ([]model.Alarm, int64, error)
+	GetLastUnconfirmedAlarm(device model.Device, measureID int64) (model.Alarm, error)
+
 	GetResourceGroupList() []interface{}
 	GetResourceList(class resource.Class, options ...helper.OptionFN) ([]model.Resource, int64, error)
 	GetResource(class resource.Class, resourceID int64) (model.Resource, error)

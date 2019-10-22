@@ -26,6 +26,13 @@ type Measure struct {
 	Title   string `json:"title"`
 }
 
+type Alarm struct {
+	Name   string                 `json:"name"`
+	Tags   map[string]string      `json:"tags"`
+	Fields map[string]interface{} `json:"fields"`
+	Time   time.Time              `json:"time"`
+}
+
 func Feedback(deviceID int64, ctx iris.Context) {
 	device, err := app.Store().GetDevice(deviceID)
 	if err != nil {
@@ -37,6 +44,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 		Log     *Log     `json:"log"`
 		Status  *Status  `json:"status"`
 		Measure *Measure `json:"measure"`
+		Alarm   *Alarm   `json:"alarm"`
 	}
 
 	if err := ctx.ReadJSON(&form); err != nil {
@@ -78,6 +86,38 @@ func Feedback(deviceID int64, ctx iris.Context) {
 			measure.SetTitle(form.Measure.Title)
 			err = measure.Save()
 			if err != nil {
+				log.Error("[Feedback]", err)
+			}
+		}
+	}
+
+	if form.Alarm != nil {
+		//保存警报信息
+		tag, _ := form.Alarm.Tags["tag"]
+		measure, err := app.Store().GetMeasureFromTagName(device.GetID(), tag)
+		if err != nil {
+			log.Error("[Feedback]", err)
+			return
+		}
+
+		alarm, err := app.Store().GetLastUnconfirmedAlarm(device, measure.GetID())
+		if err != nil {
+			if err != lang.Error(lang.ErrAlarmNotFound) {
+				log.Error("[Feedback]", err)
+				return
+			}
+			alarm, err = app.Store().CreateAlarm(device, measure.GetID(), map[string]interface{}{
+				"name":   form.Alarm.Name,
+				"tags":   form.Alarm.Tags,
+				"fields": form.Alarm.Fields,
+				"time":   form.Alarm.Time,
+			})
+			if err != nil {
+				log.Error("[Feedback]", err)
+			}
+		} else {
+			alarm.Updated()
+			if err = alarm.Save(); err != nil {
 				log.Error("[Feedback]", err)
 			}
 		}

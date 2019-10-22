@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/maritimusj/centrum/edge/devices/measure"
+	"net"
 	"sync"
 	"time"
 
@@ -23,7 +25,7 @@ import (
 type Adapter struct {
 	client        *ep6v2.Device
 	conf          *json_rpc.Conf
-	measureDataCH chan *MeasureData
+	measureDataCH chan *measure.Data
 	logger        *log.Logger
 	done          chan struct{}
 
@@ -61,6 +63,10 @@ func (adapter *Adapter) OnMeasureDiscovered(tagName, title string) {
 		global.Params.Set(key, title)
 		event.Publish(event.MeasureDiscovered, adapter.conf, tagName, title)
 	}
+}
+
+func (adapter *Adapter) OnMeasureAlarm(data *measure.Data) {
+	event.Publish(event.MeasureAlarm, adapter.conf, data)
 }
 
 type Runner struct {
@@ -170,7 +176,7 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 		client:        ep6v2.New(),
 		conf:          conf,
 		logger:        logger,
-		measureDataCH: make(chan *MeasureData, 100),
+		measureDataCH: make(chan *measure.Data, 100),
 		done:          make(chan struct{}),
 	}
 
@@ -208,6 +214,9 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 		if err != nil {
 			return nil, err
 		}
+
+		defer r.Release()
+
 		adapter.logger.Info("GetRealtimeData: ", uid)
 		values := make([]map[string]interface{}, 0)
 		for i := 0; i < r.AINum(); i++ {
@@ -215,16 +224,18 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 			if err != nil {
 				return values, err
 			}
+
 			if v, ok := r.GetAIValue(i, ai.GetConfig().Point); ok {
 				av := ai.CheckAlarm(v)
-				values = append(values, map[string]interface{}{
+				entry := map[string]interface{}{
 					"tag":   ai.GetConfig().TagName,
 					"title": ai.GetConfig().Title,
 					"unit":  ai.GetConfig().Uint,
 					"alarm": ep6v2.AlarmDesc(av),
 					"value": v,
-				})
+				}
 
+				values = append(values, entry)
 				adapter.OnMeasureDiscovered(ai.GetConfig().TagName, ai.GetConfig().Title)
 			}
 		}
@@ -339,7 +350,11 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 				if data == nil {
 					return errors.New("got nil data")
 				}
+
 				point, err := influx.NewPoint(data.Name, data.Tags, data.Fields, data.Time)
+
+				data.Release()
+
 				if err != nil {
 					log.Error(err)
 					continue
@@ -427,9 +442,15 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 			case <-time.After(adapter.conf.Interval):
 				adapter.logger.Info("start fetch data from: ", adapter.conf.Address)
 				err := runner.fetchData(adapter)
+
 				if err != nil {
+					if e, ok := err.(net.Error); ok && e.Temporary() {
+						continue
+					}
+
 					adapter.logger.Error(err)
 					adapter.client.Close()
+
 					go adapter.OnDeviceStatusChanged(lang.Disconnected)
 					goto makeConnection
 				}
@@ -446,6 +467,8 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 	if err != nil {
 		return err
 	}
+
+	defer data.Release()
 
 	getData := func(fn func() error) error {
 		select {
@@ -469,16 +492,22 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 			}
 			v, ok := data.GetAIValue(i, ai.GetConfig().Point)
 			if ok {
-				data := NewMeasureData(ai.GetConfig().TagName)
+				av := ai.CheckAlarm(v)
+
+				data := measure.New(ai.GetConfig().TagName)
 				data.AddTag("uid", adapter.conf.UID)
 				data.AddTag("address", adapter.conf.Address)
 				data.AddTag("tag", ai.GetConfig().TagName)
 				data.AddTag("title", ai.GetConfig().Title)
-				data.AddTag("alarm", ep6v2.AlarmDesc(ai.CheckAlarm(v)))
+				data.AddTag("alarm", ep6v2.AlarmDesc(av))
 				data.AddField("val", v)
+
 				adapter.measureDataCH <- data
 
 				adapter.OnMeasureDiscovered(ai.GetConfig().TagName, ai.GetConfig().Title)
+				if av != 0 {
+					adapter.OnMeasureAlarm(data.Clone())
+				}
 				log.Tracef("%s => %#v", ai.GetConfig().TagName, v)
 			}
 			return nil
@@ -496,7 +525,7 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 			}
 			v, ok := data.GetDIValue(i)
 			if ok {
-				data := NewMeasureData(di.GetConfig().TagName)
+				data := measure.New(di.GetConfig().TagName)
 				data.AddTag("uid", adapter.conf.UID)
 				data.AddTag("address", adapter.conf.Address)
 				data.AddTag("tag", di.GetConfig().TagName)
@@ -522,7 +551,7 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 			}
 			v, ok := data.GetAOValue(i)
 			if ok {
-				data := NewMeasureData(ao.GetConfig().TagName)
+				data := measure.New(ao.GetConfig().TagName)
 				data.AddTag("uid", adapter.conf.UID)
 				data.AddTag("address", adapter.conf.Address)
 				data.AddTag("tag", ao.GetConfig().TagName)
@@ -548,7 +577,7 @@ func (runner *Runner) fetchData(adapter *Adapter) error {
 			}
 			v, ok := data.GetDOValue(i)
 			if ok {
-				data := NewMeasureData(do.GetConfig().TagName)
+				data := measure.New(do.GetConfig().TagName)
 				data.AddTag("uid", adapter.conf.UID)
 				data.AddTag("address", adapter.conf.Address)
 				data.AddTag("tag", do.GetConfig().TagName)

@@ -53,7 +53,7 @@ func List(ctx iris.Context) hero.Result {
 			if err != nil {
 				return err
 			}
-			
+
 			if app.IsDefaultAdminUser(user) {
 				return lang.ErrFailedEditDefaultUser
 			}

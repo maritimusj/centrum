@@ -21,6 +21,7 @@ const (
 	prefixEquipment   = "7."
 	prefixState       = "8."
 	prefixApiResource = "9."
+	prefixAlarm       = "10."
 )
 
 type cache struct {
@@ -60,6 +61,8 @@ func getKey(obj interface{}) string {
 		pref = prefixState
 	case model.ApiResource:
 		pref = prefixApiResource
+	case model.Alarm:
+		pref = prefixAlarm
 	}
 	type getID interface {
 		GetID() int64
@@ -182,6 +185,15 @@ func (c *cache) LoadState(id int64) (model.State, error) {
 func (c *cache) LoadApiResource(id int64) (model.ApiResource, error) {
 	if v, ok := c.client.Get(prefixApiResource + strconv.FormatInt(id, 10)); ok {
 		if u, ok := v.(model.ApiResource); ok {
+			return u, nil
+		}
+	}
+	return nil, lang.Error(lang.ErrCacheNotFound)
+}
+
+func (c *cache) LoadAlarm(id int64) (model.Alarm, error) {
+	if v, ok := c.client.Get(prefixAlarm + strconv.FormatInt(id, 10)); ok {
+		if u, ok := v.(model.Alarm); ok {
 			return u, nil
 		}
 	}

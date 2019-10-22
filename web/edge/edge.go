@@ -31,7 +31,7 @@ func Invoke(cmd string, request interface{}) (*Result, error) {
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Errorf("[invoke] %s",err)
+		log.Errorf("[invoke] %s", err)
 		return nil, err
 	}
 

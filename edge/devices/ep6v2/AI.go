@@ -3,6 +3,8 @@ package ep6v2
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/maritimusj/centrum/edge/devices/modbus"
+	"github.com/maritimusj/centrum/edge/devices/util"
 	"math"
 	"time"
 )
@@ -43,7 +45,7 @@ var (
 
 func AlarmDesc(alarm AlarmValue) string {
 	if alarm == 0 {
-		return "Ok"
+		return ""
 	} else if v, ok := alarmMap[alarm]; ok {
 		return v
 	}
@@ -65,7 +67,7 @@ type AI struct {
 	alarmState   AlarmValue
 	lastReadTime time.Time
 
-	conn modbusClient
+	conn modbus.Client
 }
 
 type AlarmItem struct {
@@ -91,7 +93,7 @@ type AIAlarmConfig struct {
 	Delay int
 }
 
-func (alarm *AIAlarmConfig) fetchData(conn modbusClient, index int) error {
+func (alarm *AIAlarmConfig) fetchData(conn modbus.Client, index int) error {
 	var address, quantity uint16 = uint16(index)*CHBlockSize + 47, 11
 	data, err := conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
@@ -113,18 +115,18 @@ func (alarm *AIAlarmConfig) fetchData(conn modbusClient, index int) error {
 		return err
 	}
 
-	alarm.PrimalMaxValue = ToSingle(data[0:])
-	alarm.PrimalMinValue = ToSingle(data[4:])
-	alarm.MaxValue = ToSingle(data[8:])
-	alarm.MinValue = ToSingle(data[12:])
-	alarm.LowCut = int(math.Round(float64(ToSingle(data[24:]))))
-	alarm.HiHi.Value = ToSingle(data[32:])
-	alarm.HI.Value = ToSingle(data[36:])
-	alarm.LO.Value = ToSingle(data[40:])
-	alarm.LoLo.Value = ToSingle(data[44:])
-	alarm.HF.Value = ToSingle(data[48:])
-	alarm.LF.Value = ToSingle(data[52:])
-	alarm.DeadBand = ToSingle(data[56:])
+	alarm.PrimalMaxValue = util.ToSingle(data[0:])
+	alarm.PrimalMinValue = util.ToSingle(data[4:])
+	alarm.MaxValue = util.ToSingle(data[8:])
+	alarm.MinValue = util.ToSingle(data[12:])
+	alarm.LowCut = int(math.Round(float64(util.ToSingle(data[24:]))))
+	alarm.HiHi.Value = util.ToSingle(data[32:])
+	alarm.HI.Value = util.ToSingle(data[36:])
+	alarm.LO.Value = util.ToSingle(data[40:])
+	alarm.LoLo.Value = util.ToSingle(data[44:])
+	alarm.HF.Value = util.ToSingle(data[48:])
+	alarm.LF.Value = util.ToSingle(data[52:])
+	alarm.DeadBand = util.ToSingle(data[56:])
 
 	return nil
 }
@@ -154,7 +156,7 @@ func (ai *AI) fetchValue() error {
 		return err
 	}
 
-	ai.value = ToFloat32(ToSingle(data), ai.config.Point)
+	ai.value = util.ToFloat32(util.ToSingle(data), ai.config.Point)
 	ai.lastReadTime = time.Now()
 	return nil
 }
@@ -236,7 +238,7 @@ func (ai *AI) CheckAlarm(val float32) AlarmValue {
 	return AlarmNormal
 }
 
-func (c *AIConfig) fetchData(conn modbusClient, index int) error {
+func (c *AIConfig) fetchData(conn modbus.Client, index int) error {
 	var address, quantity uint16 = uint16(index+1) * CHBlockSize, 34
 	data, err := conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
@@ -249,8 +251,8 @@ func (c *AIConfig) fetchData(conn modbusClient, index int) error {
 	//英文名称
 	c.TagName = fmt.Sprintf("AI-%d", index+1)
 	//中文名称
-	c.Title = DecodeUtf16String(data[0:32])
-	c.Uint = DecodeUtf16String(data[32:64])
+	c.Title = util.DecodeUtf16String(data[0:32])
+	c.Uint = util.DecodeUtf16String(data[32:64])
 	c.Enabled = binary.BigEndian.Uint16(data[64:]) > 0
 	c.Point = int(binary.BigEndian.Uint16(data[66:]))
 

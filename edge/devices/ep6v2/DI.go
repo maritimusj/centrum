@@ -3,6 +3,8 @@ package ep6v2
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/maritimusj/centrum/edge/devices/modbus"
+	"github.com/maritimusj/centrum/edge/devices/util"
 	"time"
 )
 
@@ -16,7 +18,7 @@ type DI struct {
 
 	value        bool
 	lastReadTime time.Time
-	conn         modbusClient
+	conn         modbus.Client
 }
 
 type DIConfig struct {
@@ -28,7 +30,7 @@ type DIConfig struct {
 	Title   string //中文名称
 
 	AlarmConfig int
-	AlarmDelay int //警报延迟(秒)
+	AlarmDelay  int //警报延迟(秒)
 }
 
 func (di *DI) expired() bool {
@@ -58,14 +60,14 @@ func (di *DI) GetConfig() *DIConfig {
 	return di.config
 }
 
-func (c *DIConfig) fetchData(conn modbusClient, index int) error {
+func (c *DIConfig) fetchData(conn modbus.Client, index int) error {
 	var address, quantity uint16 = DICHStartAddress + uint16(index)*CHBlockSize, 16
 	data, err := conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
 		return err
 	}
 
-	c.Title = DecodeUtf16String(data[0:32])
+	c.Title = util.DecodeUtf16String(data[0:32])
 	c.TagName = fmt.Sprintf("DI-%d", index+1)
 
 	address, quantity = DICHStartAddress+uint16(index)*CHBlockSize+32, 7

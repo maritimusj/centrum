@@ -39,6 +39,7 @@ const (
 	TbStates          = "`states`"
 	TbEquipmentGroups = "`equipment_groups`"
 	TbApiResources    = "`api_resources`"
+	TbAlarms          = "`alarms`"
 )
 
 type mysqlStore struct {
@@ -1618,7 +1619,7 @@ func (s *mysqlStore) GetMeasure(measureID int64) (model.Measure, error) {
 	result := <-synchronized.Do(TbMeasures, func() interface{} {
 		if measure, err := s.cache.LoadMeasure(measureID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
-				return lang.InternalError(err)
+				return err
 			}
 		} else {
 			return measure
@@ -1993,7 +1994,7 @@ func (s *mysqlStore) loadState(id int64) (model.State, error) {
 
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return nil, err
+			return nil, lang.InternalError(err)
 		}
 		return nil, lang.Error(lang.ErrStateNotFound)
 	}
@@ -2004,7 +2005,7 @@ func (s *mysqlStore) GetState(stateID int64) (model.State, error) {
 	result := <-synchronized.Do(TbStates, func() interface{} {
 		if state, err := s.cache.LoadState(stateID); err != nil {
 			if err != lang.Error(lang.ErrCacheNotFound) {
-				return lang.InternalError(err)
+				return err
 			}
 		} else {
 			return state
@@ -2167,6 +2168,207 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		}
 
 		result = append(result, state)
+	}
+
+	return result, total, nil
+}
+
+func (s *mysqlStore) loadAlarm(id int64) (model.Alarm, error) {
+	var alarm = NewAlarm(s, id)
+	err := LoadData(s.db, TbAlarms, map[string]interface{}{
+		"org_id":     &alarm.orgID,
+		"device_id":  &alarm.deviceID,
+		"measure_id": &alarm.measureID,
+		"extra":      &alarm.extra,
+		"created_at": &alarm.createdAt,
+		"updated_at": &alarm.updatedAt,
+	}, "id=?", id)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return nil, lang.InternalError(err)
+		}
+		return nil, lang.Error(lang.ErrAlarmNotFound)
+	}
+	return alarm, nil
+}
+
+func (s *mysqlStore) GetAlarm(alarmID int64) (model.Alarm, error) {
+	result := <-synchronized.Do(TbAlarms, func() interface{} {
+		if alarm, err := s.cache.LoadAlarm(alarmID); err != nil {
+			if err != lang.Error(lang.ErrCacheNotFound) {
+				return err
+			}
+		} else {
+			return alarm
+		}
+
+		alarm, err := s.loadAlarm(alarmID)
+		if err != nil {
+			return err
+		}
+
+		err = s.cache.Save(alarm)
+		if err != nil {
+			return err
+		}
+		return alarm
+	})
+
+	if err, ok := result.(error); ok {
+		return nil, err
+	}
+	return result.(model.Alarm), nil
+}
+
+func (s *mysqlStore) CreateAlarm(device model.Device, measureID int64, data map[string]interface{}) (model.Alarm, error) {
+	result := <-synchronized.Do(TbAlarms, func() interface{} {
+		extra, err := json.Marshal(data)
+		if err != nil {
+			return lang.InternalError(err)
+		}
+
+		now := time.Now()
+		data := map[string]interface{}{
+			"org_id":     device.OrganizationID(),
+			"device_id":  device.GetID(),
+			"measure_id": measureID,
+			"extra":      extra,
+			"created_at": now,
+			"updated_at": now,
+		}
+
+		alarmID, err := CreateData(s.db, TbAlarms, data)
+		if err != nil {
+			return err
+		}
+		alarm, err := s.loadAlarm(alarmID)
+		if err != nil {
+			return err
+		}
+
+		err = s.cache.Save(alarm)
+		if err != nil {
+			return err
+		}
+		return alarm
+	})
+
+	if err, ok := result.(error); ok {
+		return nil, err
+	}
+	return result.(model.Alarm), nil
+}
+
+func (s *mysqlStore) RemoveAlarm(alarmID int64) error {
+	err := RemoveData(s.db, TbAlarms, "id=?", alarmID)
+	if err != nil {
+		return lang.InternalError(err)
+	}
+
+	s.cache.Remove(&Alarm{id: alarmID})
+	return nil
+}
+
+func (s *mysqlStore) GetLastUnconfirmedAlarm(device model.Device, measureID int64) (model.Alarm, error) {
+	const (
+		SQL = "SELECT id FROM " + TbAlarms + " WHERE device_id=? AND measure_id=? AND status=? LIMIT 1"
+	)
+
+	var alarmID int64
+	if err := s.db.QueryRow(SQL, device.GetID(), measureID, status.Unconfirmed).Scan(&alarmID); err != nil {
+		if err != sql.ErrNoRows {
+			return nil, lang.InternalError(err)
+		}
+		return nil, lang.Error(lang.ErrAlarmNotFound)
+	}
+
+	return s.GetAlarm(alarmID)
+}
+
+func (s *mysqlStore) GetAlarmList(options ...helper.OptionFN) ([]model.Alarm, int64, error) {
+	option := parseOption(options...)
+
+	var (
+		from  = "FROM " + TbAlarms + " a"
+		where = " WHERE 1"
+	)
+
+	var params []interface{}
+	if option.UserID != nil {
+		userID := *option.UserID
+		if userID > 0 {
+			from += fmt.Sprintf(` LEFT JOIN (
+SELECT m.id,p.role_id,p.action,p.effect FROM %s m
+INNER JOIN %s p ON p.resource_class=%d AND p.resource_id=m.id
+INNER JOIN %s r ON p.role_id=r.id
+WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
+) b ON a.measure_id=b.id`, TbMeasures, TbPolicies, resource.Measure, TbRoles, TbUserRoles, userID)
+
+			if option.DefaultEffect == resource.Allow {
+				where += " AND ((b.action=0 AND b.effect=1) OR (ISNULL(b.action) AND ISNULL(b.effect)))"
+			} else {
+				where += " AND (b.action=0 AND b.effect=1)"
+			}
+		}
+	}
+
+	if option.DeviceID > 0 {
+		where += " AND a.device_id=?"
+		params = append(params, option.DeviceID)
+	}
+
+	var total int64
+	if err := s.db.QueryRow("SELECT COUNT(DISTINCT a.id) "+from+where, params...).Scan(&total); err != nil {
+		return nil, 0, lang.InternalError(err)
+	}
+
+	if total == 0 {
+		return []model.Alarm{}, 0, nil
+	}
+
+	where += " ORDER BY a.id ASC"
+
+	if option.Limit > 0 {
+		where += " LIMIT ?"
+		params = append(params, option.Limit)
+	}
+
+	if option.Offset > 0 {
+		where += " OFFSET ?"
+		params = append(params, option.Offset)
+	}
+
+	log.Trace("SELECT DISTINCT a.id " + from + where)
+	rows, err := s.db.Query("SELECT DISTINCT a.id "+from+where, params...)
+	if err != nil {
+		return nil, 0, lang.InternalError(err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var ids []int64
+	var alarmID int64
+
+	for rows.Next() {
+		err = rows.Scan(&alarmID)
+		if err != nil {
+			if err != sql.ErrNoRows {
+				return nil, 0, lang.InternalError(err)
+			}
+			return []model.Alarm{}, total, nil
+		}
+		ids = append(ids, alarmID)
+	}
+
+	var result []model.Alarm
+	for _, id := range ids {
+		alarm, err := s.GetAlarm(id)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		result = append(result, alarm)
 	}
 
 	return result, total, nil

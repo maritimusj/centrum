@@ -3,6 +3,7 @@ package ep6v2
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/maritimusj/centrum/edge/devices/modbus"
 	"unicode/utf16"
 )
 
@@ -12,7 +13,7 @@ type Model struct {
 	Title   string
 }
 
-func (model *Model) fetchData(conn modbusClient) error {
+func (model *Model) fetchData(conn modbus.Client) error {
 	data, err := conn.ReadHoldingRegisters(0, 4)
 	if err != nil {
 		return err

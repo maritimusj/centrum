@@ -3,6 +3,7 @@ package ep6v2
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/maritimusj/centrum/edge/devices/modbus"
 )
 
 type IPAddr [4]uint8
@@ -24,7 +25,7 @@ type Addr struct {
 	Mac     MAC
 }
 
-func (addr *Addr) fetchData(conn modbusClient) error {
+func (addr *Addr) fetchData(conn modbus.Client) error {
 	data, err := conn.ReadHoldingRegisters(0x0020, 18)
 	if err != nil {
 		return err

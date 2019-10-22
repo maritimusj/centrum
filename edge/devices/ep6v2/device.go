@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"github.com/asaskevich/govalidator"
+	"github.com/maritimusj/centrum/edge/devices/CHNum"
 	"github.com/maritimusj/centrum/edge/devices/InverseServer"
+	"github.com/maritimusj/centrum/edge/devices/realtime"
+	"github.com/maritimusj/centrum/edge/devices/util"
 	"github.com/maritimusj/centrum/edge/lang"
 	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/modbus"
@@ -35,8 +38,8 @@ type Device struct {
 	chDI map[int]*DI
 	chDO map[int]*DO
 
-	chNum        *CHNum
-	readTimeData *RealTimeData
+	chNum        *CHNum.Data
+	readTimeData *realtime.Data
 
 	sync.RWMutex
 }
@@ -65,7 +68,7 @@ func (device *Device) IsConnected() bool {
 	return false
 }
 
-func (device *Device) getModbusClient() (modbusClient, error) {
+func (device *Device) getModbusClient() (modbus.Client, error) {
 	if device.client != nil && device.status == lang.Connected {
 		return device.client, nil
 	}
@@ -123,8 +126,15 @@ func (device *Device) Reset(otherFN ...func()) {
 
 	device.model = nil
 	device.addr = nil
-	device.chNum = nil
-	device.readTimeData = nil
+
+	if device.chNum != nil {
+		device.chNum.Release()
+		device.chNum = nil
+	}
+	if device.readTimeData != nil {
+		device.readTimeData.Release()
+		device.readTimeData = nil
+	}
 
 	device.chAI = make(map[int]*AI)
 	device.chAO = make(map[int]*AO)
@@ -199,7 +209,7 @@ func (device *Device) GetAddr() (*Addr, error) {
 	return device.addr, nil
 }
 
-func (device *Device) GetCHNum() (*CHNum, error) {
+func (device *Device) GetCHNum() (*CHNum.Data, error) {
 	if !device.IsConnected() {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
@@ -208,21 +218,23 @@ func (device *Device) GetCHNum() (*CHNum, error) {
 	defer device.Unlock()
 
 	if device.chNum == nil {
-		chNum := &CHNum{}
+		chNum := CHNum.New()
 		if client, err := device.getModbusClient(); err != nil {
+			chNum.Release()
 			return nil, err
 		} else {
-			if err := chNum.fetchData(client); err != nil {
+			if err := chNum.FetchData(client); err != nil {
+				chNum.Release()
 				return nil, err
 			}
 		}
 		device.chNum = chNum
 	}
 
-	return device.chNum.Clone(), nil
+	return device.chNum, nil
 }
 
-func (device *Device) GetRealTimeData() (*RealTimeData, error) {
+func (device *Device) GetRealTimeData() (*realtime.Data, error) {
 	if !device.IsConnected() {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
@@ -236,15 +248,13 @@ func (device *Device) GetRealTimeData() (*RealTimeData, error) {
 	defer device.Unlock()
 
 	if device.readTimeData == nil {
-		device.readTimeData = &RealTimeData{
-			chNum: chNum.Clone(),
-		}
+		device.readTimeData = realtime.New(chNum)
 	}
 
 	if client, err := device.getModbusClient(); err != nil {
 		return nil, err
 	} else {
-		err = device.readTimeData.fetchData(client)
+		err = device.readTimeData.FetchData(client)
 		if err != nil {
 			return nil, err
 		}
@@ -264,7 +274,7 @@ func (device *Device) SetCHValue(tag string, value interface{}) error {
 			return err
 		}
 
-		_, err = do.SetValue(IsOn(value))
+		_, err = do.SetValue(util.IsOn(value))
 		if err != nil {
 			return err
 		}

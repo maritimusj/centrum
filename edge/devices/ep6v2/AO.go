@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/maritimusj/centrum/edge/devices/modbus"
+	"github.com/maritimusj/centrum/edge/devices/util"
 )
 
 const (
@@ -14,7 +16,7 @@ const (
 type AO struct {
 	Index  int
 	config *AOConfig
-	conn   modbusClient
+	conn   modbus.Client
 }
 
 type AOConfig struct {
@@ -51,14 +53,14 @@ func (ao *AO) GetConfig() *AOConfig {
 	return ao.config
 }
 
-func (c *AOConfig) fetchData(conn modbusClient, index int) error {
+func (c *AOConfig) fetchData(conn modbus.Client, index int) error {
 	start := AOCHStartAddress + uint16(index)*CHBlockSize
 	data, err := conn.ReadHoldingRegisters(start, 16)
 	if err != nil {
 		return err
 	}
 
-	c.Title = DecodeUtf16String(data[0:32])
+	c.Title = util.DecodeUtf16String(data[0:32])
 	//英文名称
 	c.TagName = fmt.Sprintf("AO-%d", index+1)
 	c.Uint = "mA"
@@ -79,13 +81,13 @@ func (c *AOConfig) fetchData(conn modbusClient, index int) error {
 	c.CTLMode = int(binary.BigEndian.Uint16(data[0:]))
 
 	c.CTLSource = int(binary.BigEndian.Uint16(data[2:]))
-	c.CTLMin = ToFloat32(float32(binary.BigEndian.Uint16(data[4:]))/100, 2)
-	c.CTLMax = ToFloat32(float32(binary.BigEndian.Uint16(data[6:]))/100, 2)
-	c.CTLTarget = ToFloat32(float32(binary.BigEndian.Uint16(data[8:]))/1000, 2)
-	c.CTLKp = ToFloat32(float32(binary.BigEndian.Uint16(data[10:]))/1000, 2)
-	c.CTLKi = ToFloat32(float32(binary.BigEndian.Uint16(data[12:]))/1000, 2)
-	c.CTLKd = ToFloat32(float32(binary.BigEndian.Uint16(data[14:]))/1000, 2)
-	c.CTLManualValue = ToFloat32(float32(binary.BigEndian.Uint16(data[16:]))/1000, 2)
+	c.CTLMin = util.ToFloat32(float32(binary.BigEndian.Uint16(data[4:]))/100, 2)
+	c.CTLMax = util.ToFloat32(float32(binary.BigEndian.Uint16(data[6:]))/100, 2)
+	c.CTLTarget = util.ToFloat32(float32(binary.BigEndian.Uint16(data[8:]))/1000, 2)
+	c.CTLKp = util.ToFloat32(float32(binary.BigEndian.Uint16(data[10:]))/1000, 2)
+	c.CTLKi = util.ToFloat32(float32(binary.BigEndian.Uint16(data[12:]))/1000, 2)
+	c.CTLKd = util.ToFloat32(float32(binary.BigEndian.Uint16(data[14:]))/1000, 2)
+	c.CTLManualValue = util.ToFloat32(float32(binary.BigEndian.Uint16(data[16:]))/1000, 2)
 
 	return nil
 }

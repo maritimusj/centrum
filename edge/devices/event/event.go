@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/asaskevich/EventBus"
+	"github.com/maritimusj/centrum/edge/devices/measure"
 	"github.com/maritimusj/centrum/edge/lang"
 	httpLoggerStore "github.com/maritimusj/centrum/edge/logStore/http"
 	"github.com/maritimusj/centrum/json_rpc"
@@ -19,12 +20,14 @@ var (
 const (
 	DeviceStatusChanged = "device:status::changed"
 	MeasureDiscovered   = "measure::discovered"
+	MeasureAlarm        = "measure::alarm"
 )
 
 func init() {
 	eventsMap := map[string]interface{}{
 		DeviceStatusChanged: OnDeviceStatusChanged,
 		MeasureDiscovered:   OnMeasureDiscovered,
+		MeasureAlarm:        OnMeasureAlarm,
 	}
 
 	for e, fn := range eventsMap {
@@ -94,5 +97,21 @@ func OnMeasureDiscovered(conf *json_rpc.Conf, tagName, title string) {
 		}
 
 		println("[OnMeasureDiscovered]", conf.CallbackURL, string(data))
+	}
+}
+
+func OnMeasureAlarm(conf *json_rpc.Conf, measureData *measure.Data) {
+	defer measureData.Release()
+
+	if conf.CallbackURL != "" {
+		data, err := HttpPost(conf.CallbackURL, map[string]interface{}{
+			"alarm": measureData,
+		})
+		if err != nil {
+			log.Errorf("[OnMeasureAlarm] %s", err)
+			return
+		}
+
+		println("[OnMeasureAlarm]", conf.CallbackURL, string(data))
 	}
 }

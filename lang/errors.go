@@ -56,6 +56,8 @@ const (
 	ErrInvalidDeviceConnStr
 	ErrDeviceExists
 	ErrConfigNotFound
+
+	ErrAlarmNotFound
 )
 
 func ErrorStr(code ErrorCode, params ...interface{}) string {
