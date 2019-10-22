@@ -10,10 +10,26 @@ Target Server Type    : MYSQL
 Target Server Version : 80017
 File Encoding         : 65001
 
-Date: 2019-10-12 10:40:08
+Date: 2019-10-22 10:08:22
 */
 
 SET FOREIGN_KEY_CHECKS=0;
+
+-- ----------------------------
+-- Table structure for alarms
+-- ----------------------------
+DROP TABLE IF EXISTS `alarms`;
+CREATE TABLE `alarms` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `status` tinyint(4) NOT NULL DEFAULT '0',
+  `org_id` int(10) unsigned NOT NULL,
+  `device_id` int(10) unsigned NOT NULL,
+  `measure_id` int(10) unsigned NOT NULL,
+  `extra` blob NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ----------------------------
 -- Table structure for api_resources
