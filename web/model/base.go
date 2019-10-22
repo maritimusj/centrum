@@ -17,6 +17,7 @@ type DBEntry interface {
 }
 
 type OptionEntry interface {
+	Option() map[string]interface{}
 	GetOption(path string) gjson.Result
 	SetOption(path string, value interface{}) error
 }

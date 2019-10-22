@@ -1,9 +1,11 @@
 package mysqlStore
 
 import (
+	"github.com/kataras/iris"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/web/dirty"
 	"github.com/maritimusj/centrum/web/model"
+	"github.com/maritimusj/centrum/web/status"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"time"
@@ -13,6 +15,7 @@ type Alarm struct {
 	id int64
 
 	orgID     int64
+	status    int
 	deviceID  int64
 	measureID int64
 
@@ -42,6 +45,21 @@ func (alarm *Alarm) DeviceID() int64 {
 
 func (alarm *Alarm) MeasureID() int64 {
 	return alarm.measureID
+}
+
+func (alarm *Alarm) Status() (int, string) {
+	return alarm.status, lang.AlarmStatusDesc(alarm.status)
+}
+
+func (alarm *Alarm) Confirm(data map[string]interface{}) error {
+	alarm.status = status.Confirmated
+	alarm.dirty.Set("status", func() interface{} {
+		return alarm.status
+	})
+	if err := alarm.SetOption("confirm", data); err != nil {
+		return err
+	}
+	return alarm.Save()
 }
 
 func (alarm *Alarm) Device() (model.Device, error) {
@@ -81,6 +99,10 @@ func (alarm *Alarm) Destroy() error {
 	return alarm.store.RemoveAlarm(alarm.id)
 }
 
+func (alarm *Alarm) Option() map[string]interface{} {
+	return gjson.ParseBytes(alarm.extra).Value().(map[string]interface{})
+}
+
 func (alarm *Alarm) GetOption(path string) gjson.Result {
 	return gjson.GetBytes(alarm.extra, path)
 }
@@ -96,5 +118,52 @@ func (alarm *Alarm) SetOption(path string, value interface{}) error {
 		return alarm.extra
 	})
 
-	return alarm.Save()
+	return nil
+}
+
+func (alarm *Alarm) Simple() model.Map {
+	device, _ := alarm.Device()
+	measure, _ := alarm.Measure()
+	return model.Map{
+		"id":          alarm.GetID(),
+		"status":      alarm.status,
+		"status_desc": lang.AlarmStatusDesc(alarm.status),
+		"device":      device.Brief(),
+		"measure":     measure.Brief(),
+		"raw": iris.Map{
+			"alarm": alarm.GetOption("tags.alarm").String(),
+			"val":   alarm.GetOption("fields.val").String(),
+		},
+		"updated_at": alarm.updatedAt,
+	}
+}
+
+func (alarm *Alarm) Brief() model.Map {
+	device, _ := alarm.Device()
+	measure, _ := alarm.Measure()
+	return model.Map{
+		"id":          alarm.GetID(),
+		"status":      alarm.status,
+		"status_desc": lang.AlarmStatusDesc(alarm.status),
+		"device":      device.Brief(),
+		"measure":     measure.Brief(),
+		"raw":         alarm.Option(),
+		"created_at":  alarm.createdAt,
+		"updated_at":  alarm.updatedAt,
+	}
+}
+
+func (alarm *Alarm) Detail() model.Map {
+	device, _ := alarm.Device()
+	measure, _ := alarm.Measure()
+	return model.Map{
+		"id":          alarm.GetID(),
+		"status":      alarm.status,
+		"status_desc": lang.AlarmStatusDesc(alarm.status),
+		"device":      device.Brief(),
+		"measure":     measure.Brief(),
+		"raw":         alarm.Option(),
+		"created_at":  alarm.createdAt,
+		"updated_at":  alarm.updatedAt,
+	}
 }

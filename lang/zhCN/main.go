@@ -1,6 +1,8 @@
 package zhCN
 
-import "github.com/maritimusj/centrum/lang"
+import (
+	"github.com/maritimusj/centrum/lang"
+)
 
 func init() {
 	lang.Register(lang.ZhCN, strMap, errStrMap)
@@ -23,6 +25,9 @@ var (
 		lang.LogError: "错误",
 		lang.LogFatal: "严重",
 		lang.LogPanic: "异常",
+
+		lang.AlarmUnconfirmed: "未确认",
+		lang.AlarmConfirmed:   "已确认",
 
 		lang.RoleSystemAdminTitle:       "系统管理员",
 		lang.RoleOrganizationAdminTitle: "管理员",

@@ -155,6 +155,10 @@ func (d *Device) SetTitle(title string) {
 	}
 }
 
+func (d *Device) Option() map[string]interface{} {
+	return gjson.ParseBytes(d.options).Value().(map[string]interface{})
+}
+
 func (d *Device) GetOption(key string) gjson.Result {
 	if d != nil {
 		return gjson.GetBytes(d.options, key)
@@ -174,7 +178,7 @@ func (d *Device) SetOption(key string, value interface{}) error {
 			return d.options
 		})
 
-		return d.Save()
+		return nil
 	}
 	return lang.Error(lang.ErrDeviceNotFound)
 }

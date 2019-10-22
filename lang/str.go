@@ -3,6 +3,7 @@ package lang
 import (
 	"errors"
 	"github.com/maritimusj/centrum/web/resource"
+	"github.com/maritimusj/centrum/web/status"
 )
 
 const (
@@ -207,10 +208,14 @@ const (
 	UserCreateEquipmentOk
 	UserUpdateEquipmentOk
 	UserDeleteEquipmentOk
+
+	AlarmUnconfirmed
+	AlarmConfirmed
 )
 
 var (
 	resourceGroupsMap map[resource.Class]string
+	alarmStatusDesc   map[int]string
 )
 
 func load() {
@@ -222,6 +227,11 @@ func load() {
 		resource.Measure:   Str(ResourceMeasure),
 		resource.Equipment: Str(ResourceEquipment),
 		resource.State:     Str(ResourceState),
+	}
+
+	alarmStatusDesc = map[int]string{
+		status.Unconfirmed: Str(AlarmUnconfirmed),
+		status.Confirmated: Str(AlarmConfirmed),
 	}
 }
 
@@ -351,5 +361,16 @@ func ResourceClassTitle(class resource.Class) string {
 	if v, ok := resourceGroupsMap[class]; ok {
 		return v
 	}
+
 	panic(errors.New("unknown resource class"))
+}
+
+func AlarmStatusDesc(stats int) string {
+	if len(alarmStatusDesc) == 0 {
+		load()
+	}
+	if v, ok := alarmStatusDesc[stats]; ok {
+		return v
+	}
+	panic(errors.New("unknown alarm status"))
 }

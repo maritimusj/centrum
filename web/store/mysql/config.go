@@ -39,6 +39,10 @@ func (config *Config) UpdateAt() time.Time {
 	return config.updateAt
 }
 
+func (config *Config) Option() map[string]interface{} {
+	return gjson.ParseBytes(config.extra).Value().(map[string]interface{})
+}
+
 func (config *Config) GetOption(key string) gjson.Result {
 	if config != nil {
 		return gjson.GetBytes(config.extra, key)

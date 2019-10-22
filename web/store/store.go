@@ -6,6 +6,7 @@ import (
 	"github.com/maritimusj/centrum/web/helper"
 	"github.com/maritimusj/centrum/web/model"
 	"github.com/maritimusj/centrum/web/resource"
+	"time"
 )
 
 type Store interface {
@@ -76,7 +77,7 @@ type Store interface {
 	GetAlarm(alarmID int64) (model.Alarm, error)
 	CreateAlarm(device model.Device, measureID int64, data map[string]interface{}) (model.Alarm, error)
 	RemoveAlarm(alarmID int64) error
-	GetAlarmList(options ...helper.OptionFN) ([]model.Alarm, int64, error)
+	GetAlarmList(start, end *time.Time, options ...helper.OptionFN) ([]model.Alarm, int64, error)
 	GetLastUnconfirmedAlarm(device model.Device, measureID int64) (model.Alarm, error)
 
 	GetResourceGroupList() []interface{}

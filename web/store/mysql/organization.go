@@ -62,6 +62,10 @@ func (o *Organization) IsEnabled() bool {
 	return o.enable == status.Enable
 }
 
+func (o *Organization) Option() map[string]interface{} {
+	return gjson.ParseBytes(o.extra).Value().(map[string]interface{})
+}
+
 func (o *Organization) GetOption(path string) gjson.Result {
 	return gjson.GetBytes(o.extra, path)
 }
@@ -77,7 +81,7 @@ func (o *Organization) SetOption(path string, value interface{}) error {
 		return o.extra
 	})
 
-	return o.Save()
+	return nil
 }
 
 func (o *Organization) Name() string {

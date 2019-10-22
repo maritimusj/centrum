@@ -10,6 +10,7 @@ import (
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/event"
 	"github.com/maritimusj/centrum/global"
+	"github.com/maritimusj/centrum/web/api/alarm"
 	"github.com/maritimusj/centrum/web/api/edge"
 	logStore "github.com/maritimusj/centrum/web/api/log"
 	"github.com/maritimusj/centrum/web/api/my"
@@ -209,6 +210,14 @@ func (server *server) Start(ctx context.Context, cfg *config.Config) {
 				p.Get("/{id:int64}", hero.Handler(equipment.StateDetail)).Name = ResourceDef.StateDetail
 				p.Put("/{id:int64}", hero.Handler(equipment.UpdateState)).Name = ResourceDef.StateUpdate
 				p.Delete("/{id:int64}", hero.Handler(equipment.DeleteState)).Name = ResourceDef.StateDelete
+			})
+
+			//警报
+			p.PartyFunc("/alarm", func(p router.Party) {
+				p.Get("/", hero.Handler(alarm.List))
+				p.Put("/{id:int64}", hero.Handler(alarm.Confirm))
+				p.Get("/{id:int64}", hero.Handler(alarm.Detail))
+				p.Delete("/{id:int64}", hero.Handler(alarm.Delete))
 			})
 
 			//日志等级

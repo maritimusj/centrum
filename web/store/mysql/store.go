@@ -2285,7 +2285,7 @@ func (s *mysqlStore) GetLastUnconfirmedAlarm(device model.Device, measureID int6
 	return s.GetAlarm(alarmID)
 }
 
-func (s *mysqlStore) GetAlarmList(options ...helper.OptionFN) ([]model.Alarm, int64, error) {
+func (s *mysqlStore) GetAlarmList(start, end *time.Time, options ...helper.OptionFN) ([]model.Alarm, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -2315,6 +2315,16 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	if option.DeviceID > 0 {
 		where += " AND a.device_id=?"
 		params = append(params, option.DeviceID)
+	}
+
+	if start != nil {
+		where += " AND a.created_at>=?"
+		params = append(params, *start)
+	}
+
+	if end != nil {
+		where += " AND a.created_at<?"
+		params = append(params, *end)
 	}
 
 	var total int64
