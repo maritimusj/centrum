@@ -190,6 +190,15 @@ var (
 		lang.ResourceStateDeleteTitle: "删除自定义点位",
 		lang.ResourceStateDeleteDesc:  "删除一个自定义点位",
 
+		lang.AlarmListTitle:    "",
+		lang.AlarmListDesc:     "",
+		lang.AlarmConfirmTitle: "",
+		lang.AlarmConfirmDesc:  "",
+		lang.AlarmDeleteTitle:  "",
+		lang.AlarmDeleteDesc:   "",
+		lang.AlarmDetailTitle:  "",
+		lang.AlarmDetailDesc:   "",
+
 		lang.ResourceLogListTitle:      "系统日志",
 		lang.ResourceLogListDesc:       "查看系统日志",
 		lang.ResourceLogDeleteTitle:    "删除系统日志",

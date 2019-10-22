@@ -214,10 +214,10 @@ func (server *server) Start(ctx context.Context, cfg *config.Config) {
 
 			//警报
 			p.PartyFunc("/alarm", func(p router.Party) {
-				p.Get("/", hero.Handler(alarm.List))
-				p.Put("/{id:int64}", hero.Handler(alarm.Confirm))
-				p.Get("/{id:int64}", hero.Handler(alarm.Detail))
-				p.Delete("/{id:int64}", hero.Handler(alarm.Delete))
+				p.Get("/", hero.Handler(alarm.List)).Name = ResourceDef.AlarmList
+				p.Put("/{id:int64}", hero.Handler(alarm.Confirm)).Name = ResourceDef.AlarmConfirm
+				p.Get("/{id:int64}", hero.Handler(alarm.Detail)).Name = ResourceDef.AlarmDetail
+				p.Delete("/{id:int64}", hero.Handler(alarm.Delete)).Name = ResourceDef.AlarmDelete
 			})
 
 			//日志等级

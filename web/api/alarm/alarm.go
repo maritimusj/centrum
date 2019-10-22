@@ -57,6 +57,18 @@ func List(ctx iris.Context) hero.Result {
 		var result = make([]model.Map, 0, len(alarms))
 		for _, alarm := range alarms {
 			brief := alarm.Brief()
+			measure, err := alarm.Measure()
+			if err != nil {
+				brief["perm"] = iris.Map{
+					"err": err,
+				}
+			} else {
+				brief["perm"] = iris.Map{
+					"view": true,
+					"ctrl": app.Allow(admin, measure, resource.Ctrl),
+				}
+			}
+
 			result = append(result, brief)
 		}
 
@@ -121,6 +133,7 @@ func Confirm(alarmID int64, ctx iris.Context) hero.Result {
 			"admin": admin.Brief(),
 			"time":  time.Now(),
 			"ip":    ctx.RemoteAddr(),
+			"desc":  form.Desc,
 		})
 		if err != nil {
 			return err

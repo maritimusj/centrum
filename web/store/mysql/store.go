@@ -88,6 +88,7 @@ func (s *mysqlStore) EraseAllData() error {
 		"TRUNCATE TABLE " + TbStates,
 		"TRUNCATE TABLE " + TbEquipmentGroups,
 		"TRUNCATE TABLE " + TbApiResources,
+		"TRUNCATE TABLE " + TbAlarms,
 	}
 	for _, st := range statements {
 		_, err := s.db.Exec(st)
@@ -2177,6 +2178,7 @@ func (s *mysqlStore) loadAlarm(id int64) (model.Alarm, error) {
 	var alarm = NewAlarm(s, id)
 	err := LoadData(s.db, TbAlarms, map[string]interface{}{
 		"org_id":     &alarm.orgID,
+		"status":     &alarm.status,
 		"device_id":  &alarm.deviceID,
 		"measure_id": &alarm.measureID,
 		"extra":      &alarm.extra,
@@ -2336,7 +2338,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		return []model.Alarm{}, 0, nil
 	}
 
-	where += " ORDER BY a.id ASC"
+	where += " ORDER BY a.updated_at DESC"
 
 	if option.Limit > 0 {
 		where += " LIMIT ?"

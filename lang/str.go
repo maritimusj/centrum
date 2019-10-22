@@ -179,6 +179,15 @@ const (
 	ResourceStateDeleteTitle
 	ResourceStateDeleteDesc
 
+	AlarmListTitle
+	AlarmListDesc
+	AlarmConfirmTitle
+	AlarmConfirmDesc
+	AlarmDeleteTitle
+	AlarmDeleteDesc
+	AlarmDetailTitle
+	AlarmDetailDesc
+
 	ResourceLogListTitle
 	ResourceLogListDesc
 	ResourceLogDeleteTitle
@@ -346,6 +355,11 @@ func ApiResourcesMap() [][3]string {
 		{resource.StateDetail, Str(ResourceStateDetailTitle), Str(ResourceStateDetailDesc)},
 		{resource.StateUpdate, Str(ResourceStateUpdateTitle), Str(ResourceStateUpdateDesc)},
 		{resource.StateDelete, Str(ResourceStateDeleteTitle), Str(ResourceStateDeleteDesc)},
+
+		{resource.AlarmList, Str(AlarmListTitle), Str(AlarmListDesc)},
+		{resource.AlarmConfirm, Str(AlarmConfirmTitle), Str(AlarmConfirmDesc)},
+		{resource.AlarmDelete, Str(AlarmDeleteTitle), Str(AlarmDeleteDesc)},
+		{resource.AlarmDetail, Str(AlarmDetailTitle), Str(AlarmDetailDesc)},
 
 		{resource.LogList, Str(ResourceLogListTitle), Str(ResourceLogListDesc)},
 		{resource.LogDelete, Str(ResourceLogDeleteTitle), Str(ResourceLogDeleteDesc)},

@@ -52,13 +52,13 @@ func (alarm *Alarm) Status() (int, string) {
 }
 
 func (alarm *Alarm) Confirm(data map[string]interface{}) error {
+	if err := alarm.SetOption("confirm", data); err != nil {
+		return err
+	}
 	alarm.status = status.Confirmated
 	alarm.dirty.Set("status", func() interface{} {
 		return alarm.status
 	})
-	if err := alarm.SetOption("confirm", data); err != nil {
-		return err
-	}
 	return alarm.Save()
 }
 

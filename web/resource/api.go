@@ -79,6 +79,11 @@ const (
 	StateUpdate = "state.update"
 	StateDelete = "state.delete"
 
+	AlarmList    = "alarm.list"
+	AlarmConfirm = "alarm.confirm"
+	AlarmDelete  = "alarm.delete"
+	AlarmDetail  = "alarm.detail"
+
 	LogLevelList = "log.level.list"
 	LogList      = "log.list"
 	LogDelete    = "log.delete"
@@ -155,6 +160,11 @@ var (
 		StateUpdate,
 		StateDelete,
 
+		AlarmList,
+		AlarmConfirm,
+		AlarmDelete,
+		AlarmDetail,
+
 		LogLevelList,
 		LogList,
 		LogDelete,
@@ -172,8 +182,6 @@ var (
 //后台菜单角色权限列表
 var (
 	MenuRoleGallery = []string{
-		Unknown,
-
 		DeviceStatus,
 		DeviceData,
 		DeviceCtrl,
@@ -226,12 +234,18 @@ var (
 		StateUpdate,
 		StateDelete,
 	}
+
 	MenuRoleAlert = []string{
-		Unknown,
+		AlarmList,
+		AlarmConfirm,
+		AlarmDelete,
+		AlarmDetail,
 	}
+
 	MenuRoleStats = []string{
 		Unknown,
 	}
+
 	MenuRoleSMSSettings = []string{
 		Unknown,
 	}
