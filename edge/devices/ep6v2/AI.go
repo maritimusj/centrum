@@ -63,9 +63,12 @@ type AI struct {
 	config      *AIConfig
 	alarmConfig *AIAlarmConfig
 
-	value        float32
+	value             float32
+	lastValueReadTime time.Time
+
 	alarmState   AlarmValue
-	lastReadTime time.Time
+	lastAlarmStateReadTime time.Time
+
 
 	conn modbus.Client
 }
@@ -94,7 +97,7 @@ type AIAlarmConfig struct {
 }
 
 func (alarm *AIAlarmConfig) fetchData(conn modbus.Client, index int) error {
-	var address, quantity uint16 = uint16(index)*CHBlockSize + 47, 11
+	var address, quantity uint16 = uint16(index+1)*CHBlockSize + 47, 11
 	data, err := conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
 		return err
@@ -109,7 +112,7 @@ func (alarm *AIAlarmConfig) fetchData(conn modbus.Client, index int) error {
 
 	alarm.Delay = int(binary.BigEndian.Uint16(data[20:]))
 
-	address, quantity = uint16(index)*CHBlockSize+80, 30
+	address, quantity = uint16(index+1)*CHBlockSize+80, 30
 	data, err = conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
 		return err
@@ -145,8 +148,12 @@ type AIConfig struct {
 	Alarm *AIAlarmConfig //警报设置
 }
 
-func (ai *AI) expired() bool {
-	return time.Now().Sub(ai.lastReadTime) > 1*time.Second
+func (ai *AI) valueExpired() bool {
+	return time.Now().Sub(ai.lastValueReadTime) > 1*time.Second
+}
+
+func (ai *AI) stateExpired() bool {
+	return time.Now().Sub(ai.lastAlarmStateReadTime) > 1*time.Second
 }
 
 func (ai *AI) fetchValue() error {
@@ -157,12 +164,12 @@ func (ai *AI) fetchValue() error {
 	}
 
 	ai.value = util.ToFloat32(util.ToSingle(data), ai.config.Point)
-	ai.lastReadTime = time.Now()
+	ai.lastValueReadTime = time.Now()
 	return nil
 }
 
 func (ai *AI) GetValue() (float32, error) {
-	if ai.expired() {
+	if ai.valueExpired() {
 		if err := ai.fetchValue(); err != nil {
 			return 0, nil
 		}
@@ -182,13 +189,14 @@ func (ai *AI) GetConfig() *AIConfig {
 }
 
 func (ai *AI) GetAlarmState() (AlarmValue, error) {
-	if ai.expired() {
+	if ai.stateExpired() {
 		address := uint16(AIAlarmStartAddress + ai.Index)
 		data, err := ai.conn.ReadInputRegisters(address, 1)
 		if err != nil {
 			return 0, err
 		}
 		ai.alarmState = AlarmValue(data[1])
+		ai.lastAlarmStateReadTime = time.Now()
 	}
 
 	return ai.alarmState, nil

@@ -7,6 +7,7 @@ import (
 	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/resource"
 	log "github.com/sirupsen/logrus"
+	edgeLang "github.com/maritimusj/centrum/edge/lang"
 	"time"
 )
 
@@ -62,6 +63,12 @@ func Feedback(deviceID int64, ctx iris.Context) {
 	}
 
 	if form.Status != nil {
+		if form.Status.Index == int(edgeLang.Disconnected) {
+			org, _ := global.GetDeviceStatus(device)
+			if org == int(edgeLang.Connected) {
+
+			}
+		}
 		global.UpdateDeviceStatus(device, form.Status.Index, form.Status.Title)
 	}
 

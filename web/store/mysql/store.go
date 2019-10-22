@@ -2232,6 +2232,7 @@ func (s *mysqlStore) CreateAlarm(device model.Device, measureID int64, data map[
 		now := time.Now()
 		data := map[string]interface{}{
 			"org_id":     device.OrganizationID(),
+			"status":     status.Unconfirmed,
 			"device_id":  device.GetID(),
 			"measure_id": measureID,
 			"extra":      extra,
