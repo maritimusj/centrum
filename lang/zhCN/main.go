@@ -273,5 +273,6 @@ var (
 		lang.ErrInvalidDeviceConnStr:            "设备连接参数不正确！",
 		lang.ErrConfigNotFound:                  "没找到这个配置项！",
 		lang.ErrAlarmNotFound:                   "没有找到这个警报数据！",
+		lang.ErrNotStatisticsData:               "没有任何数据！",
 	}
 )

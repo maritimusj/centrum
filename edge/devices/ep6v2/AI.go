@@ -66,9 +66,8 @@ type AI struct {
 	value             float32
 	lastValueReadTime time.Time
 
-	alarmState   AlarmValue
+	alarmState             AlarmValue
 	lastAlarmStateReadTime time.Time
-
 
 	conn modbus.Client
 }

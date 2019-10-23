@@ -2,12 +2,12 @@ package edge
 
 import (
 	"github.com/kataras/iris"
+	edgeLang "github.com/maritimusj/centrum/edge/lang"
 	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/resource"
 	log "github.com/sirupsen/logrus"
-	edgeLang "github.com/maritimusj/centrum/edge/lang"
 	"time"
 )
 

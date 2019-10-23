@@ -2352,7 +2352,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	}
 
 	log.Trace("SELECT DISTINCT a.id " + from + where)
-	rows, err := s.db.Query("SELECT DISTINCT a.id "+from+where, params...)
+	rows, err := s.db.Query("SELECT DISTINCT a.id,a.updated_at "+from+where, params...)
 	if err != nil {
 		return nil, 0, lang.InternalError(err)
 	}
@@ -2360,11 +2360,14 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		_ = rows.Close()
 	}()
 
-	var ids []int64
-	var alarmID int64
+	var (
+		ids     []int64
+		alarmID int64
+		updated time.Time
+	)
 
 	for rows.Next() {
-		err = rows.Scan(&alarmID)
+		err = rows.Scan(&alarmID, &updated)
 		if err != nil {
 			if err != sql.ErrNoRows {
 				return nil, 0, lang.InternalError(err)

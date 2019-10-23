@@ -16,6 +16,7 @@ import (
 	"github.com/maritimusj/centrum/web/api/my"
 	"github.com/maritimusj/centrum/web/api/organization"
 	"github.com/maritimusj/centrum/web/api/role"
+	"github.com/maritimusj/centrum/web/api/statistics"
 	"github.com/maritimusj/centrum/web/api/web"
 	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/perm"
@@ -175,11 +176,17 @@ func (server *server) Start(ctx context.Context, cfg *config.Config) {
 				p.Get("/{id:int64}/data", hero.Handler(device.Data)).Name = ResourceDef.DeviceData
 				p.Put("/{id:int64}/{tagName:string}", hero.Handler(device.Ctrl)).Name = ResourceDef.DeviceCtrl
 				p.Get("/{id:int64}/{tagName:string}", hero.Handler(device.GetCHValue)).Name = ResourceDef.DeviceCHValue
+
+				//导出报表
+				p.Post("/export", hero.Handler(statistics.Export))
 			})
 			//物理点位
 			p.PartyFunc("/measure", func(p router.Party) {
 				p.Delete("/{id:int64}", hero.Handler(device.DeleteMeasure)).Name = ResourceDef.MeasureDelete
 				p.Get("/{id:int64}", hero.Handler(device.MeasureDetail)).Name = ResourceDef.MeasureDetail
+
+				//历史趋势
+				p.Post("/{id:int64}/statistics", hero.Handler(statistics.Measure))
 			})
 
 			//自定义设备
@@ -210,6 +217,9 @@ func (server *server) Start(ctx context.Context, cfg *config.Config) {
 				p.Get("/{id:int64}", hero.Handler(equipment.StateDetail)).Name = ResourceDef.StateDetail
 				p.Put("/{id:int64}", hero.Handler(equipment.UpdateState)).Name = ResourceDef.StateUpdate
 				p.Delete("/{id:int64}", hero.Handler(equipment.DeleteState)).Name = ResourceDef.StateDelete
+
+				//历史趋势
+				p.Get("/{id:int64}/statistics", hero.Handler(statistics.State))
 			})
 
 			//警报

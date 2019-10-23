@@ -5,6 +5,7 @@ import (
 	"github.com/maritimusj/centrum/config"
 	"github.com/maritimusj/centrum/lang"
 	logStore "github.com/maritimusj/centrum/logStore/bolt"
+	"github.com/maritimusj/centrum/statistics"
 	"github.com/maritimusj/centrum/web/db"
 	mysqlDB "github.com/maritimusj/centrum/web/db/mysql"
 	"github.com/maritimusj/centrum/web/edge"
@@ -28,6 +29,7 @@ var (
 	Event      = EventBus.New()
 	LogDBStore = logStore.New()
 	s          store.Store
+	StatsDB    = statistics.New()
 )
 
 func IsDefaultAdminUser(user model.User) bool {
@@ -187,6 +189,12 @@ func Init(ctx context.Context, logLevel string) error {
 
 	if result != nil {
 		return result.(error)
+	}
+
+	if err := StatsDB.Open(map[string]interface{}{
+		"connStr": "http://localhost:8086",
+	}); err != nil {
+		return err
 	}
 
 	return nil

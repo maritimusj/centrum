@@ -58,6 +58,7 @@ const (
 	ErrConfigNotFound
 
 	ErrAlarmNotFound
+	ErrNotStatisticsData
 )
 
 func ErrorStr(code ErrorCode, params ...interface{}) string {
