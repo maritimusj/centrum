@@ -109,7 +109,8 @@ func Init(ctx context.Context, logLevel string) error {
 
 	//数据库连接
 	if err := InitDB(map[string]interface{}{
-		"connStr": "root:12345678@/chuanyan?charset=utf8mb4&parseTime=true&loc=Local",
+		//"connStr": "root:12345678@/chuanyan?charset=utf8mb4&parseTime=true&loc=Local",
+		"connStr": "./chuanyan.db",
 	}); err != nil {
 		return err
 	}
@@ -118,6 +119,7 @@ func Init(ctx context.Context, logLevel string) error {
 	err := Config.Load()
 	if err != nil {
 		log.Error(err)
+		return err
 	}
 
 	if err := InitLog(logLevel); err != nil {

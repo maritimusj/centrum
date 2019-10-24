@@ -865,8 +865,9 @@ func (s *mysqlStore) GetRoleList(options ...helper.OptionFN) ([]model.Role, int6
 	}
 
 	if option.Keyword != "" {
-		fromSQL += " AND (r.name REGEXP ? OR r.title REGEXP ?)"
-		params = append(params, option.Keyword, option.Keyword)
+		fromSQL += " AND (r.name LIKE ? OR r.title LIKE ?)"
+		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		params = append(params, keyword, keyword)
 	}
 
 	var total int64
@@ -2039,6 +2040,7 @@ func (s *mysqlStore) CreateState(equipmentID, measureID int64, title, desc, scri
 			"equipment_id": equipmentID,
 			"measure_id":   measureID,
 			"script":       script,
+			"created_at":   time.Now(),
 		}
 
 		stateID, err := CreateData(s.db, TbStates, data)

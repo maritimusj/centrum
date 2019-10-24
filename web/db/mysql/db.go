@@ -46,7 +46,7 @@ func (m *mysqlDB) TransactionDo(fn func(db db2.DB) interface{}) interface{} {
 
 func Open(ctx context.Context, option map[string]interface{}) (db2.WithTransaction, error) {
 	if connStr, ok := option["connStr"].(string); ok {
-		conn, err := sql.Open("mysql", connStr)
+		conn, err := sql.Open("sqlite3", connStr)
 		if err != nil {
 			return nil, lang.InternalError(err)
 		}

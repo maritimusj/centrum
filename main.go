@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/maritimusj/centrum/lang"
 	_ "github.com/maritimusj/centrum/lang/zhCN"
