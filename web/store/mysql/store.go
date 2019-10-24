@@ -75,20 +75,21 @@ func parseOption(options ...helper.OptionFN) *helper.Option {
 
 func (s *mysqlStore) EraseAllData() error {
 	var statements = []string{
-		"TRUNCATE TABLE " + TbOrganization,
-		"TRUNCATE TABLE " + TbUsers,
-		"TRUNCATE TABLE " + TbRoles,
-		"TRUNCATE TABLE " + TbUserRoles,
-		"TRUNCATE TABLE " + TbPolicies,
-		"TRUNCATE TABLE " + TbGroups,
-		"TRUNCATE TABLE " + TbDevices,
-		"TRUNCATE TABLE " + TbMeasures,
-		"TRUNCATE TABLE " + TbDeviceGroups,
-		"TRUNCATE TABLE " + TbEquipments,
-		"TRUNCATE TABLE " + TbStates,
-		"TRUNCATE TABLE " + TbEquipmentGroups,
-		"TRUNCATE TABLE " + TbApiResources,
-		"TRUNCATE TABLE " + TbAlarms,
+		"DELETE FROM " + TbOrganization,
+		"DELETE FROM " + TbUsers,
+		"DELETE FROM " + TbRoles,
+		"DELETE FROM " + TbUserRoles,
+		"DELETE FROM " + TbPolicies,
+		"DELETE FROM " + TbGroups,
+		"DELETE FROM " + TbDevices,
+		"DELETE FROM " + TbMeasures,
+		"DELETE FROM " + TbDeviceGroups,
+		"DELETE FROM " + TbEquipments,
+		"DELETE FROM " + TbStates,
+		"DELETE FROM " + TbEquipmentGroups,
+		"DELETE FROM " + TbApiResources,
+		"DELETE FROM " + TbAlarms,
+		"UPDATE `sqlite_sequence` SET seq = 0",
 	}
 	for _, st := range statements {
 		_, err := s.db.Exec(st)
