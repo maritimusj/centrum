@@ -97,6 +97,7 @@ func (s *mysqlStore) EraseAllData() error {
 			return err
 		}
 	}
+
 	return nil
 }
 

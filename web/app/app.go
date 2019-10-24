@@ -151,7 +151,12 @@ func Init(ctx context.Context, logLevel string) error {
 			if err != lang.Error(lang.ErrOrganizationNotFound) {
 				return err
 			}
-			_, err := s.CreateOrganization(defaultOrg, defaultOrg)
+			org, err = s.CreateOrganization(defaultOrg, defaultOrg)
+			if err != nil {
+				return err
+			}
+
+			_, err = s.CreateGroup(org, lang.Str(lang.DefaultGroupTitle), lang.Str(lang.DefaultGroupDesc), 0)
 			if err != nil {
 				return err
 			}

@@ -8,6 +8,9 @@ import (
 
 const (
 	_ = iota
+	DefaultGroupTitle
+	DefaultGroupDesc
+
 	ResourceDefault
 	ResourceApi
 	ResourceGroup

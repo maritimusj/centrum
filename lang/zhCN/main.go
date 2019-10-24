@@ -10,6 +10,9 @@ func init() {
 
 var (
 	strMap = map[int]string{
+		lang.DefaultGroupTitle: "默认分组",
+		lang.DefaultGroupDesc:  "系统默认分组",
+
 		lang.ResourceDefault:   "默认分组",
 		lang.ResourceApi:       "后台权限",
 		lang.ResourceGroup:     "设备分组",
