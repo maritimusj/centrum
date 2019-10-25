@@ -61,12 +61,19 @@ func Export(ctx iris.Context) {
 
 			col := axisMap.Next(sheetName)
 			excel.SetCellValue(sheetName, fmt.Sprintf("%c1", col), rows.Name)
+
 			for i, data := range rows.Values {
-				sec, _ := data[0].(json.Number).Int64()
-				val, _ := data[1].(json.Number).Float64()
 				cell := fmt.Sprintf("%c%d", col, i+2)
+				sec, _ := data[0].(json.Number).Int64()
 				excel.SetCellValue(sheetName, fmt.Sprintf("A%d", i+2), time.Unix(sec, 0))
-				excel.SetCellValue(sheetName, cell, val)
+				switch v := data[1].(type) {
+				case json.Number:
+					val, _ := v.Float64()
+					excel.SetCellValue(sheetName, cell, val)
+				case bool:
+					excel.SetCellBool(sheetName, cell, v)
+				}
+
 				if data[2] != nil {
 					excel.SetCellStyle(sheetName, cell, cell, alarmStyle)
 				}
