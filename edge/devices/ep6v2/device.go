@@ -6,12 +6,13 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/maritimusj/centrum/edge/devices/CHNum"
 	"github.com/maritimusj/centrum/edge/devices/InverseServer"
+	"github.com/maritimusj/centrum/edge/devices/modbus"
 	"github.com/maritimusj/centrum/edge/devices/realtime"
 	"github.com/maritimusj/centrum/edge/devices/util"
 	"github.com/maritimusj/centrum/edge/lang"
 	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/centrum/synchronized"
-	"github.com/maritimusj/modbus"
+	rawModbus "github.com/maritimusj/modbus"
 	"io"
 	"net"
 	"strconv"
@@ -100,10 +101,10 @@ func (device *Device) Connect(ctx context.Context, address string) error {
 
 	device.Reset(func() {
 		device.status = lang.Connected
-		handler := modbus.NewTCPClientHandlerFrom(conn)
-		client := modbus.NewClient(handler)
+		handler := rawModbus.NewTCPClientHandlerFrom(conn)
+		client := rawModbus.NewClient(handler)
 		device.handler = handler
-		device.client = client
+		device.client = &modbusWrapper{client: client}
 	})
 
 	return nil
@@ -410,12 +411,9 @@ func (device *Device) GetCHValue(tag string) (value map[string]interface{}, err 
 			return
 		}
 
-		<-synchronized.Do(device, func() interface{} {
-			if device.readTimeData != nil {
-				device.readTimeData.SetDOValue(do.Index, v)
-			}
-			return nil
-		})
+		if device.readTimeData != nil {
+			device.readTimeData.SetDOValue(do.Index, v)
+		}
 
 		return map[string]interface{}{
 			"title": do.GetConfig().Title,
