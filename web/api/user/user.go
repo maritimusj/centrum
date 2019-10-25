@@ -387,14 +387,14 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 
 					if p.View != nil {
 						effect := util.If(*p.View, resource.Allow, resource.Deny).(resource.Effect)
-						_, err = role.SetPolicy(res, resource.View, effect, map[model.Resource]struct{})
+						_, err = role.SetPolicy(res, resource.View, effect, map[model.Resource]struct{}{})
 						if err != nil {
 							return err
 						}
 					}
 					if p.Ctrl != nil {
 						effect := util.If(*p.Ctrl, resource.Allow, resource.Deny).(resource.Effect)
-						_, err = role.SetPolicy(res, resource.Ctrl, effect, map[model.Resource]struct{})
+						_, err = role.SetPolicy(res, resource.Ctrl, effect, map[model.Resource]struct{}{})
 						if err != nil {
 							return err
 						}
