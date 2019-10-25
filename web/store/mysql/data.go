@@ -2,6 +2,8 @@ package mysqlStore
 
 import (
 	"database/sql"
+
+	"github.com/maritimusj/centrum/synchronized"
 	"github.com/maritimusj/centrum/util"
 	"github.com/maritimusj/centrum/web/db"
 	log "github.com/sirupsen/logrus"
@@ -9,6 +11,10 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+)
+
+const (
+	writeLockerUID = "writeDBData"
 )
 
 func LoadData(db db.DB, tbName string, data map[string]interface{}, cond string, params ...interface{}) error {
@@ -35,7 +41,9 @@ func LoadData(db db.DB, tbName string, data map[string]interface{}, cond string,
 		SQL.WriteString(cond)
 
 		err := db.QueryRow(SQL.String(), params...).Scan(values...)
+
 		log.Tracef("LoadData: %s => %s", SQL.String(), util.If(err != nil, err, "Ok"))
+
 		if err != nil {
 			return err
 		}
@@ -66,19 +74,27 @@ func CreateData(db db.DB, tbName string, data map[string]interface{}) (int64, er
 		SQL.WriteString(strings.Join(placeHolders, ","))
 		SQL.WriteString(")")
 
-		result, err := db.Exec(SQL.String(), values...)
-		log.Tracef("createData: %s => %s", SQL.String(), util.If(err != nil, err, "Ok"))
+		result := <-synchronized.Do(writeLockerUID, func() interface{} {
+			result, err := db.Exec(SQL.String(), values...)
 
-		if err != nil {
+			log.Tracef("createData: %s => %s", SQL.String(), util.If(err != nil, err, "Ok"))
+
+			if err != nil {
+				return err
+			}
+
+			lastInsertID, err := result.LastInsertId()
+			if err != nil {
+				return err
+			}
+
+			return lastInsertID
+		})
+
+		if err, ok := result.(error); ok {
 			return 0, err
 		}
-
-		lastInsertID, err := result.LastInsertId()
-		if err != nil {
-			return 0, err
-		}
-
-		return lastInsertID, nil
+		return result.(int64), nil
 	}
 
 	panic(errors.New("CreateData: empty data"))
@@ -106,9 +122,12 @@ func SaveData(db db.DB, tbName string, data map[string]interface{}, cond string,
 		SQL.WriteString(" WHERE ")
 		SQL.WriteString(cond)
 
-		_, err := db.Exec(SQL.String(), values...)
-		log.Tracef("SaveData: %s => %s", SQL.String(), util.If(err != nil, err, "Ok"))
-		if err != nil {
+		result := <-synchronized.Do(writeLockerUID, func() interface{} {
+			_, err := db.Exec(SQL.String(), values...)
+			log.Tracef("SaveData: %s => %s", SQL.String(), util.If(err != nil, err, "Ok"))
+			return err
+		})
+		if err, ok := result.(error); ok {
 			return err
 		}
 		return nil
@@ -118,13 +137,19 @@ func SaveData(db db.DB, tbName string, data map[string]interface{}, cond string,
 }
 
 func RemoveData(db db.DB, tbName string, cond string, params ...interface{}) error {
-	SQL := "DELETE FROM " + tbName + " WHERE " + cond
-	_, err := db.Exec(SQL, params...)
-	log.Tracef("RemoveData: %s => %s", SQL, util.If(err != nil, err, "Ok"))
-	if err != nil {
-		if err != sql.ErrNoRows {
-			return err
+	result := <-synchronized.Do(writeLockerUID, func() interface{} {
+		SQL := "DELETE FROM " + tbName + " WHERE " + cond
+		_, err := db.Exec(SQL, params...)
+		log.Tracef("RemoveData: %s => %s", SQL, util.If(err != nil, err, "Ok"))
+		if err != nil {
+			if err != sql.ErrNoRows {
+				return err
+			}
 		}
+		return nil
+	})
+	if err, ok := result.(error); ok {
+		return err
 	}
 	return nil
 }

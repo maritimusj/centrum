@@ -4,70 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kr/pretty"
+	"github.com/maritimusj/centrum/edge/devices/InverseServer"
+	"github.com/maritimusj/centrum/edge/devices/ep6v2"
 	"github.com/maritimusj/centrum/edge/devices/measure"
+	"github.com/maritimusj/centrum/edge/lang"
+	"github.com/maritimusj/centrum/json_rpc"
+	log "github.com/sirupsen/logrus"
 	"net"
 	"sync"
 	"time"
 
-	_ "github.com/influxdata/influxdb1-client"
 	influx "github.com/influxdata/influxdb1-client/v2"
-	"github.com/kr/pretty"
-	"github.com/maritimusj/centrum/edge/devices/InverseServer"
-	"github.com/maritimusj/centrum/edge/devices/ep6v2"
-	"github.com/maritimusj/centrum/edge/devices/event"
-	"github.com/maritimusj/centrum/edge/lang"
-	httpLoggerStore "github.com/maritimusj/centrum/edge/logStore/http"
-	"github.com/maritimusj/centrum/global"
-	"github.com/maritimusj/centrum/json_rpc"
-	log "github.com/sirupsen/logrus"
+	httpLogStore "github.com/maritimusj/centrum/edge/logStore/http"
 )
-
-type Adapter struct {
-	client        *ep6v2.Device
-	conf          *json_rpc.Conf
-	measureDataCH chan *measure.Data
-	logger        *log.Logger
-	done          chan struct{}
-
-	wg sync.WaitGroup
-}
-
-func (adapter *Adapter) IsDone() bool {
-	select {
-	case <-adapter.done:
-		return true
-	default:
-		return false
-	}
-}
-
-func (adapter *Adapter) Close() {
-	if adapter != nil {
-		if adapter.client != nil {
-			adapter.client.Close()
-			adapter.client = nil
-		}
-
-		close(adapter.done)
-		adapter.wg.Wait()
-	}
-}
-
-func (adapter *Adapter) OnDeviceStatusChanged(index lang.StrIndex) {
-	event.Publish(event.DeviceStatusChanged, adapter.conf, index)
-}
-
-func (adapter *Adapter) OnMeasureDiscovered(tagName, title string) {
-	key := "tag:" + adapter.conf.UID + ":" + tagName
-	if v, ok := global.Params.Get(key); !ok || v.(string) != title {
-		global.Params.Set(key, title)
-		event.Publish(event.MeasureDiscovered, adapter.conf, tagName, title)
-	}
-}
-
-func (adapter *Adapter) OnMeasureAlarm(data *measure.Data) {
-	event.Publish(event.MeasureAlarm, adapter.conf, data)
-}
 
 type Runner struct {
 	ctx      context.Context
@@ -90,7 +40,7 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 		baseInfo := make(map[string]interface{})
 
 		adapter := v.(*Adapter)
-		model, err := adapter.client.GetModel()
+		model, err := adapter.device.GetModel()
 		if err != nil {
 			return nil, err
 		}
@@ -99,7 +49,7 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 		baseInfo["version"] = model.Version
 		baseInfo["title"] = model.Title
 
-		addr, err := adapter.client.GetAddr()
+		addr, err := adapter.device.GetAddr()
 		if err != nil {
 			return baseInfo, err
 		}
@@ -108,8 +58,8 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 		baseInfo["mac"] = addr.Mac.String()
 
 		baseInfo["status"] = map[string]interface{}{
-			"index": adapter.client.GetStatus(),
-			"title": adapter.client.GetStatusTitle(),
+			"index": adapter.device.GetStatus(),
+			"title": adapter.device.GetStatusTitle(),
 		}
 		return baseInfo, nil
 	}
@@ -117,7 +67,7 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 	return nil, lang.Error(lang.ErrDeviceNotExists)
 }
 
-func needRestartAdapter(conf *json_rpc.Conf, newConf *json_rpc.Conf) bool {
+func (runner *Runner) needRestartAdapter(conf *json_rpc.Conf, newConf *json_rpc.Conf) bool {
 	return conf.Address != newConf.Address ||
 		conf.InfluxDBAddress != newConf.InfluxDBAddress ||
 		conf.InfluxDBUserName != newConf.InfluxDBUserName ||
@@ -129,7 +79,7 @@ func needRestartAdapter(conf *json_rpc.Conf, newConf *json_rpc.Conf) bool {
 func (runner *Runner) Active(conf *json_rpc.Conf) error {
 	if v, ok := runner.adapters.Load(conf.UID); ok {
 		adapter := v.(*Adapter)
-		if needRestartAdapter(adapter.conf, conf) {
+		if runner.needRestartAdapter(adapter.conf, conf) {
 			adapter.Close()
 			runner.adapters.Delete(conf.UID)
 		} else {
@@ -144,7 +94,7 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 				adapter.logger.SetLevel(level)
 			}
 
-			adapter.OnDeviceStatusChanged(adapter.client.GetStatus())
+			adapter.OnDeviceStatusChanged(adapter.device.GetStatus())
 			return nil
 		}
 	}
@@ -160,7 +110,7 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 			return err
 		}
 
-		loggerHook := httpLoggerStore.New()
+		loggerHook := httpLogStore.New()
 		loggerHook.SetUID(conf.UID)
 
 		logger.SetLevel(level)
@@ -173,7 +123,7 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 	}
 
 	adapter := &Adapter{
-		client:        ep6v2.New(),
+		device:        ep6v2.New(),
 		conf:          conf,
 		logger:        logger,
 		measureDataCH: make(chan *measure.Data, 100),
@@ -190,7 +140,7 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 func (runner *Runner) GetValue(ch *json_rpc.CH) (interface{}, error) {
 	if v, ok := runner.adapters.Load(ch.UID); ok {
 		adapter := v.(*Adapter)
-		v, err := adapter.client.GetCHValue(ch.Tag)
+		v, err := adapter.device.GetCHValue(ch.Tag)
 		if err != nil {
 			return nil, err
 		}
@@ -202,7 +152,7 @@ func (runner *Runner) GetValue(ch *json_rpc.CH) (interface{}, error) {
 func (runner *Runner) SetValue(val *json_rpc.Value) error {
 	if v, ok := runner.adapters.Load(val.UID); ok {
 		adapter := v.(*Adapter)
-		return adapter.client.SetCHValue(val.Tag, val.V)
+		return adapter.device.SetCHValue(val.Tag, val.V)
 	}
 	return lang.Error(lang.ErrDeviceNotExists)
 }
@@ -210,7 +160,7 @@ func (runner *Runner) SetValue(val *json_rpc.Value) error {
 func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, error) {
 	if v, ok := runner.adapters.Load(uid); ok {
 		adapter := v.(*Adapter)
-		r, err := adapter.client.GetRealTimeData()
+		r, err := adapter.device.GetRealTimeData()
 		if err != nil {
 			return nil, err
 		}
@@ -218,9 +168,10 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 		defer r.Release()
 
 		adapter.logger.Trace("GetRealtimeData: ", uid)
+
 		values := make([]map[string]interface{}, 0)
 		for i := 0; i < r.AINum(); i++ {
-			ai, err := adapter.client.GetAI(i)
+			ai, err := adapter.device.GetAI(i)
 			if err != nil {
 				return values, err
 			}
@@ -241,7 +192,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 		}
 
 		for i := 0; i < r.AONum(); i++ {
-			ao, err := adapter.client.GetAO(i)
+			ao, err := adapter.device.GetAO(i)
 			if err != nil {
 				return values, err
 			}
@@ -257,7 +208,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 		}
 
 		for i := 0; i < r.DINum(); i++ {
-			di, err := adapter.client.GetDI(i)
+			di, err := adapter.device.GetDI(i)
 			if err != nil {
 				return values, err
 			}
@@ -272,7 +223,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 		}
 
 		for i := 0; i < r.DONum(); i++ {
-			do, err := adapter.client.GetDO(i)
+			do, err := adapter.device.GetDO(i)
 			if err != nil {
 				return values, err
 			}
@@ -296,7 +247,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 func (runner *Runner) Reset(uid string) {
 	if v, ok := runner.adapters.Load(uid); ok {
 		adapter := v.(*Adapter)
-		adapter.client.Reset()
+		adapter.device.Reset()
 	}
 }
 
@@ -309,69 +260,84 @@ func (runner *Runner) Remove(uid string) {
 	}
 }
 
-func (runner *Runner) Serve(adapter *Adapter) error {
-	adapter.OnDeviceStatusChanged(lang.AdapterInitializing)
-
-	fmt.Printf("%# v", pretty.Formatter(adapter.conf))
-	adapter.logger.Trace("start influx http client")
-
+func (runner *Runner) InitInfluxDB(conf *json_rpc.Conf) (influx.Client, error) {
 	c, err := influx.NewHTTPClient(influx.HTTPConfig{
-		Addr:     adapter.conf.InfluxDBAddress,
-		Username: adapter.conf.InfluxDBUserName,
-		Password: adapter.conf.InfluxDBPassword,
+		Addr:     conf.InfluxDBAddress,
+		Username: conf.InfluxDBUserName,
+		Password: conf.InfluxDBPassword,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if _, _, err = c.Ping(3 * time.Second); err != nil {
-		return err
+		return nil, err
 	}
 
-	adapter.logger.Trace("create influx db: ", adapter.conf.DB)
+	log.Trace("create influx db: ", conf.DB)
 
 	_, err = c.Query(influx.Query{
-		Database: adapter.conf.DB,
-		Command:  fmt.Sprintf("CREATE DATABASE \"%s\"", adapter.conf.DB),
+		Database: conf.DB,
+		Command:  fmt.Sprintf("CREATE DATABASE \"%s\"", conf.DB),
 	})
+
 	if err != nil {
-		adapter.logger.Error(err)
-		return err
+		log.Errorln(err)
+		return nil, err
 	}
+	return c, nil
+}
 
-	getMeasureDataFN := func() error {
-		bp, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
-			Precision: "ns",
-			Database:  adapter.conf.DB,
-		})
-		for {
-			select {
-			case data := <-adapter.measureDataCH:
-				if data == nil {
-					return errors.New("got nil data")
-				}
+func (runner *Runner) getMeasureData(client influx.Client, db string, ch <-chan *measure.Data) error {
+	bp, _ := influx.NewBatchPoints(influx.BatchPointsConfig{
+		Precision: "ns",
+		Database:  db,
+	})
+	for {
+		select {
+		case data := <-ch:
+			if data == nil {
+				return errors.New("got nil data")
+			}
 
-				point, err := influx.NewPoint(data.Name, data.Tags, data.Fields, data.Time)
+			point, err := influx.NewPoint(data.Name, data.Tags, data.Fields, data.Time)
 
-				data.Release()
+			data.Release()
 
+			if err != nil {
+				log.Errorln(err)
+				continue
+			} else {
+				bp.AddPoint(point)
+			}
+
+		case <-time.After(1 * time.Second):
+			if len(bp.Points()) > 0 {
+				err := client.Write(bp)
 				if err != nil {
-					log.Error(err)
-					continue
+					return err
 				} else {
-					bp.AddPoint(point)
-				}
-			case <-time.After(1 * time.Second):
-				if len(bp.Points()) > 0 {
-					err := c.Write(bp)
-					if err != nil {
-						return err
-					} else {
-						return nil
-					}
+					return nil
 				}
 			}
 		}
+	}
+}
+func (runner *Runner) Serve(adapter *Adapter) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = e.(error)
+		}
+	}()
+
+	adapter.OnDeviceStatusChanged(lang.AdapterInitializing)
+
+	fmt.Printf("%# v", pretty.Formatter(adapter.conf))
+	adapter.logger.Trace("start influx http device")
+
+	c, err := runner.InitInfluxDB(adapter.conf)
+	if err != nil {
+		return err
 	}
 
 	adapter.wg.Add(2)
@@ -388,7 +354,7 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 			case <-adapter.done:
 				return
 			default:
-				err := getMeasureDataFN()
+				err := runner.getMeasureData(c, adapter.conf.DB, adapter.measureDataCH)
 				if err != nil {
 					adapter.logger.Error(err)
 					return
@@ -404,13 +370,13 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 			adapter.logger.Warnln("fetch data routine exit!")
 		}()
 
-	makeConnection:
-		client := adapter.client
+	tryConnectToDevice:
+		device := adapter.device
 		for {
 			adapter.logger.Trace("try connect to :", adapter.conf.Address)
 			adapter.OnDeviceStatusChanged(lang.Connecting)
 
-			err := client.Connect(runner.ctx, adapter.conf.Address)
+			err := device.Connect(runner.ctx, adapter.conf.Address)
 			if err != nil {
 				if err == runner.ctx.Err() {
 					return
@@ -425,7 +391,7 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 					continue
 				}
 			} else {
-				if client.IsConnected() {
+				if device.IsConnected() {
 					break
 				}
 			}
@@ -441,18 +407,18 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 				return
 			case <-time.After(adapter.conf.Interval):
 				adapter.logger.Trace("start fetch data from: ", adapter.conf.Address)
-				err := runner.fetchData(adapter)
 
+				err := runner.gatherData(adapter)
 				if err != nil {
 					if e, ok := err.(net.Error); ok && e.Temporary() {
 						continue
 					}
 
 					adapter.logger.Error(err)
-					adapter.client.Close()
+					device.Close()
 
 					go adapter.OnDeviceStatusChanged(lang.Disconnected)
-					goto makeConnection
+					goto tryConnectToDevice
 				}
 			}
 		}
@@ -461,8 +427,8 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 	return nil
 }
 
-func (runner *Runner) fetchData(adapter *Adapter) error {
-	client := adapter.client
+func (runner *Runner) gatherData(adapter *Adapter) error {
+	client := adapter.device
 	data, err := client.GetRealTimeData()
 	if err != nil {
 		return err

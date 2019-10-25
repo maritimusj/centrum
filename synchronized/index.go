@@ -22,18 +22,12 @@ type data struct {
 	mu        sync.Mutex
 	done      chan struct{}
 	wg        sync.WaitGroup
-	pool      *sync.Pool
 }
 
 func New() *data {
 	return &data{
 		lockerMap: make(map[interface{}]*sync.Mutex),
 		done:      make(chan struct{}),
-		pool: &sync.Pool{
-			New: func() interface{} {
-				return &sync.Mutex{}
-			},
-		},
 	}
 }
 
@@ -44,11 +38,13 @@ func (data *data) Close() {
 
 func (data *data) Do(obj interface{}, fn func() interface{}) <-chan interface{} {
 	data.mu.Lock()
-	defer data.mu.Unlock()
+	defer func() {
+		data.mu.Unlock()
+	}()
 
 	v, ok := data.lockerMap[obj]
 	if !ok {
-		v = data.pool.Get().(*sync.Mutex)
+		v = &sync.Mutex{}
 		data.lockerMap[obj] = v
 	}
 
@@ -56,16 +52,15 @@ func (data *data) Do(obj interface{}, fn func() interface{}) <-chan interface{} 
 	go func() {
 		data.wg.Add(1)
 		v.Lock()
-
 		defer func() {
 			close(resultChan)
 			data.wg.Done()
+
 			v.Unlock()
 
 			data.mu.Lock()
 			{
 				delete(data.lockerMap, obj)
-				data.pool.Put(v)
 			}
 			data.mu.Unlock()
 		}()

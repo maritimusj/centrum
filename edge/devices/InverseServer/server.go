@@ -105,7 +105,7 @@ func (server *Server) handler(ctx context.Context, conn net.Conn) {
 
 	data, err := client.ReadHoldingRegisters(44, 6)
 	if err != nil {
-		log.Error(err)
+		log.Errorln(err)
 		return
 	}
 

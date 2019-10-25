@@ -1,6 +1,8 @@
 package edge
 
 import (
+	"time"
+
 	"github.com/kataras/iris"
 	edgeLang "github.com/maritimusj/centrum/edge/lang"
 	"github.com/maritimusj/centrum/global"
@@ -8,7 +10,6 @@ import (
 	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/resource"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 type Log struct {
@@ -37,7 +38,7 @@ type Alarm struct {
 func Feedback(deviceID int64, ctx iris.Context) {
 	device, err := app.Store().GetDevice(deviceID)
 	if err != nil {
-		log.Error("[Feedback]", err)
+		log.Error("[Feedback 1]", err)
 		return
 	}
 
@@ -49,14 +50,14 @@ func Feedback(deviceID int64, ctx iris.Context) {
 	}
 
 	if err := ctx.ReadJSON(&form); err != nil {
-		log.Error("[Feedback]", err)
+		log.Error("[Feedback 2]", err)
 		return
 	}
 
 	if form.Log != nil {
 		level, err := log.ParseLevel(form.Log.Level)
 		if err != nil {
-			log.Error("[Feedback]", err)
+			log.Error("[Feedback 3]", err)
 		} else {
 			device.Logger().Log(level, form.Log.Message)
 		}
@@ -66,7 +67,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 		if form.Status.Index == int(edgeLang.Disconnected) {
 			org, _ := global.GetDeviceStatus(device)
 			if org == int(edgeLang.Connected) {
-
+				//?
 			}
 		}
 		global.UpdateDeviceStatus(device, form.Status.Index, form.Status.Title)
@@ -76,24 +77,24 @@ func Feedback(deviceID int64, ctx iris.Context) {
 		measure, err := app.Store().GetMeasureFromTagName(device.GetID(), form.Measure.TagName)
 		if err != nil {
 			if err != lang.Error(lang.ErrMeasureNotFound) {
-				log.Error("[Feedback]", err)
+				log.Error("[Feedback 4]", err)
 				return
 			}
 			kind := resource.ParseMeasureKind(form.Measure.TagName)
 			if kind == resource.UnknownKind {
-				log.Error("[Feedback]", lang.Error(lang.ErrMeasureNotFound))
+				log.Error("[Feedback 5]", lang.Error(lang.ErrMeasureNotFound))
 				return
 			}
 			measure, err = app.Store().CreateMeasure(device.GetID(), form.Measure.Title, form.Measure.TagName, kind)
 			if err != nil {
-				log.Error("[Feedback]", err)
+				log.Error("[Feedback 6]", err)
 				return
 			}
 		} else {
 			measure.SetTitle(form.Measure.Title)
 			err = measure.Save()
 			if err != nil {
-				log.Error("[Feedback]", err)
+				log.Error("[Feedback 7]", err)
 			}
 		}
 	}
@@ -103,14 +104,14 @@ func Feedback(deviceID int64, ctx iris.Context) {
 		tag, _ := form.Alarm.Tags["tag"]
 		measure, err := app.Store().GetMeasureFromTagName(device.GetID(), tag)
 		if err != nil {
-			log.Error("[Feedback]", err)
+			log.Error("[Feedback 8]", err)
 			return
 		}
 
 		alarm, err := app.Store().GetLastUnconfirmedAlarm(device, measure.GetID())
 		if err != nil {
 			if err != lang.Error(lang.ErrAlarmNotFound) {
-				log.Error("[Feedback]", err)
+				log.Error("[Feedback 9]", err)
 				return
 			}
 			alarm, err = app.Store().CreateAlarm(device, measure.GetID(), map[string]interface{}{
@@ -120,12 +121,12 @@ func Feedback(deviceID int64, ctx iris.Context) {
 				"time":   form.Alarm.Time,
 			})
 			if err != nil {
-				log.Error("[Feedback]", err)
+				log.Error("[Feedback 10]", err)
 			}
 		} else {
 			alarm.Updated()
 			if err = alarm.Save(); err != nil {
-				log.Error("[Feedback]", err)
+				log.Error("[Feedback 11]", err)
 			}
 		}
 	}

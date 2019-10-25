@@ -215,8 +215,6 @@ func (d *Device) SetGroups(groups ...interface{}) error {
 				return lang.InternalError(err)
 			}
 		}
-		println("d::SetGroups:", groups)
-
 		return nil
 	}
 	return lang.Error(lang.ErrDeviceNotFound)

@@ -171,11 +171,11 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 		return result
 	}
 
-	//var result interface{}
-	//for i := 0; i < 10; i++ {
-	//result = fn()
-	//}
-	return response.Wrap(fn)
+	var result interface{}
+	for i := 0; i < 10; i++ {
+		result = fn()
+	}
+	return response.Wrap(result)
 }
 
 func Detail(deviceID int64, ctx iris.Context) hero.Result {

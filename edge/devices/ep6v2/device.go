@@ -10,12 +10,12 @@ import (
 	"github.com/maritimusj/centrum/edge/devices/util"
 	"github.com/maritimusj/centrum/edge/lang"
 	"github.com/maritimusj/centrum/global"
+	"github.com/maritimusj/centrum/synchronized"
 	"github.com/maritimusj/modbus"
 	"io"
 	"net"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 type Connector interface {
@@ -40,8 +40,6 @@ type Device struct {
 
 	chNum        *CHNum.Data
 	readTimeData *realtime.Data
-
-	sync.RWMutex
 }
 
 func New() *Device {
@@ -49,7 +47,9 @@ func New() *Device {
 }
 
 func (device *Device) SetConnector(connector Connector) {
-	device.connector = connector
+	if device != nil {
+		device.connector = connector
+	}
 }
 
 func (device *Device) onDisconnected(err error) {
@@ -60,36 +60,37 @@ func (device *Device) onDisconnected(err error) {
 
 func (device *Device) IsConnected() bool {
 	if device != nil {
-		device.RLock()
-		defer device.RUnlock()
-
 		return device.client != nil && device.status == lang.Connected
 	}
 	return false
 }
 
 func (device *Device) getModbusClient() (modbus.Client, error) {
+	if device == nil {
+		return nil, lang.Error(lang.ErrDeviceNotExists)
+	}
+
 	if device.client != nil && device.status == lang.Connected {
 		return device.client, nil
 	}
-	return nil, errors.New("device not connected")
+	return nil, lang.Error(lang.ErrDeviceNotConnected)
 }
 
 func (device *Device) Connect(ctx context.Context, address string) error {
-	device.Lock()
-	device.status = lang.Connecting
-
-	if device.connector == nil {
-		if govalidator.IsMAC(address) {
-			println("InverseServer.DefaultConnector")
-			device.connector = InverseServer.DefaultConnector()
-		} else {
-			println("NewTCPConnector")
-			device.connector = NewTCPConnector()
-		}
+	if device == nil {
+		return lang.Error(lang.ErrDeviceNotExists)
 	}
-
-	device.Unlock()
+	<-synchronized.Do(device, func() interface{} {
+		device.status = lang.Connecting
+		if device.connector == nil {
+			if govalidator.IsMAC(address) {
+				device.connector = InverseServer.DefaultConnector()
+			} else {
+				device.connector = NewTCPConnector()
+			}
+		}
+		return nil
+	})
 
 	conn, err := device.connector.Try(ctx, address)
 	if err != nil {
@@ -121,120 +122,146 @@ func (device *Device) Close() {
 }
 
 func (device *Device) Reset(otherFN ...func()) {
-	device.Lock()
-	defer device.Unlock()
+	if device != nil {
+		<-synchronized.Do(device, func() interface{} {
+			device.model = nil
+			device.addr = nil
 
-	device.model = nil
-	device.addr = nil
+			if device.chNum != nil {
+				device.chNum.Release()
+				device.chNum = nil
+			}
+			if device.readTimeData != nil {
+				device.readTimeData.Release()
+				device.readTimeData = nil
+			}
 
-	if device.chNum != nil {
-		device.chNum.Release()
-		device.chNum = nil
-	}
-	if device.readTimeData != nil {
-		device.readTimeData.Release()
-		device.readTimeData = nil
-	}
+			device.chAI = make(map[int]*AI)
+			device.chAO = make(map[int]*AO)
+			device.chDI = make(map[int]*DI)
+			device.chDO = make(map[int]*DO)
 
-	device.chAI = make(map[int]*AI)
-	device.chAO = make(map[int]*AO)
-	device.chDI = make(map[int]*DI)
-	device.chDO = make(map[int]*DO)
+			global.Params.Reset()
 
-	global.Params.Reset()
-
-	for _, fn := range otherFN {
-		if fn != nil {
-			fn()
-		}
+			for _, fn := range otherFN {
+				if fn != nil {
+					fn()
+				}
+			}
+			return nil
+		})
 	}
 }
 
 func (device *Device) GetStatus() lang.StrIndex {
-	device.RLock()
-	defer device.RUnlock()
-
-	return device.status
+	if device != nil {
+		return device.status
+	}
+	return lang.Disconnected
 }
 
 func (device *Device) GetStatusTitle() string {
-	device.RLock()
-	defer device.RUnlock()
-
-	return lang.Str(device.status)
+	if device != nil {
+		return lang.Str(device.status)
+	}
+	return lang.Str(lang.Disconnected)
 }
 
 func (device *Device) GetModel() (*Model, error) {
+	if device == nil {
+		return nil, lang.Error(lang.ErrDeviceNotExists)
+	}
 	if !device.IsConnected() {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
 
-	device.Lock()
-	defer device.Unlock()
-
-	if device.model == nil {
-		if client, err := device.getModbusClient(); err != nil {
-			return nil, err
-		} else {
-			model := &Model{}
-			if err := model.fetchData(client); err != nil {
-				return nil, err
+	result := <-synchronized.Do(device, func() interface{} {
+		if device.model == nil {
+			if client, err := device.getModbusClient(); err != nil {
+				return err
+			} else {
+				model := &Model{}
+				if err := model.fetchData(client); err != nil {
+					return err
+				}
+				device.model = model
 			}
-			device.model = model
 		}
-	}
 
-	return device.model, nil
+		return device.model
+	})
+
+	if err, ok := result.(error); ok {
+		return nil, err
+	}
+	return result.(*Model), nil
 }
 
 func (device *Device) GetAddr() (*Addr, error) {
+	if device == nil {
+		return nil, lang.Error(lang.ErrDeviceNotExists)
+	}
 	if !device.IsConnected() {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
 
-	device.Lock()
-	defer device.Unlock()
-
-	if device.addr == nil {
-		if client, err := device.getModbusClient(); err != nil {
-			return nil, err
-		} else {
-			addr := &Addr{}
-			if err := addr.fetchData(client); err != nil {
-				return nil, err
+	result := <-synchronized.Do(device, func() interface{} {
+		if device.addr == nil {
+			if client, err := device.getModbusClient(); err != nil {
+				return err
+			} else {
+				addr := &Addr{}
+				if err := addr.fetchData(client); err != nil {
+					return err
+				}
+				device.addr = addr
 			}
-			device.addr = addr
 		}
+		return device.addr
+	})
+
+	if err, ok := result.(error); ok {
+		return nil, err
 	}
-	return device.addr, nil
+	return result.(*Addr), nil
 }
 
 func (device *Device) GetCHNum() (*CHNum.Data, error) {
+	if device == nil {
+		return nil, lang.Error(lang.ErrDeviceNotExists)
+	}
 	if !device.IsConnected() {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
 
-	device.Lock()
-	defer device.Unlock()
-
-	if device.chNum == nil {
-		chNum := CHNum.New()
-		if client, err := device.getModbusClient(); err != nil {
-			chNum.Release()
-			return nil, err
-		} else {
-			if err := chNum.FetchData(client); err != nil {
+	result := <-synchronized.Do(device, func() interface{} {
+		if device.chNum == nil {
+			chNum := CHNum.New()
+			if client, err := device.getModbusClient(); err != nil {
 				chNum.Release()
-				return nil, err
+				return err
+			} else {
+				if err := chNum.FetchData(client); err != nil {
+					chNum.Release()
+					return err
+				}
 			}
+			device.chNum = chNum
 		}
-		device.chNum = chNum
-	}
 
-	return device.chNum, nil
+		return device.chNum
+	})
+
+	if err, ok := result.(error); ok {
+		return nil, err
+	}
+	return result.(*CHNum.Data), nil
 }
 
 func (device *Device) GetRealTimeData() (*realtime.Data, error) {
+	if device == nil {
+		return nil, lang.Error(lang.ErrDeviceNotExists)
+	}
 	if !device.IsConnected() {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
@@ -244,26 +271,33 @@ func (device *Device) GetRealTimeData() (*realtime.Data, error) {
 		return nil, err
 	}
 
-	device.Lock()
-	defer device.Unlock()
-
-	if device.readTimeData == nil {
-		device.readTimeData = realtime.New(chNum)
-	}
-
-	if client, err := device.getModbusClient(); err != nil {
-		return nil, err
-	} else {
-		err = device.readTimeData.FetchData(client)
-		if err != nil {
-			return nil, err
+	result := <-synchronized.Do(device, func() interface{} {
+		if device.readTimeData == nil {
+			device.readTimeData = realtime.New(chNum)
 		}
-	}
 
-	return device.readTimeData.Clone(), nil
+		if client, err := device.getModbusClient(); err != nil {
+			return err
+		} else {
+			err = device.readTimeData.FetchData(client)
+			if err != nil {
+				return err
+			}
+		}
+
+		return device.readTimeData.Clone()
+	})
+
+	if err, ok := result.(error); ok {
+		return nil, err
+	}
+	return result.(*realtime.Data), nil
 }
 
 func (device *Device) SetCHValue(tag string, value interface{}) error {
+	if device == nil {
+		return lang.Error(lang.ErrDeviceNotExists)
+	}
 	if !device.IsConnected() {
 		return lang.Error(lang.ErrDeviceNotConnected)
 	}
@@ -286,6 +320,9 @@ func (device *Device) SetCHValue(tag string, value interface{}) error {
 }
 
 func (device *Device) GetCHValue(tag string) (value map[string]interface{}, err error) {
+	if device == nil {
+		return nil, lang.Error(lang.ErrDeviceNotExists)
+	}
 	if !device.IsConnected() {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
@@ -372,11 +409,14 @@ func (device *Device) GetCHValue(tag string) (value map[string]interface{}, err 
 		if err != nil {
 			return
 		}
-		device.Lock()
-		if device.readTimeData != nil {
-			device.readTimeData.SetDOValue(do.Index, v)
-		}
-		device.Unlock()
+
+		<-synchronized.Do(device, func() interface{} {
+			if device.readTimeData != nil {
+				device.readTimeData.SetDOValue(do.Index, v)
+			}
+			return nil
+		})
+
 		return map[string]interface{}{
 			"title": do.GetConfig().Title,
 			"tag":   do.GetConfig().TagName,
@@ -390,6 +430,9 @@ func (device *Device) GetCHValue(tag string) (value map[string]interface{}, err 
 }
 
 func (device *Device) GetAI(index int) (*AI, error) {
+	if device == nil {
+		return nil, lang.Error(lang.ErrDeviceNotExists)
+	}
 	if !device.IsConnected() {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
@@ -403,40 +446,47 @@ func (device *Device) GetAI(index int) (*AI, error) {
 		return nil, errors.New("invalid AI index")
 	}
 
-	device.Lock()
-	defer device.Unlock()
+	result := <-synchronized.Do(device, func() interface{} {
+		if ai, ok := device.chAI[index]; ok {
+			return ai
+		}
 
-	if ai, ok := device.chAI[index]; ok {
-		return ai, nil
-	}
+		client, err := device.getModbusClient()
+		if err != nil {
+			return err
+		}
 
-	client, err := device.getModbusClient()
-	if err != nil {
+		config := &AIConfig{}
+		if err := config.fetchData(client, index); err != nil {
+			return err
+		}
+
+		alarm := &AIAlarmConfig{}
+		if err := alarm.fetchData(client, index); err != nil {
+			return err
+		}
+
+		ai := &AI{
+			Index:       index,
+			config:      config,
+			alarmConfig: alarm,
+			conn:        client,
+		}
+
+		device.chAI[index] = ai
+		return ai
+	})
+
+	if err, ok := result.(error); ok {
 		return nil, err
 	}
-
-	config := &AIConfig{}
-	if err := config.fetchData(client, index); err != nil {
-		return nil, err
-	}
-
-	alarm := &AIAlarmConfig{}
-	if err := alarm.fetchData(client, index); err != nil {
-		return nil, err
-	}
-
-	ai := &AI{
-		Index:       index,
-		config:      config,
-		alarmConfig: alarm,
-		conn:        client,
-	}
-
-	device.chAI[index] = ai
-	return ai, nil
+	return result.(*AI), nil
 }
 
 func (device *Device) GetAO(index int) (*AO, error) {
+	if device == nil {
+		return nil, lang.Error(lang.ErrDeviceNotExists)
+	}
 	if !device.IsConnected() {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
@@ -450,32 +500,39 @@ func (device *Device) GetAO(index int) (*AO, error) {
 		return nil, errors.New("invalid AO index")
 	}
 
-	device.Lock()
-	defer device.Unlock()
+	result := <-synchronized.Do(device, func() interface{} {
+		if ao, ok := device.chAO[index]; ok {
+			return ao
+		}
 
-	if ao, ok := device.chAO[index]; ok {
-		return ao, nil
-	}
+		client, err := device.getModbusClient()
+		if err != nil {
+			return err
+		}
 
-	client, err := device.getModbusClient()
-	if err != nil {
+		config := &AOConfig{}
+		if err := config.fetchData(client, index); err != nil {
+			return err
+		}
+		ao := &AO{
+			Index:  index,
+			config: config,
+			conn:   client,
+		}
+		device.chAO[index] = ao
+		return ao
+	})
+
+	if err, ok := result.(error); ok {
 		return nil, err
 	}
-
-	config := &AOConfig{}
-	if err := config.fetchData(client, index); err != nil {
-		return nil, err
-	}
-	ao := &AO{
-		Index:  index,
-		config: config,
-		conn:   client,
-	}
-	device.chAO[index] = ao
-	return ao, nil
+	return result.(*AO), nil
 }
 
 func (device *Device) GetDI(index int) (*DI, error) {
+	if device == nil {
+		return nil, lang.Error(lang.ErrDeviceNotExists)
+	}
 	if !device.IsConnected() {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
@@ -488,34 +545,41 @@ func (device *Device) GetDI(index int) (*DI, error) {
 		return nil, errors.New("invalid DI index")
 	}
 
-	device.Lock()
-	defer device.Unlock()
+	result := <-synchronized.Do(device, func() interface{} {
+		if di, ok := device.chDI[index]; ok {
+			return di
+		}
 
-	if di, ok := device.chDI[index]; ok {
-		return di, nil
-	}
+		client, err := device.getModbusClient()
+		if err != nil {
+			return err
+		}
 
-	client, err := device.getModbusClient()
-	if err != nil {
+		config := &DIConfig{}
+		if err := config.fetchData(client, index); err != nil {
+			return err
+		}
+
+		di := &DI{
+			Index:  index,
+			config: config,
+			conn:   client,
+		}
+
+		device.chDI[index] = di
+		return di
+	})
+
+	if err, ok := result.(error); ok {
 		return nil, err
 	}
-
-	config := &DIConfig{}
-	if err := config.fetchData(client, index); err != nil {
-		return nil, err
-	}
-
-	di := &DI{
-		Index:  index,
-		config: config,
-		conn:   client,
-	}
-
-	device.chDI[index] = di
-	return di, nil
+	return result.(*DI), nil
 }
 
 func (device *Device) GetDOFromTag(tag string) (*DO, error) {
+	if device == nil {
+		return nil, lang.Error(lang.ErrDeviceNotExists)
+	}
 	if !device.IsConnected() {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
@@ -539,6 +603,9 @@ func (device *Device) GetDOFromTag(tag string) (*DO, error) {
 }
 
 func (device *Device) GetDO(index int) (*DO, error) {
+	if device == nil {
+		return nil, lang.Error(lang.ErrDeviceNotExists)
+	}
 	if !device.IsConnected() {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
@@ -552,29 +619,33 @@ func (device *Device) GetDO(index int) (*DO, error) {
 		return nil, errors.New("invalid DO index")
 	}
 
-	device.Lock()
-	defer device.Unlock()
+	result := <-synchronized.Do(device, func() interface{} {
+		if do, ok := device.chDO[index]; ok {
+			return do
+		}
 
-	if do, ok := device.chDO[index]; ok {
-		return do, nil
-	}
+		client, err := device.getModbusClient()
+		if err != nil {
+			return err
+		}
 
-	client, err := device.getModbusClient()
-	if err != nil {
+		config := &DOConfig{}
+		if err := config.fetchData(client, index); err != nil {
+			return err
+		}
+
+		do := &DO{
+			config: config,
+			Index:  index,
+			conn:   client,
+		}
+
+		device.chDO[index] = do
+		return do
+	})
+
+	if err, ok := result.(error); ok {
 		return nil, err
 	}
-
-	config := &DOConfig{}
-	if err := config.fetchData(client, index); err != nil {
-		return nil, err
-	}
-
-	do := &DO{
-		config: config,
-		Index:  index,
-		conn:   client,
-	}
-
-	device.chDO[index] = do
-	return do, nil
+	return result.(*DO), nil
 }
