@@ -78,7 +78,7 @@ func OnDeviceStatusChanged(conf *json_rpc.Conf, status lang.StrIndex) {
 			return
 		}
 
-		println("[OnDeviceStatusChanged]", conf.CallbackURL, string(data))
+		log.Traceln("[OnDeviceStatusChanged]", conf.CallbackURL, string(data))
 	}
 }
 
@@ -96,7 +96,7 @@ func OnMeasureDiscovered(conf *json_rpc.Conf, tagName, title string) {
 			return
 		}
 
-		println("[OnMeasureDiscovered]", conf.CallbackURL, string(data))
+		log.Traceln("[OnMeasureDiscovered]", conf.CallbackURL, string(data))
 	}
 }
 
@@ -112,6 +112,6 @@ func OnMeasureAlarm(conf *json_rpc.Conf, measureData *measure.Data) {
 			return
 		}
 
-		println("[OnMeasureAlarm]", conf.CallbackURL, string(data))
+		log.Traceln("[OnMeasureAlarm]", conf.CallbackURL, string(data))
 	}
 }

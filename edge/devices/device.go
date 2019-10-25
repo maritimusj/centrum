@@ -217,7 +217,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 
 		defer r.Release()
 
-		adapter.logger.Info("GetRealtimeData: ", uid)
+		adapter.logger.Trace("GetRealtimeData: ", uid)
 		values := make([]map[string]interface{}, 0)
 		for i := 0; i < r.AINum(); i++ {
 			ai, err := adapter.client.GetAI(i)
@@ -313,7 +313,7 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 	adapter.OnDeviceStatusChanged(lang.AdapterInitializing)
 
 	fmt.Printf("%# v", pretty.Formatter(adapter.conf))
-	adapter.logger.Info("start influx http client")
+	adapter.logger.Trace("start influx http client")
 
 	c, err := influx.NewHTTPClient(influx.HTTPConfig{
 		Addr:     adapter.conf.InfluxDBAddress,
@@ -328,7 +328,7 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 		return err
 	}
 
-	adapter.logger.Info("create influx db: ", adapter.conf.DB)
+	adapter.logger.Trace("create influx db: ", adapter.conf.DB)
 
 	_, err = c.Query(influx.Query{
 		Database: adapter.conf.DB,
@@ -407,7 +407,7 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 	makeConnection:
 		client := adapter.client
 		for {
-			adapter.logger.Info("try connect to :", adapter.conf.Address)
+			adapter.logger.Trace("try connect to :", adapter.conf.Address)
 			adapter.OnDeviceStatusChanged(lang.Connecting)
 
 			err := client.Connect(runner.ctx, adapter.conf.Address)
@@ -440,7 +440,7 @@ func (runner *Runner) Serve(adapter *Adapter) error {
 			case <-adapter.done:
 				return
 			case <-time.After(adapter.conf.Interval):
-				adapter.logger.Info("start fetch data from: ", adapter.conf.Address)
+				adapter.logger.Trace("start fetch data from: ", adapter.conf.Address)
 				err := runner.fetchData(adapter)
 
 				if err != nil {

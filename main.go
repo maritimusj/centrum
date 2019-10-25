@@ -12,6 +12,7 @@ import (
 
 	"github.com/maritimusj/centrum/lang"
 	_ "github.com/maritimusj/centrum/lang/zhCN"
+
 	"github.com/maritimusj/centrum/util"
 	webAPI "github.com/maritimusj/centrum/web/api"
 	webApp "github.com/maritimusj/centrum/web/app"

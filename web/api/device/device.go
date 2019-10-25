@@ -9,15 +9,12 @@ import (
 	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/web/app"
-	"github.com/maritimusj/centrum/web/edge"
 	"github.com/maritimusj/centrum/web/helper"
 	"github.com/maritimusj/centrum/web/model"
 	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
 	"github.com/maritimusj/centrum/web/store"
-	log "github.com/sirupsen/logrus"
 	"gopkg.in/go-playground/validator.v9"
-	"strconv"
 	"strings"
 )
 
@@ -63,26 +60,25 @@ func List(ctx iris.Context) hero.Result {
 			return err
 		}
 
-		var result = make([]model.Map, 0, len(devices))
+		var (
+			result = make([]model.Map, 0, len(devices))
+		)
+
 		for _, device := range devices {
 			brief := device.Brief()
+
 			brief["perm"] = iris.Map{
 				"view": true,
 				"ctrl": app.Allow(admin, device, resource.Ctrl),
 			}
-			if baseInfo, err := edge.GetBaseInfo(strconv.FormatInt(device.GetID(), 10)); err != nil {
-				log.Errorf("get base info: %s", err)
-				index, title := global.GetDeviceStatus(device)
-				brief["edge"] = iris.Map{
-					"status": iris.Map{
-						"index": index,
-						"title": title,
-					},
-				}
-			} else {
-				brief["edge"] = baseInfo
-			}
 
+			index, title := global.GetDeviceStatus(device)
+			brief["edge"] = iris.Map{
+				"status": iris.Map{
+					"index": index,
+					"title": title,
+				},
+			}
 			result = append(result, brief)
 		}
 
@@ -94,31 +90,31 @@ func List(ctx iris.Context) hero.Result {
 }
 
 func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
-	return response.Wrap(func() interface{} {
-		var form struct {
-			OrgID    int64   `json:"org"`
-			Title    string  `json:"title" validate:"required"`
-			Groups   []int64 `json:"groups"`
-			ConnStr  string  `json:"params.connStr" validate:"required"`
-			Interval int64   `json:"params.interval" validate:"required"`
-		}
+	var form struct {
+		OrgID    int64   `json:"org"`
+		Title    string  `json:"title" validate:"required"`
+		Groups   []int64 `json:"groups"`
+		ConnStr  string  `json:"params.connStr" validate:"required"`
+		Interval int64   `json:"params.interval" validate:"required"`
+	}
 
-		if err := ctx.ReadJSON(&form); err != nil {
-			return lang.ErrInvalidRequestData
-		}
+	if err := ctx.ReadJSON(&form); err != nil {
+		return response.Wrap(lang.ErrInvalidRequestData)
+	}
 
-		if err := validate.Struct(&form); err != nil {
-			return lang.ErrInvalidRequestData
-		}
+	if err := validate.Struct(&form); err != nil {
+		return response.Wrap(lang.ErrInvalidRequestData)
+	}
 
-		if govalidator.IsIPv4(form.ConnStr) {
-			form.ConnStr += ":502"
-		} else if govalidator.IsIPv6(form.ConnStr) {
-			form.ConnStr = fmt.Sprintf("[%s]:502", form.ConnStr)
-		} else if govalidator.IsMAC(form.ConnStr) {
-			form.ConnStr = strings.ToLower(form.ConnStr)
-		}
+	if govalidator.IsIPv4(form.ConnStr) {
+		form.ConnStr += ":502"
+	} else if govalidator.IsIPv6(form.ConnStr) {
+		form.ConnStr = fmt.Sprintf("[%s]:502", form.ConnStr)
+	} else if govalidator.IsMAC(form.ConnStr) {
+		form.ConnStr = strings.ToLower(form.ConnStr)
+	}
 
+	fn := func() interface{} {
 		result := app.TransactionDo(func(s store.Store) interface{} {
 			var org interface{}
 
@@ -173,7 +169,12 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 		}
 
 		return result
-	})
+	}
+	var result interface{}
+	for i := 0; i < 10; i++ {
+		result = fn()
+	}
+	return response.Wrap(result)
 }
 
 func Detail(deviceID int64, ctx iris.Context) hero.Result {

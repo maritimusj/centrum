@@ -24,7 +24,7 @@ func ActiveDevice(device model.Device) error {
 		InfluxDBUserName: "",
 		InfluxDBPassword: "",
 		CallbackURL:      fmt.Sprintf("%s/%d", global.Params.MustGet("callbackURL"), device.GetID()),
-		LogLevel:         "trace",
+		LogLevel:         "error",
 	}
 
 	return Active(conf)

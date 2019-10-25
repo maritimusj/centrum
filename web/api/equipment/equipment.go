@@ -57,7 +57,10 @@ func List(ctx iris.Context) hero.Result {
 			return err
 		}
 
-		var result = make([]model.Map, 0, len(equipments))
+		var (
+			result = make([]model.Map, 0, len(equipments))
+		)
+
 		for _, equipment := range equipments {
 			brief := equipment.Brief()
 			brief["perm"] = iris.Map{
