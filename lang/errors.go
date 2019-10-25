@@ -3,6 +3,7 @@ package lang
 import (
 	"errors"
 	"fmt"
+	"github.com/maritimusj/centrum/synchronized"
 	"runtime"
 )
 
@@ -62,34 +63,41 @@ const (
 )
 
 func ErrorStr(code ErrorCode, params ...interface{}) string {
-	var str string
-	if region, ok := errStrMap[regionIndex]; ok {
-		if str, ok = region[code]; !ok {
-			str = region[ErrUnknown]
+	str := <-synchronized.Do("error.str", func() interface{} {
+		var str string
+		if region, ok := errStrMap[regionIndex]; ok {
+			if str, ok = region[code]; !ok {
+				str = region[ErrUnknown]
+			}
+		} else {
+			str = region[ErrUnknownLang]
 		}
-	} else {
-		str = region[ErrUnknownLang]
-	}
-	return str
+		return fmt.Sprintf(str, params...)
+	})
+	return str.(string)
 }
 
 func Error(code ErrorCode, params ...interface{}) error {
-	var str string
-	if region, ok := errStrMap[regionIndex]; ok {
-		if str, ok = region[code]; !ok {
-			str = region[ErrUnknown]
+	err := <-synchronized.Do("error.str", func() interface{} {
+		var str string
+		if region, ok := errStrMap[regionIndex]; ok {
+			if str, ok = region[code]; !ok {
+				str = region[ErrUnknown]
+			}
+		} else {
+			str = region[ErrUnknownLang]
 		}
-	} else {
-		str = region[ErrUnknownLang]
-	}
-	errStr := fmt.Sprintf(str, params...)
-	if err, ok := errMap[errStr]; ok {
-		return err
-	}
+		errStr := fmt.Sprintf(str, params...)
+		if err, ok := errMap[errStr]; ok {
+			return err
+		}
 
-	err := errors.New(errStr)
-	errMap[errStr] = err
-	return err
+		err := errors.New(errStr)
+		errMap[errStr] = err
+		return err
+	})
+
+	return err.(error)
 }
 
 func InternalError(err error) error {

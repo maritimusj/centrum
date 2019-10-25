@@ -1,9 +1,10 @@
 package main
 
 import (
+	_ "github.com/maritimusj/centrum/edge/lang/zhCN"
+
 	"context"
 	"github.com/maritimusj/centrum/edge/devices/InverseServer"
-	_ "github.com/maritimusj/centrum/edge/lang/zhCN"
 
 	"flag"
 	"fmt"

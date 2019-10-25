@@ -1,6 +1,9 @@
 package lang
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/maritimusj/centrum/synchronized"
+)
 
 const (
 	_ = iota
@@ -21,10 +24,13 @@ func Register(region int, lang map[StrIndex]string, err map[ErrorCode]string) {
 }
 
 func Str(index StrIndex, params ...interface{}) string {
-	if region, ok := langMap[regionIndex]; ok {
-		if str, ok := region[index]; ok {
-			return fmt.Sprintf(str, params...)
+	str := <-synchronized.Do("lang.str", func() interface{} {
+		if region, ok := langMap[regionIndex]; ok {
+			if str, ok := region[index]; ok {
+				return fmt.Sprintf(str, params...)
+			}
 		}
-	}
-	return fmt.Sprintf("<unknown string index, region: %d, index: %d>", regionIndex, index)
+		return fmt.Sprintf("<unknown string index, region: %d, index: %d>", regionIndex, index)
+	})
+	return str.(string)
 }
