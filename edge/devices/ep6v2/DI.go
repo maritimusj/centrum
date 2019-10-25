@@ -81,6 +81,5 @@ func (c *DIConfig) fetchData(conn modbus.Client, index int) error {
 	c.Inverse = data[7] > 0
 	c.AlarmEnabled = data[9] > 0
 	c.AlarmConfig = int(binary.BigEndian.Uint16(data[12:]))
-	fmt.Printf("%#v, %#v, %d", data, c.AlarmEnabled, c.AlarmConfig)
 	return nil
 }

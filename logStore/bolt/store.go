@@ -80,14 +80,6 @@ func (store *store) releaseEncoder(encoder *JsonCopier) {
 	store.encoderPool.Put(encoder)
 }
 
-func (store *store) getEntry() map[string]interface{} {
-	return store.entryPool.Get().(map[string]interface{})
-}
-
-func (store *store) releaseEntry(entry map[string]interface{}) {
-	store.entryPool.Put(entry)
-}
-
 func (store *store) Close() {
 	close(store.done)
 
@@ -158,10 +150,9 @@ func (store *store) Fire(entry *logrus.Entry) error {
 		return err
 	}
 
-	e := store.getEntry()
+	e := map[string]interface{}{}
 	err = encoder.decode(&e)
 	if err != nil {
-		store.releaseEntry(e)
 		return err
 	}
 
@@ -197,8 +188,6 @@ func (store *store) worker(db *bolt.DB, cache <-chan *logStore.Entry) {
 		if err := store.write(db, entry); err != nil {
 			fmt.Println("fail to write log to db:", err)
 		}
-
-		store.releaseEntry(entry.Fields)
 	}
 
 	for {

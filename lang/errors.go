@@ -19,6 +19,7 @@ const (
 	ErrUnknown
 	ErrUnknownLang
 	ErrInternal
+	ErrNetworkFail
 	ErrServerIsBusy
 	ErrInvalidDBConnStr
 	ErrInvalidRequestData

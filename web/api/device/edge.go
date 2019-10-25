@@ -10,6 +10,7 @@ import (
 	"github.com/maritimusj/centrum/web/model"
 	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
+	"net"
 )
 
 func Reset(deviceID int64, ctx iris.Context) hero.Result {
@@ -71,6 +72,9 @@ func Data(deviceID int64, ctx iris.Context) hero.Result {
 
 		data, err := edge.GetData(device)
 		if err != nil {
+			if netErr, ok := err.(net.Error); ok {
+				return lang.Error(lang.ErrNetworkFail, netErr.Error())
+			}
 			return err
 		}
 
