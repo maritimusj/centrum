@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"sync"
+	"time"
+
 	"github.com/kr/pretty"
 	"github.com/maritimusj/centrum/edge/devices/InverseServer"
 	"github.com/maritimusj/centrum/edge/devices/ep6v2"
@@ -11,9 +15,6 @@ import (
 	"github.com/maritimusj/centrum/edge/lang"
 	"github.com/maritimusj/centrum/json_rpc"
 	log "github.com/sirupsen/logrus"
-	"net"
-	"sync"
-	"time"
 
 	influx "github.com/influxdata/influxdb1-client/v2"
 	httpLogStore "github.com/maritimusj/centrum/edge/logStore/http"
@@ -326,7 +327,14 @@ func (runner *Runner) getMeasureData(client influx.Client, db string, ch <-chan 
 func (runner *Runner) Serve(adapter *Adapter) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
-			err = e.(error)
+			switch v := e.(type) {
+			case error:
+				err = v
+			case string:
+				err = errors.New(v)
+			default:
+				err = lang.InternalError(errors.New("unknown error"))
+			}
 		}
 	}()
 
