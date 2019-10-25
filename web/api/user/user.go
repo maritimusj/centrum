@@ -328,9 +328,10 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 			type P struct {
 				ResourceClass int   `json:"class"`
 				ResourceID    int64 `json:"id"`
-				View          *bool `json:"view"`   //是否可以观察资源
-				Ctrl          *bool `json:"ctrl"`   //是否可以控制资源
-				Enable        *bool `json:"enable"` //角色是否启用
+
+				View *bool `json:"view"`   //是否可以观察资源
+				Ctrl *bool `json:"ctrl"`   //是否可以控制资源
+				Role *bool `json:"enable"` //角色是否启用
 			}
 			var form struct {
 				Policies []P `json:"policies"`
@@ -348,13 +349,13 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 
 			//先处理角色设定
 			for _, p := range form.Policies {
-				if p.Enable != nil {
+				if p.Role != nil {
 					role, err := s.GetRole(p.ResourceID)
 					if err != nil {
 						return err
 					}
 					if app.IsDefaultAdminUser(admin) || role.Name() != lang.RoleSystemAdminName {
-						if *p.Enable {
+						if *p.Role {
 							newRoles.Add(role.GetID())
 						} else {
 							newRoles.Remove(role.GetID())
@@ -370,7 +371,7 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 			update := func(role model.Role) interface{} {
 				for _, p := range form.Policies {
 					//角色设置，则跳过
-					if p.Enable != nil {
+					if p.Role != nil {
 						continue
 					}
 
@@ -386,14 +387,22 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 
 					if p.View != nil {
 						effect := util.If(*p.View, resource.Allow, resource.Deny).(resource.Effect)
-						_, err = role.SetPolicy(res, resource.View, effect, make(map[model.Resource]struct{}))
+						var recursiveMap map[model.Resource]struct{}
+						if effect == resource.Deny {
+							recursiveMap = make(map[model.Resource]struct{})
+						}
+						_, err = role.SetPolicy(res, resource.View, effect, recursiveMap)
 						if err != nil {
 							return err
 						}
 					}
 					if p.Ctrl != nil {
 						effect := util.If(*p.Ctrl, resource.Allow, resource.Deny).(resource.Effect)
-						_, err = role.SetPolicy(res, resource.Ctrl, effect, make(map[model.Resource]struct{}))
+						var recursiveMap map[model.Resource]struct{}
+						if effect == resource.Deny {
+							recursiveMap = make(map[model.Resource]struct{})
+						}
+						_, err = role.SetPolicy(res, resource.Ctrl, effect, recursiveMap)
 						if err != nil {
 							return err
 						}
