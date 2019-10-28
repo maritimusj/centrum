@@ -20,7 +20,6 @@ import (
 	"github.com/maritimusj/centrum/web/api/web"
 	"github.com/maritimusj/centrum/web/app"
 	"github.com/maritimusj/centrum/web/perm"
-	"gopkg.in/go-playground/validator.v9"
 	"sync"
 	"time"
 
@@ -62,7 +61,6 @@ func (server *server) Wait() {
 }
 
 func (server *server) Start(ctx context.Context, cfg *config.Config) {
-	hero.Register(validator.New())
 	server.app.Logger().SetLevel(cfg.LogLevel())
 
 	crs := cors.New(cors.Options{

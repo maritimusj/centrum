@@ -16,7 +16,6 @@ import (
 	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
 	"github.com/maritimusj/centrum/web/store"
-	"gopkg.in/go-playground/validator.v9"
 )
 
 func List(ctx iris.Context) hero.Result {
@@ -90,20 +89,20 @@ func List(ctx iris.Context) hero.Result {
 	})
 }
 
-func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
+func Create(ctx iris.Context) hero.Result {
 	var form struct {
 		OrgID    int64   `json:"org"`
-		Title    string  `json:"title" validate:"required"`
+		Title    string  `json:"title" valid:"required"`
 		Groups   []int64 `json:"groups"`
-		ConnStr  string  `json:"params.connStr" validate:"required"`
-		Interval int64   `json:"params.interval" validate:"required"`
+		ConnStr  string  `json:"params.connStr" valid:"required"`
+		Interval int64   `json:"params.interval"`
 	}
 
 	if err := ctx.ReadJSON(&form); err != nil {
 		return response.Wrap(lang.ErrInvalidRequestData)
 	}
 
-	if err := validate.Struct(&form); err != nil {
+	if _, err := govalidator.ValidateStruct(&form); err != nil {
 		return response.Wrap(lang.ErrInvalidRequestData)
 	}
 

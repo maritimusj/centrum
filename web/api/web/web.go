@@ -41,8 +41,8 @@ func CheckUser(ctx iris.Context) {
 func Login(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
-			Username string `form:"username" validate:"required"`
-			Password string `form:"password" validate:"required"`
+			Username string `form:"username" valid:"required"`
+			Password string `form:"password" valid:"required"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {

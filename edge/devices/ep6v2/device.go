@@ -45,7 +45,7 @@ type Device struct {
 
 func New() *Device {
 	return &Device{
-		status:lang.Disconnected,
+		status: lang.Disconnected,
 	}
 }
 

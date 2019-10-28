@@ -1,6 +1,7 @@
 package equipment
 
 import (
+	"github.com/asaskevich/govalidator"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/lang"
@@ -10,7 +11,6 @@ import (
 	"github.com/maritimusj/centrum/web/resource"
 	"github.com/maritimusj/centrum/web/response"
 	"github.com/maritimusj/centrum/web/store"
-	"gopkg.in/go-playground/validator.v9"
 )
 
 func StateList(equipmentID int64, ctx iris.Context) hero.Result {
@@ -63,19 +63,19 @@ func StateList(equipmentID int64, ctx iris.Context) hero.Result {
 	})
 }
 
-func CreateState(equipmentID int64, ctx iris.Context, validate *validator.Validate) hero.Result {
+func CreateState(equipmentID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
-			Title           string `json:"title" validate:"required"`
+			Title           string `json:"title" valid:"required"`
 			Desc            string `json:"desc"`
-			MeasureID       int64  `json:"measure_id" validate:"required"`
+			MeasureID       int64  `json:"measure_id" valid:"required"`
 			TransformScript string `json:"script"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
 			return lang.ErrInvalidRequestData
 		}
-		if err := validate.Struct(&form); err != nil {
+		if _, err := govalidator.ValidateStruct(&form); err != nil {
 			return lang.ErrInvalidRequestData
 		}
 

@@ -5,19 +5,19 @@ import (
 )
 
 type Option struct {
-	Limit         int64
-	Offset        int64
-	Kind          resource.MeasureKind
-	Class         resource.Class
-	OrgID         int64
-	ParentID      *int64
-	RoleID        *int64
-	UserID        *int64
-	GroupID       *int64
-	DeviceID      int64
-	MeasureID int64
-	EquipmentID   int64
-	StateID int64
+	Limit       int64
+	Offset      int64
+	Kind        resource.MeasureKind
+	Class       resource.Class
+	OrgID       int64
+	ParentID    *int64
+	RoleID      *int64
+	UserID      *int64
+	GroupID     *int64
+	DeviceID    int64
+	MeasureID   int64
+	EquipmentID int64
+	StateID     int64
 
 	Name          string
 	Keyword       string
