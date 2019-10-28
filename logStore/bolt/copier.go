@@ -2,19 +2,19 @@ package bolt
 
 import (
 	"bytes"
-	"encoding/json"
+	"encoding/gob"
 )
 
 type JsonCopier struct {
-	encoder *json.Encoder
-	decoder *json.Decoder
+	encoder *gob.Encoder
+	decoder *gob.Decoder
 }
 
 func NewJsonCopier() *JsonCopier {
 	buffer := bytes.Buffer{}
 	return &JsonCopier{
-		encoder: json.NewEncoder(&buffer),
-		decoder: json.NewDecoder(&buffer),
+		encoder: gob.NewEncoder(&buffer),
+		decoder: gob.NewDecoder(&buffer),
 	}
 }
 
