@@ -15,12 +15,15 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		s := app.Store()
+		var (
+			s = app.Store()
 
-		var params []helper.OptionFN
-		var orgID int64
+			params []helper.OptionFN
+			orgID  int64
 
-		admin := s.MustGetUserFromContext(ctx)
+			admin = s.MustGetUserFromContext(ctx)
+		)
+
 		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)
@@ -28,12 +31,16 @@ func List(ctx iris.Context) hero.Result {
 		} else {
 			orgID = admin.OrganizationID()
 		}
+
 		if orgID > 0 {
 			params = append(params, helper.Organization(orgID))
 		}
 
-		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+		var (
+			page     = ctx.URLParamInt64Default("page", 1)
+			pageSize = ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+		)
+
 		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")

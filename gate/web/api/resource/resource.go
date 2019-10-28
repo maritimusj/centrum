@@ -70,20 +70,22 @@ func getRolePerm(role model.Role, res model.Resource) (interface{}, error) {
 
 func List(classID int, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
-		keyword := ctx.URLParam("keyword")
-		roleID := ctx.URLParamInt64Default("role", 0)
-		userID := ctx.URLParamInt64Default("user", 0)
+		var (
+			page     = ctx.URLParamInt64Default("page", 1)
+			pageSize = ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+			keyword  = ctx.URLParam("keyword")
+			roleID   = ctx.URLParamInt64Default("role", 0)
+			userID   = ctx.URLParamInt64Default("user", 0)
+		)
 
 		var (
 			err error
 
 			role model.Role
 			user model.User
-		)
 
-		s := app.Store()
+			s = app.Store()
+		)
 
 		if roleID > 0 {
 			role, err = s.GetRole(roleID)
@@ -175,24 +177,26 @@ func List(classID int, ctx iris.Context) hero.Result {
 
 func GetList(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+		var (
+			page     = ctx.URLParamInt64Default("page", 1)
+			pageSize = ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 
-		roleID := ctx.URLParamInt64Default("role", 0)
-		userID := ctx.URLParamInt64Default("user", 0)
-		keyword := ctx.URLParam("keyword")
+			roleID  = ctx.URLParamInt64Default("role", 0)
+			userID  = ctx.URLParamInt64Default("user", 0)
+			keyword = ctx.URLParam("keyword")
 
-		var params = []helper.OptionFN{
-			helper.Page(page, pageSize),
-		}
+			params = []helper.OptionFN{
+				helper.Page(page, pageSize),
+			}
+		)
 
 		if keyword != "" {
 			params = append(params, helper.Keyword(keyword))
 		}
 
-		s := app.Store()
-
 		var (
+			s = app.Store()
+
 			err       error
 			resources []model.Resource
 			total     int64

@@ -24,7 +24,7 @@ import (
 	"github.com/maritimusj/centrum/gate/web/api/user"
 	"github.com/maritimusj/centrum/gate/web/api/web"
 	"github.com/maritimusj/centrum/gate/web/app"
-	 "github.com/maritimusj/centrum/gate/web/perm"
+	"github.com/maritimusj/centrum/gate/web/perm"
 	resourceDef "github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/global"
 	"sync"

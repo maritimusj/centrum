@@ -16,11 +16,14 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		s := app.Store()
-		admin := s.MustGetUserFromContext(ctx)
+		var (
+			s     = app.Store()
+			admin = s.MustGetUserFromContext(ctx)
 
-		var params []helper.OptionFN
-		var orgID int64
+			params []helper.OptionFN
+			orgID  int64
+		)
+
 		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)

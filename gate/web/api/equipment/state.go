@@ -26,15 +26,17 @@ func StateList(equipmentID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
-		kind := ctx.URLParamIntDefault("kind", int(resource.AllKind))
+		var (
+			page     = ctx.URLParamInt64Default("page", 1)
+			pageSize = ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+			kind     = ctx.URLParamIntDefault("kind", int(resource.AllKind))
 
-		var params = []helper.OptionFN{
-			helper.Page(page, pageSize),
-			helper.Kind(resource.MeasureKind(kind)),
-			helper.Equipment(equipment.GetID()),
-		}
+			params = []helper.OptionFN{
+				helper.Page(page, pageSize),
+				helper.Kind(resource.MeasureKind(kind)),
+				helper.Equipment(equipment.GetID()),
+			}
+		)
 
 		if !app.IsDefaultAdminUser(admin) {
 			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))

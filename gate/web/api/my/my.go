@@ -65,10 +65,13 @@ func Update(ctx iris.Context) hero.Result {
 
 func Perm(class string, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		s := app.Store()
+		var (
+			s = app.Store()
 
-		var res model.Resource
-		var err error
+			res model.Resource
+			err error
+		)
+
 		switch class {
 		case "api":
 			id := ctx.URLParam("id")
@@ -120,10 +123,13 @@ func MultiPerm(class string, ctx iris.Context) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		s := app.Store()
-		my := s.MustGetUserFromContext(ctx)
+		var (
+			s  = app.Store()
+			my = s.MustGetUserFromContext(ctx)
 
-		var perms = iris.Map{}
+			perms = iris.Map{}
+		)
+
 		switch class {
 		case "api":
 			for _, name := range form.Names {

@@ -6,7 +6,7 @@ import (
 	"github.com/maritimusj/centrum/gate/config"
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/app"
-	 "github.com/maritimusj/centrum/gate/web/response"
+	"github.com/maritimusj/centrum/gate/web/response"
 )
 
 type APIConfig struct {

@@ -109,9 +109,9 @@ func InitLog(levelStr string) error {
 func Init(ctx context.Context, logLevel string) error {
 	Ctx, cancel = context.WithCancel(ctx)
 
-	const dbFile =  "./chuanyan.db"
+	const dbFile = "./chuanyan.db"
 	var initDB bool
-	if _, err := os.Stat(dbFile); err != nil  {
+	if _, err := os.Stat(dbFile); err != nil {
 		if os.IsNotExist(err) {
 			f, err := os.Create(dbFile)
 			if err != nil {
@@ -125,7 +125,7 @@ func Init(ctx context.Context, logLevel string) error {
 	if err := InitDB(map[string]interface{}{
 		//"connStr": "root:12345678@/chuanyan?charset=utf8mb4&parseTime=true&loc=Local",
 		"connStr": dbFile,
-		"initDB": initDB,
+		"initDB":  initDB,
 	}); err != nil {
 		return err
 	}

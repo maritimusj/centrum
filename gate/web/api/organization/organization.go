@@ -15,19 +15,23 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		s := app.Store()
-		admin := s.MustGetUserFromContext(ctx)
+		var (
+			s     = app.Store()
+			admin = s.MustGetUserFromContext(ctx)
+		)
 
 		if !app.IsDefaultAdminUser(admin) {
 			return lang.ErrNoPermission
 		}
 
-		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+		var (
+			page     = ctx.URLParamInt64Default("page", 1)
+			pageSize = ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 
-		var params = []helper.OptionFN{
-			helper.Page(page, pageSize),
-		}
+			params = []helper.OptionFN{
+				helper.Page(page, pageSize),
+			}
+		)
 
 		keyword := ctx.URLParam("keyword")
 		if keyword != "" {

@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func main()  {
+func main() {
 	pid := fmt.Sprintf("%d", os.Getpid())
 	err := ioutil.WriteFile("./edge.pid", []byte(pid), os.ModePerm)
 	if err != nil {

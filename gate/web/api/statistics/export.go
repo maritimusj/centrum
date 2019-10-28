@@ -48,12 +48,14 @@ func Export(ctx iris.Context) {
 			return err
 		}
 
-		axisMap := AxisMap{}
+		var (
+			axisMap = AxisMap{}
 
-		s := app.Store()
-		admin := s.MustGetUserFromContext(ctx)
-		excel := excelize.NewFile()
-		alarmStyle, _ := excel.NewStyle(`{"font":{"color":"#f44336"}}`)
+			s             = app.Store()
+			admin         = s.MustGetUserFromContext(ctx)
+			excel         = excelize.NewFile()
+			alarmStyle, _ = excel.NewStyle(`{"font":{"color":"#f44336"}}`)
+		)
 
 		exportMeasureFN := func(sheetName string, rows *models.Row) {
 			excel.SetActiveSheet(excel.NewSheet(sheetName))

@@ -14,16 +14,19 @@ import (
 
 func List(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		s := app.Store()
+		var (
+			s = app.Store()
 
-		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+			page     = ctx.URLParamInt64Default("page", 1)
+			pageSize = ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 
-		var params = []helper.OptionFN{
-			helper.Page(page, pageSize),
-		}
+			params = []helper.OptionFN{
+				helper.Page(page, pageSize),
+			}
 
-		admin := s.MustGetUserFromContext(ctx)
+			admin = s.MustGetUserFromContext(ctx)
+		)
+
 		if !app.IsDefaultAdminUser(admin) {
 			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
 			params = append(params, helper.User(admin.GetID()))
@@ -33,6 +36,7 @@ func List(ctx iris.Context) hero.Result {
 			start *time.Time
 			end   *time.Time
 		)
+
 		if ctx.URLParamExists("start") {
 			s, err := time.Parse("2006-01-02_15:04:05", ctx.URLParam("start"))
 			if err != nil {
@@ -112,8 +116,10 @@ func Confirm(alarmID int64, ctx iris.Context) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
-		s := app.Store()
-		admin := s.MustGetUserFromContext(ctx)
+		var (
+			s     = app.Store()
+			admin = s.MustGetUserFromContext(ctx)
+		)
 
 		alarm, err := s.GetAlarm(alarmID)
 		if err != nil {
@@ -144,8 +150,10 @@ func Confirm(alarmID int64, ctx iris.Context) hero.Result {
 
 func Delete(alarmID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		s := app.Store()
-		admin := s.MustGetUserFromContext(ctx)
+		var (
+			s     = app.Store()
+			admin = s.MustGetUserFromContext(ctx)
+		)
 
 		alarm, err := s.GetAlarm(alarmID)
 		if err != nil {
