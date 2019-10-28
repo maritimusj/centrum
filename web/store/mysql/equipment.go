@@ -47,7 +47,6 @@ func (e *Equipment) UID() string {
 }
 
 func (e *Equipment) Logger() *log.Entry {
-	println("equipment logger:", e.OrganizationID(), e.UID())
 	return log.WithFields(log.Fields{
 		"org": e.OrganizationID(),
 		"src": e.UID(),

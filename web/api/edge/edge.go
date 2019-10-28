@@ -67,7 +67,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 		if form.Status.Index == int(edgeLang.Disconnected) {
 			org, _ := global.GetDeviceStatus(device)
 			if org == int(edgeLang.Connected) {
-				//?
+				//断线警报？
 			}
 		}
 		global.UpdateDeviceStatus(device, form.Status.Index, form.Status.Title)

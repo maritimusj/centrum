@@ -336,6 +336,8 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 				err = lang.InternalError(errors.New("unknown error"))
 			}
 		}
+
+		adapter.OnDeviceStatusChanged(lang.MalFunctioned)
 	}()
 
 	adapter.OnDeviceStatusChanged(lang.AdapterInitializing)
@@ -345,6 +347,7 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 
 	c, err := runner.InitInfluxDB(adapter.conf)
 	if err != nil {
+		adapter.OnDeviceStatusChanged(lang.InfluxDBError)
 		return err
 	}
 

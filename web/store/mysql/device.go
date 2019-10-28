@@ -60,7 +60,6 @@ func (d *Device) UID() string {
 }
 
 func (d *Device) Logger() *log.Entry {
-	println("device logger:", d.OrganizationID(), d.UID())
 	return log.WithFields(log.Fields{
 		"org": d.OrganizationID(),
 		"src": d.UID(),
@@ -256,6 +255,18 @@ func (d *Device) CreatedAt() time.Time {
 func (d *Device) Destroy() error {
 	if d == nil {
 		return lang.Error(lang.ErrDeviceNotFound)
+	}
+
+	alarms, _, err := d.store.GetAlarmList(nil, nil, helper.Device(d.GetID()))
+	if err != nil {
+		return err
+	}
+
+	for _, alarm := range alarms {
+		err = alarm.Destroy()
+		if err != nil {
+			return err
+		}
 	}
 
 	measures, _, err := d.store.GetMeasureList(helper.Device(d.GetID()))

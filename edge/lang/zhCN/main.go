@@ -13,6 +13,7 @@ var (
 		lang.Connected:           "已连接",
 		lang.Disconnected:        "已断开",
 		lang.MalFunctioned:       "故障",
+		lang.InfluxDBError:       "数据库错误",
 	}
 
 	errStrMap = map[lang.ErrorCode]string{

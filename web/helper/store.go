@@ -15,7 +15,10 @@ type Option struct {
 	UserID        *int64
 	GroupID       *int64
 	DeviceID      int64
+	MeasureID int64
 	EquipmentID   int64
+	StateID int64
+
 	Name          string
 	Keyword       string
 	GetTotal      *bool
@@ -107,9 +110,21 @@ func Device(deviceID int64) OptionFN {
 	}
 }
 
+func Measure(measureID int64) OptionFN {
+	return func(i *Option) {
+		i.MeasureID = measureID
+	}
+}
+
 func Equipment(equipmentID int64) OptionFN {
 	return func(i *Option) {
 		i.EquipmentID = equipmentID
+	}
+}
+
+func State(stateID int64) OptionFN {
+	return func(i *Option) {
+		i.StateID = stateID
 	}
 }
 

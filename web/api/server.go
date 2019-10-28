@@ -219,7 +219,7 @@ func (server *server) Start(ctx context.Context, cfg *config.Config) {
 				p.Delete("/{id:int64}", hero.Handler(equipment.DeleteState)).Name = ResourceDef.StateDelete
 
 				//历史趋势
-				p.Get("/{id:int64}/statistics", hero.Handler(statistics.State))
+				p.Post("/{id:int64}/statistics", hero.Handler(statistics.State))
 			})
 
 			//警报

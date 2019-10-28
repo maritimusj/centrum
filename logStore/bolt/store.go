@@ -232,8 +232,6 @@ func (store *store) write(db *bolt.DB, entry *logStore.Entry) error {
 		src = logStore.SystemLog
 	}
 
-	println("logStore.write:", orgID, src)
-
 	return db.Batch(func(tx *bolt.Tx) error {
 		orgB, err := tx.CreateBucketIfNotExists(i2b(orgID))
 		if err != nil {
@@ -340,18 +338,16 @@ func (store *store) GetList(orgID int64, src, level string, start *uint64, offse
 	if src == "" {
 		src = logStore.SystemLog
 	}
-	println("log:", orgID, src)
 
 	var errNoResult = errors.New("no result")
-
 	err = store.db.View(func(tx *bolt.Tx) error {
 		orgB := tx.Bucket(i2b(uint64(orgID)))
 		if orgB == nil {
-			return fmt.Errorf("org:%s", errNoResult)
+			return errNoResult
 		}
 		logB := orgB.Bucket([]byte("log"))
 		if logB == nil {
-			return fmt.Errorf("log:%s", errNoResult)
+			return errNoResult
 		}
 
 		srcB := logB.Bucket([]byte(src))
@@ -361,7 +357,7 @@ func (store *store) GetList(orgID int64, src, level string, start *uint64, offse
 
 		entriesB := srcB.Bucket([]byte("entries"))
 		if entriesB == nil {
-			return fmt.Errorf("entries:%s", errNoResult)
+			return errNoResult
 		}
 
 		if level != "" {
@@ -407,7 +403,6 @@ func (store *store) GetList(orgID int64, src, level string, start *uint64, offse
 	})
 
 	if err != nil {
-		println("logStore.GetList:", err.Error())
 		result = []*logStore.Data{}
 		err = nil
 	}

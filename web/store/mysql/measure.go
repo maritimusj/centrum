@@ -120,6 +120,19 @@ func (m *Measure) CreatedAt() time.Time {
 }
 
 func (m *Measure) Destroy() error {
+
+	alarms, _, err := m.store.GetAlarmList(nil, nil, helper.Measure(m.GetID()))
+	if err != nil {
+		return err
+	}
+
+	for _, alarm := range alarms {
+		err = alarm.Destroy()
+		if err != nil {
+			return err
+		}
+	}
+
 	policies, _, err := m.store.GetPolicyList(m)
 	if err != nil {
 		return err

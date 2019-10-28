@@ -2324,6 +2324,11 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		params = append(params, option.DeviceID)
 	}
 
+	if option.MeasureID > 0 {
+		where += " AND a.measure_id=?"
+		params = append(params, option.MeasureID)
+	}
+
 	if start != nil {
 		where += " AND a.created_at>=?"
 		params = append(params, *start)

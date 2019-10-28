@@ -165,7 +165,6 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 		})
 
 		if data, ok := result.(event.Data); ok {
-			println("device created")
 			app.Event.Publish(event.DeviceCreated, data.Get("userID"), data.Get("deviceID"))
 			return data.Pop("result")
 		}

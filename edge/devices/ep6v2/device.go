@@ -44,7 +44,9 @@ type Device struct {
 }
 
 func New() *Device {
-	return &Device{}
+	return &Device{
+		status:lang.Disconnected,
+	}
 }
 
 func (device *Device) SetConnector(connector Connector) {

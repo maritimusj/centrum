@@ -9,4 +9,5 @@ const (
 	Connected
 	Disconnected
 	MalFunctioned
+	InfluxDBError
 )
