@@ -10,12 +10,12 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	"github.com/maritimusj/centrum/lang"
-	_ "github.com/maritimusj/centrum/lang/zhCN"
+	"github.com/maritimusj/centrum/gate/lang"
+	_ "github.com/maritimusj/centrum/gate/lang/zhCN"
 
+	webAPI "github.com/maritimusj/centrum/gate/web/api"
+	webApp "github.com/maritimusj/centrum/gate/web/app"
 	"github.com/maritimusj/centrum/util"
-	webAPI "github.com/maritimusj/centrum/web/api"
-	webApp "github.com/maritimusj/centrum/web/app"
 	log "github.com/sirupsen/logrus"
 )
 
