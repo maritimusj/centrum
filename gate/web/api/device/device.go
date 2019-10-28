@@ -3,13 +3,13 @@ package device
 import (
 	"fmt"
 	"github.com/maritimusj/centrum/gate/event"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	app2 "github.com/maritimusj/centrum/gate/web/app"
-	helper2 "github.com/maritimusj/centrum/gate/web/helper"
-	model2 "github.com/maritimusj/centrum/gate/web/model"
-	resource2 "github.com/maritimusj/centrum/gate/web/resource"
-	response2 "github.com/maritimusj/centrum/gate/web/response"
-	store2 "github.com/maritimusj/centrum/gate/web/store"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/app"
+	"github.com/maritimusj/centrum/gate/web/helper"
+	"github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/web/response"
+	"github.com/maritimusj/centrum/gate/web/store"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
@@ -19,13 +19,13 @@ import (
 )
 
 func List(ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		var params []helper2.OptionFN
+	return response.Wrap(func() interface{} {
+		var params []helper.OptionFN
 		var orgID int64
 
-		s := app2.Store()
+		s := app.Store()
 		admin := s.MustGetUserFromContext(ctx)
-		if app2.IsDefaultAdminUser(admin) {
+		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)
 			}
@@ -33,26 +33,26 @@ func List(ctx iris.Context) hero.Result {
 			orgID = admin.OrganizationID()
 		}
 		if orgID > 0 {
-			params = append(params, helper2.Organization(orgID))
+			params = append(params, helper.Organization(orgID))
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app2.Config.DefaultPageSize())
-		params = append(params, helper2.Page(page, pageSize))
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
 		if keyword != "" {
-			params = append(params, helper2.Keyword(keyword))
+			params = append(params, helper.Keyword(keyword))
 		}
 
 		if ctx.URLParamExists("group") {
 			groupID := ctx.URLParamInt64Default("group", 0)
-			params = append(params, helper2.Group(groupID))
+			params = append(params, helper.Group(groupID))
 		}
 
-		if !app2.IsDefaultAdminUser(admin) {
-			params = append(params, helper2.User(admin.GetID()))
-			params = append(params, helper2.DefaultEffect(app2.Config.DefaultEffect()))
+		if !app.IsDefaultAdminUser(admin) {
+			params = append(params, helper.User(admin.GetID()))
+			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
 		}
 
 		devices, total, err := s.GetDeviceList(params...)
@@ -61,7 +61,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		var (
-			result = make([]model2.Map, 0, len(devices))
+			result = make([]model.Map, 0, len(devices))
 		)
 
 		for _, device := range devices {
@@ -69,7 +69,7 @@ func List(ctx iris.Context) hero.Result {
 
 			brief["perm"] = iris.Map{
 				"view": true,
-				"ctrl": app2.Allow(admin, device, resource2.Ctrl),
+				"ctrl": app.Allow(admin, device, resource.Ctrl),
 			}
 
 			index, title := global.GetDeviceStatus(device)
@@ -99,11 +99,11 @@ func Create(ctx iris.Context) hero.Result {
 	}
 
 	if err := ctx.ReadJSON(&form); err != nil {
-		return response2.Wrap(lang2.ErrInvalidRequestData)
+		return response.Wrap(lang.ErrInvalidRequestData)
 	}
 
 	if _, err := govalidator.ValidateStruct(&form); err != nil {
-		return response2.Wrap(lang2.ErrInvalidRequestData)
+		return response.Wrap(lang.ErrInvalidRequestData)
 	}
 
 	if govalidator.IsIPv4(form.ConnStr) {
@@ -115,15 +115,15 @@ func Create(ctx iris.Context) hero.Result {
 	}
 
 	fn := func() interface{} {
-		result := app2.TransactionDo(func(s store2.Store) interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			var org interface{}
 
 			admin := s.MustGetUserFromContext(ctx)
-			if app2.IsDefaultAdminUser(admin) {
+			if app.IsDefaultAdminUser(admin) {
 				if form.OrgID > 0 {
 					org = form.OrgID
 				} else {
-					org = app2.Config.DefaultOrganization()
+					org = app.Config.DefaultOrganization()
 				}
 			} else {
 				org = admin.OrganizationID()
@@ -151,7 +151,7 @@ func Create(ctx iris.Context) hero.Result {
 				}
 			}
 
-			err = app2.SetAllow(admin, device, resource2.View, resource2.Ctrl)
+			err = app.SetAllow(admin, device, resource.View, resource.Ctrl)
 			if err != nil {
 				return err
 			}
@@ -164,26 +164,26 @@ func Create(ctx iris.Context) hero.Result {
 		})
 
 		if data, ok := result.(event.Data); ok {
-			app2.Event.Publish(event.DeviceCreated, data.Get("userID"), data.Get("deviceID"))
+			app.Event.Publish(event.DeviceCreated, data.Get("userID"), data.Get("deviceID"))
 			return data.Pop("result")
 		}
 
 		return result
 	}
 
-	return response2.Wrap(fn())
+	return response.Wrap(fn())
 }
 
 func Detail(deviceID int64, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		device, err := app2.Store().GetDevice(deviceID)
+	return response.Wrap(func() interface{} {
+		device, err := app.Store().GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
 
-		admin := app2.Store().MustGetUserFromContext(ctx)
-		if !app2.Allow(admin, device, resource2.View) {
-			return lang2.ErrNoPermission
+		admin := app.Store().MustGetUserFromContext(ctx)
+		if !app.Allow(admin, device, resource.View) {
+			return lang.ErrNoPermission
 		}
 
 		return device.Detail()
@@ -191,7 +191,7 @@ func Detail(deviceID int64, ctx iris.Context) hero.Result {
 }
 
 func Update(deviceID int64, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
+	return response.Wrap(func() interface{} {
 		var form struct {
 			Title    *string  `json:"title"`
 			ConnStr  *string  `json:"params.connStr"`
@@ -200,18 +200,18 @@ func Update(deviceID int64, ctx iris.Context) hero.Result {
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
-			return lang2.ErrInvalidRequestData
+			return lang.ErrInvalidRequestData
 		}
 
-		result := app2.TransactionDo(func(s store2.Store) interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			device, err := s.GetDevice(deviceID)
 			if err != nil {
 				return err
 			}
 
 			admin := s.MustGetUserFromContext(ctx)
-			if !app2.Allow(admin, device, resource2.Ctrl) {
-				return lang2.ErrNoPermission
+			if !app.Allow(admin, device, resource.Ctrl) {
+				return lang.ErrNoPermission
 			}
 
 			logFields := make(map[string]interface{})
@@ -270,8 +270,8 @@ func Update(deviceID int64, ctx iris.Context) hero.Result {
 		})
 
 		if data, ok := result.(event.Data); ok {
-			app2.Event.Publish(event.DeviceUpdated, data.GetMulti("userID", "deviceID")...)
-			return lang2.Ok
+			app.Event.Publish(event.DeviceUpdated, data.GetMulti("userID", "deviceID")...)
+			return lang.Ok
 		}
 
 		return result
@@ -279,8 +279,8 @@ func Update(deviceID int64, ctx iris.Context) hero.Result {
 }
 
 func Delete(deviceID int64, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		result := app2.TransactionDo(func(s store2.Store) interface{} {
+	return response.Wrap(func() interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			device, err := s.GetDevice(deviceID)
 			if err != nil {
 				return err
@@ -293,16 +293,16 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 				"title":  device.Title(),
 				"userID": admin.GetID(),
 			}
-			if app2.IsDefaultAdminUser(admin) {
+			if app.IsDefaultAdminUser(admin) {
 				err = device.Destroy()
 				if err != nil {
 					return err
 				}
 			} else {
-				if !app2.Allow(admin, device, resource2.Ctrl) {
-					return lang2.ErrNoPermission
+				if !app.Allow(admin, device, resource.Ctrl) {
+					return lang.ErrNoPermission
 				}
-				err = app2.SetDeny(admin, device, resource2.View, resource2.Ctrl)
+				err = app.SetDeny(admin, device, resource.View, resource.Ctrl)
 				if err != nil {
 					return err
 				}
@@ -311,8 +311,8 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 		})
 
 		if data, ok := result.(event.Data); ok {
-			app2.Event.Publish(event.DeviceDeleted, data.GetMulti("userID", "id", "uid", "title")...)
-			return lang2.Ok
+			app.Event.Publish(event.DeviceDeleted, data.GetMulti("userID", "id", "uid", "title")...)
+			return lang.Ok
 		}
 		return result
 	})

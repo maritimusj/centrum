@@ -4,9 +4,9 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/config"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	app2 "github.com/maritimusj/centrum/gate/web/app"
-	response2 "github.com/maritimusj/centrum/gate/web/response"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/app"
+	 "github.com/maritimusj/centrum/gate/web/response"
 )
 
 type APIConfig struct {
@@ -39,56 +39,56 @@ type Form struct {
 }
 
 func Base() hero.Result {
-	return response2.Wrap(func() interface{} {
+	return response.Wrap(func() interface{} {
 		return &Form{
 			Api: &APIConfig{
-				Addr: app2.Config.APIAddr(),
-				Port: app2.Config.APIPort(),
+				Addr: app.Config.APIAddr(),
+				Port: app.Config.APIPort(),
 			},
 			Def: &DefaultConfig{
-				Username:        app2.Config.DefaultUserName(),
-				Organization:    app2.Config.DefaultOrganization(),
-				Effect:          int(app2.Config.DefaultEffect()),
-				PageSize:        app2.Config.DefaultPageSize(),
-				TokenExpiration: int64(app2.Config.DefaultTokenExpiration().Seconds()),
+				Username:        app.Config.DefaultUserName(),
+				Organization:    app.Config.DefaultOrganization(),
+				Effect:          int(app.Config.DefaultEffect()),
+				PageSize:        app.Config.DefaultPageSize(),
+				TokenExpiration: int64(app.Config.DefaultTokenExpiration().Seconds()),
 			},
 			Log: &LogConfig{
-				Level:    app2.Config.LogLevel(),
-				FileName: app2.Config.LogFileName(),
+				Level:    app.Config.LogLevel(),
+				FileName: app.Config.LogFileName(),
 			},
 		}
 	})
 }
 
 func UpdateBase(ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
+	return response.Wrap(func() interface{} {
 		var form Form
 		if err := ctx.ReadJSON(&form); err != nil {
-			return lang2.ErrInvalidRequestData
+			return lang.ErrInvalidRequestData
 		}
 
 		if form.Api != nil {
-			_ = app2.Config.BaseConfig.SetOption(config.ApiAddrPath, form.Api.Addr)
-			_ = app2.Config.BaseConfig.SetOption(config.ApiPortPath, form.Api.Port)
+			_ = app.Config.BaseConfig.SetOption(config.ApiAddrPath, form.Api.Addr)
+			_ = app.Config.BaseConfig.SetOption(config.ApiPortPath, form.Api.Port)
 		}
 
 		if form.Def != nil {
-			_ = app2.Config.BaseConfig.SetOption(config.DefaultUserNamePath, form.Def.Username)
-			_ = app2.Config.BaseConfig.SetOption(config.DefaultOrganizationPath, form.Def.Organization)
-			_ = app2.Config.BaseConfig.SetOption(config.DefaultEffectPath, form.Def.Effect)
-			_ = app2.Config.BaseConfig.SetOption(config.DefaultPageSizePath, form.Def.PageSize)
-			_ = app2.Config.BaseConfig.SetOption(config.DefaultTokenExpirationPath, form.Def.TokenExpiration)
+			_ = app.Config.BaseConfig.SetOption(config.DefaultUserNamePath, form.Def.Username)
+			_ = app.Config.BaseConfig.SetOption(config.DefaultOrganizationPath, form.Def.Organization)
+			_ = app.Config.BaseConfig.SetOption(config.DefaultEffectPath, form.Def.Effect)
+			_ = app.Config.BaseConfig.SetOption(config.DefaultPageSizePath, form.Def.PageSize)
+			_ = app.Config.BaseConfig.SetOption(config.DefaultTokenExpirationPath, form.Def.TokenExpiration)
 		}
 
 		if form.Log != nil {
-			_ = app2.Config.BaseConfig.SetOption(config.LogLevelPath, form.Log.Level)
-			_ = app2.Config.BaseConfig.SetOption(config.LogFileNamePath, form.Log.FileName)
+			_ = app.Config.BaseConfig.SetOption(config.LogLevelPath, form.Log.Level)
+			_ = app.Config.BaseConfig.SetOption(config.LogFileNamePath, form.Log.FileName)
 		}
 
 		if form.Inverse != nil {
-			_ = app2.Config.BaseConfig.SetOption(config.InversePortPath, form.Inverse.Port)
+			_ = app.Config.BaseConfig.SetOption(config.InversePortPath, form.Inverse.Port)
 		}
 
-		return app2.Config.BaseConfig.Save()
+		return app.Config.BaseConfig.Save()
 	})
 }

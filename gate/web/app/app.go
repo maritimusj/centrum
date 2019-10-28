@@ -12,8 +12,8 @@ import (
 	"github.com/maritimusj/centrum/gate/web/helper"
 	"github.com/maritimusj/centrum/gate/web/model"
 	"github.com/maritimusj/centrum/gate/web/resource"
-	store2 "github.com/maritimusj/centrum/gate/web/store"
-	mysqlStore2 "github.com/maritimusj/centrum/gate/web/store/mysql"
+	"github.com/maritimusj/centrum/gate/web/store"
+	mysqlStore "github.com/maritimusj/centrum/gate/web/store/mysql"
 	log "github.com/sirupsen/logrus"
 	"os"
 
@@ -29,7 +29,7 @@ var (
 
 	Event      = EventBus.New()
 	LogDBStore = bolt.New()
-	s          store2.Store
+	s          store.Store
 	StatsDB    = statistics.New()
 )
 
@@ -49,17 +49,17 @@ func Allow(user model.User, res model.Resource, action resource.Action) bool {
 	return allow
 }
 
-func Store() store2.Store {
+func Store() store.Store {
 	return s
 }
 
-func NewStore(db db.DB) store2.Store {
-	return mysqlStore2.Attach(Ctx, db, func(key string, _ interface{}) {
+func NewStore(db db.DB) store.Store {
+	return mysqlStore.Attach(Ctx, db, func(key string, _ interface{}) {
 		s.Cache().Remove(key)
 	})
 }
 
-func TransactionDo(fn func(store2.Store) interface{}) interface{} {
+func TransactionDo(fn func(store.Store) interface{}) interface{} {
 	return DB.TransactionDo(func(db db.DB) interface{} {
 		s := NewStore(db)
 		defer s.Close()
@@ -75,7 +75,7 @@ func InitDB(params map[string]interface{}) error {
 	}
 
 	DB = conn
-	s = mysqlStore2.Attach(Ctx, DB)
+	s = mysqlStore.Attach(Ctx, DB)
 	return nil
 }
 
@@ -145,7 +145,7 @@ func Init(ctx context.Context, logLevel string) error {
 		return err
 	}
 
-	result := TransactionDo(func(s store2.Store) interface{} {
+	result := TransactionDo(func(s store.Store) interface{} {
 		_, total, err := s.GetApiResourceList(helper.Limit(1))
 		if err != nil {
 			return err
@@ -243,7 +243,7 @@ func Close() {
 }
 
 func FlushDB() error {
-	res := TransactionDo(func(store store2.Store) interface{} {
+	res := TransactionDo(func(store store.Store) interface{} {
 		return store.EraseAllData()
 	})
 	if res != nil {

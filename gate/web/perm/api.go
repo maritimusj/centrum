@@ -3,39 +3,39 @@ package perm
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	app2 "github.com/maritimusj/centrum/gate/web/app"
-	resource2 "github.com/maritimusj/centrum/gate/web/resource"
-	response2 "github.com/maritimusj/centrum/gate/web/response"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/app"
+	"github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/web/response"
 	"github.com/maritimusj/centrum/util"
 )
 
 func CheckApiPerm(ctx iris.Context) hero.Result {
-	s := app2.Store()
+	s := app.Store()
 	admin := s.MustGetUserFromContext(ctx)
 
 	checkFN := func() interface{} {
-		if app2.IsDefaultAdminUser(admin) {
+		if app.IsDefaultAdminUser(admin) {
 			return nil
 		}
 
 		router := ctx.GetCurrentRoute()
 		res, err := s.GetApiResource(router.Name())
 		if err != nil {
-			if err != lang2.Error(lang2.ErrApiResourceNotFound) {
+			if err != lang.Error(lang.ErrApiResourceNotFound) {
 				return err
 			}
-			return util.If(app2.Config.DefaultEffect() == resource2.Allow, nil, lang2.ErrNoPermission)
+			return util.If(app.Config.DefaultEffect() == resource.Allow, nil, lang.ErrNoPermission)
 		}
 
-		if app2.Allow(admin, res, resource2.Invoke) {
+		if app.Allow(admin, res, resource.Invoke) {
 			return nil
 		}
-		return lang2.ErrNoPermission
+		return lang.ErrNoPermission
 	}
 
 	if err := checkFN(); err != nil {
-		return response2.Wrap(err)
+		return response.Wrap(err)
 	}
 
 	ctx.Next()

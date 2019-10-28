@@ -2,8 +2,8 @@ package mysqlStore
 
 import (
 	"database/sql"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	model2 "github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/model"
 )
 
 func (s *mysqlStore) getConfigID(cfg interface{}) (int64, error) {
@@ -14,20 +14,20 @@ func (s *mysqlStore) getConfigID(cfg interface{}) (int64, error) {
 		}
 		if exists, err := IsDataExists(s.db, TbConfig, "id=?", v); err != nil {
 			if err != sql.ErrNoRows {
-				return 0, lang2.InternalError(err)
+				return 0, lang.InternalError(err)
 			}
-			return 0, lang2.Error(lang2.ErrConfigNotFound)
+			return 0, lang.Error(lang.ErrConfigNotFound)
 		} else if exists {
 			return v, nil
 		}
 	case string:
 		return s.getConfigIDByName(v)
-	case model2.Config:
+	case model.Config:
 		if v != nil {
 			return v.GetID(), nil
 		}
 	}
-	return 0, lang2.Error(lang2.ErrConfigNotFound)
+	return 0, lang.Error(lang.ErrConfigNotFound)
 }
 
 func (s *mysqlStore) getConfigIDByName(name string) (int64, error) {
@@ -37,9 +37,9 @@ func (s *mysqlStore) getConfigIDByName(name string) (int64, error) {
 	}, "name=?", name)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return 0, lang2.InternalError(err)
+			return 0, lang.InternalError(err)
 		}
-		return 0, lang2.Error(lang2.ErrConfigNotFound)
+		return 0, lang.Error(lang.ErrConfigNotFound)
 	}
 	return cfgID, nil
 }
@@ -52,20 +52,20 @@ func (s *mysqlStore) getOrganizationID(org interface{}) (int64, error) {
 		}
 		if exists, err := IsDataExists(s.db, TbOrganization, "id=?", v); err != nil {
 			if err != sql.ErrNoRows {
-				return 0, lang2.InternalError(err)
+				return 0, lang.InternalError(err)
 			}
-			return 0, lang2.Error(lang2.ErrOrganizationNotFound)
+			return 0, lang.Error(lang.ErrOrganizationNotFound)
 		} else if exists {
 			return v, nil
 		}
 	case string:
 		return s.getOrganizationIDByName(v)
-	case model2.Organization:
+	case model.Organization:
 		if v != nil {
 			return v.GetID(), nil
 		}
 	}
-	return 0, lang2.Error(lang2.ErrOrganizationNotFound)
+	return 0, lang.Error(lang.ErrOrganizationNotFound)
 }
 
 func (s *mysqlStore) getOrganizationIDByName(name string) (int64, error) {
@@ -75,9 +75,9 @@ func (s *mysqlStore) getOrganizationIDByName(name string) (int64, error) {
 	}, "name=?", name)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return 0, lang2.InternalError(err)
+			return 0, lang.InternalError(err)
 		}
-		return 0, lang2.Error(lang2.ErrOrganizationNotFound)
+		return 0, lang.Error(lang.ErrOrganizationNotFound)
 	}
 	return orgID, nil
 }
@@ -90,20 +90,20 @@ func (s *mysqlStore) getRoleID(role interface{}) (int64, error) {
 		}
 		if exists, err := IsDataExists(s.db, TbRoles, "id=?", v); err != nil {
 			if err != sql.ErrNoRows {
-				return 0, lang2.InternalError(err)
+				return 0, lang.InternalError(err)
 			}
-			return 0, lang2.Error(lang2.ErrRoleNotFound)
+			return 0, lang.Error(lang.ErrRoleNotFound)
 		} else if exists {
 			return v, nil
 		}
 	case string:
 		return s.getRoleIDByName(v)
-	case model2.Role:
+	case model.Role:
 		if v != nil {
 			return v.GetID(), nil
 		}
 	}
-	return 0, lang2.Error(lang2.ErrRoleNotFound)
+	return 0, lang.Error(lang.ErrRoleNotFound)
 }
 
 func (s *mysqlStore) getRoleIDByName(name string) (int64, error) {
@@ -113,9 +113,9 @@ func (s *mysqlStore) getRoleIDByName(name string) (int64, error) {
 	}, "name=?", name)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return 0, lang2.InternalError(err)
+			return 0, lang.InternalError(err)
 		}
-		return 0, lang2.Error(lang2.ErrRoleNotFound)
+		return 0, lang.Error(lang.ErrRoleNotFound)
 	}
 	return roleID, nil
 }
@@ -123,9 +123,9 @@ func (s *mysqlStore) getRoleIDByName(name string) (int64, error) {
 func (s *mysqlStore) getUserID(user interface{}) (int64, error) {
 	checkExists := func(v interface{}) error {
 		if exists, err := IsDataExists(s.db, TbUsers, "id=?", v); err != nil {
-			return lang2.InternalError(err)
+			return lang.InternalError(err)
 		} else if !exists {
-			return lang2.Error(lang2.ErrUserNotFound)
+			return lang.Error(lang.ErrUserNotFound)
 		}
 		return nil
 	}
@@ -145,12 +145,12 @@ func (s *mysqlStore) getUserID(user interface{}) (int64, error) {
 		return int64(v), nil
 	case string:
 		return s.getUserIDByName(v)
-	case model2.User:
+	case model.User:
 		if v != nil {
 			return v.GetID(), nil
 		}
 	}
-	return 0, lang2.Error(lang2.ErrUserNotFound)
+	return 0, lang.Error(lang.ErrUserNotFound)
 }
 
 func (s *mysqlStore) getUserIDByName(name string) (int64, error) {
@@ -160,9 +160,9 @@ func (s *mysqlStore) getUserIDByName(name string) (int64, error) {
 	}, "name=?", name)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return 0, lang2.InternalError(err)
+			return 0, lang.InternalError(err)
 		}
-		return 0, lang2.Error(lang2.ErrUserNotFound)
+		return 0, lang.Error(lang.ErrUserNotFound)
 	}
 	return userID, nil
 }
@@ -175,18 +175,18 @@ func (s *mysqlStore) getMeasureID(deviceID int64, tag interface{}) (int64, error
 		}
 		if exists, err := IsDataExists(s.db, TbMeasures, "id=?", v); err != nil {
 			if err != sql.ErrNoRows {
-				return 0, lang2.InternalError(err)
+				return 0, lang.InternalError(err)
 			}
-			return 0, lang2.Error(lang2.ErrMeasureNotFound)
+			return 0, lang.Error(lang.ErrMeasureNotFound)
 		} else if exists {
 			return v, nil
 		}
 	case string:
 		return s.getMeasureIDByTagName(deviceID, v)
-	case model2.Measure:
+	case model.Measure:
 		return v.GetID(), nil
 	}
-	return 0, lang2.Error(lang2.ErrMeasureNotFound)
+	return 0, lang.Error(lang.ErrMeasureNotFound)
 }
 
 func (s *mysqlStore) getMeasureIDByTagName(deviceID int64, tagName string) (int64, error) {
@@ -196,9 +196,9 @@ func (s *mysqlStore) getMeasureIDByTagName(deviceID int64, tagName string) (int6
 	}, "device_id=? AND tag=?", deviceID, tagName)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return 0, lang2.InternalError(err)
+			return 0, lang.InternalError(err)
 		}
-		return 0, lang2.Error(lang2.ErrMeasureNotFound)
+		return 0, lang.Error(lang.ErrMeasureNotFound)
 	}
 	return measureID, nil
 }

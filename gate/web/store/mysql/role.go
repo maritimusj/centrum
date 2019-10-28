@@ -1,12 +1,12 @@
 package mysqlStore
 
 import (
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	dirty2 "github.com/maritimusj/centrum/gate/web/dirty"
-	helper2 "github.com/maritimusj/centrum/gate/web/helper"
-	model2 "github.com/maritimusj/centrum/gate/web/model"
-	resource2 "github.com/maritimusj/centrum/gate/web/resource"
-	status2 "github.com/maritimusj/centrum/gate/web/status"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/dirty"
+	"github.com/maritimusj/centrum/gate/web/helper"
+	"github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/web/status"
 	"time"
 )
 
@@ -21,14 +21,14 @@ type Role struct {
 	desc      string
 	createdAt time.Time
 
-	dirty *dirty2.Dirty
+	dirty *dirty.Dirty
 	store *mysqlStore
 }
 
 func NewRole(s *mysqlStore, id int64) *Role {
 	return &Role{
 		id:    id,
-		dirty: dirty2.New(),
+		dirty: dirty.New(),
 		store: s,
 	}
 }
@@ -37,7 +37,7 @@ func (r *Role) OrganizationID() int64 {
 	return r.orgID
 }
 
-func (r *Role) Organization() (model2.Organization, error) {
+func (r *Role) Organization() (model.Organization, error) {
 	return r.store.GetOrganization(r.orgID)
 }
 
@@ -53,7 +53,7 @@ func (r *Role) Save() error {
 	if r.dirty.Any() {
 		err := SaveData(r.store.db, TbRoles, r.dirty.Data(true), "id=?", r.id)
 		if err != nil {
-			return lang2.InternalError(err)
+			return lang.InternalError(err)
 		}
 	}
 
@@ -61,7 +61,7 @@ func (r *Role) Save() error {
 }
 
 func (r *Role) Destroy() error {
-	policies, _, err := r.store.GetPolicyList(nil, helper2.Role(r.GetID()))
+	policies, _, err := r.store.GetPolicyList(nil, helper.Role(r.GetID()))
 	if err != nil {
 		return err
 	}
@@ -76,8 +76,8 @@ func (r *Role) Destroy() error {
 }
 
 func (r *Role) Enable() {
-	if r.enable != status2.Enable {
-		r.enable = status2.Enable
+	if r.enable != status.Enable {
+		r.enable = status.Enable
 		r.dirty.Set("enable", func() interface{} {
 			return r.enable
 		})
@@ -85,8 +85,8 @@ func (r *Role) Enable() {
 }
 
 func (r *Role) Disable() {
-	if r.enable != status2.Disable {
-		r.enable = status2.Disable
+	if r.enable != status.Disable {
+		r.enable = status.Disable
 		r.dirty.Set("enable", func() interface{} {
 			return r.enable
 		})
@@ -94,7 +94,7 @@ func (r *Role) Disable() {
 }
 
 func (r *Role) IsEnabled() bool {
-	return r.enable == status2.Enable
+	return r.enable == status.Enable
 }
 
 func (r *Role) Name() string {
@@ -127,21 +127,21 @@ func (r *Role) SetDesc(desc string) {
 	}
 }
 
-func (r *Role) GetUserList(options ...helper2.OptionFN) ([]model2.User, int64, error) {
-	return r.store.GetUserList(helper2.Role(r.GetID()))
+func (r *Role) GetUserList(options ...helper.OptionFN) ([]model.User, int64, error) {
+	return r.store.GetUserList(helper.Role(r.GetID()))
 }
 
-func (r *Role) SetPolicy(res model2.Resource, action resource2.Action, effect resource2.Effect, recursiveMap map[model2.Resource]struct{}) (model2.Policy, error) {
+func (r *Role) SetPolicy(res model.Resource, action resource.Action, effect resource.Effect, recursiveMap map[model.Resource]struct{}) (model.Policy, error) {
 	if recursiveMap != nil {
 		if _, ok := recursiveMap[res]; ok {
-			return nil, lang2.Error(lang2.ErrRecursiveDetected)
+			return nil, lang.Error(lang.ErrRecursiveDetected)
 		}
 		recursiveMap[res] = struct{}{}
 	}
 
 	policy, err := r.store.GetPolicyFrom(r.id, res, action)
 	if err != nil {
-		if err != lang2.Error(lang2.ErrPolicyNotFound) {
+		if err != lang.Error(lang.ErrPolicyNotFound) {
 			return nil, err
 		}
 
@@ -175,8 +175,8 @@ func (r *Role) SetPolicy(res model2.Resource, action resource2.Action, effect re
 	return policy, nil
 }
 
-func (r *Role) RemovePolicy(res model2.Resource) error {
-	policies, _, err := r.store.GetPolicyList(res, helper2.Role(r.id))
+func (r *Role) RemovePolicy(res model.Resource) error {
+	policies, _, err := r.store.GetPolicyList(res, helper.Role(r.id))
 	if err != nil {
 		return err
 	}
@@ -188,39 +188,39 @@ func (r *Role) RemovePolicy(res model2.Resource) error {
 	return nil
 }
 
-func (r *Role) GetPolicy(res model2.Resource) (map[resource2.Action]model2.Policy, error) {
-	policies, _, err := r.store.GetPolicyList(res, helper2.Role(r.id))
+func (r *Role) GetPolicy(res model.Resource) (map[resource.Action]model.Policy, error) {
+	policies, _, err := r.store.GetPolicyList(res, helper.Role(r.id))
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[resource2.Action]model2.Policy)
+	result := make(map[resource.Action]model.Policy)
 	for _, policy := range policies {
 		result[policy.Action()] = policy
 	}
 	return result, nil
 }
 
-func (r *Role) IsAllow(res model2.Resource, action resource2.Action) (bool, error) {
+func (r *Role) IsAllow(res model.Resource, action resource.Action) (bool, error) {
 	pm, err := r.GetPolicy(res)
 	if err != nil {
 		return false, err
 	}
 
 	if v, ok := pm[action]; ok {
-		if v.Effect() == resource2.Allow {
+		if v.Effect() == resource.Allow {
 			return true, nil
 		}
-		return false, lang2.Error(lang2.ErrNoPermission)
+		return false, lang.Error(lang.ErrNoPermission)
 	}
 
-	return false, lang2.Error(lang2.ErrPolicyNotFound)
+	return false, lang.Error(lang.ErrPolicyNotFound)
 }
 
-func (r *Role) Simple() model2.Map {
+func (r *Role) Simple() model.Map {
 	if r == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
-	return model2.Map{
+	return model.Map{
 		"id":     r.id,
 		"enable": r.IsEnabled(),
 		"name":   r.name,
@@ -228,11 +228,11 @@ func (r *Role) Simple() model2.Map {
 	}
 }
 
-func (r *Role) Brief() model2.Map {
+func (r *Role) Brief() model.Map {
 	if r == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
-	return model2.Map{
+	return model.Map{
 		"id":         r.id,
 		"enable":     r.IsEnabled(),
 		"name":       r.name,
@@ -242,11 +242,11 @@ func (r *Role) Brief() model2.Map {
 	}
 }
 
-func (r *Role) Detail() model2.Map {
+func (r *Role) Detail() model.Map {
 	if r == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
-	return model2.Map{
+	return model.Map{
 		"id":         r.id,
 		"enable":     r.IsEnabled(),
 		"name":       r.name,

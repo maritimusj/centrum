@@ -2,12 +2,12 @@ package mysqlStore
 
 import (
 	"errors"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	dirty2 "github.com/maritimusj/centrum/gate/web/dirty"
-	helper2 "github.com/maritimusj/centrum/gate/web/helper"
-	model2 "github.com/maritimusj/centrum/gate/web/model"
-	resource2 "github.com/maritimusj/centrum/gate/web/resource"
-	status2 "github.com/maritimusj/centrum/gate/web/status"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/dirty"
+	"github.com/maritimusj/centrum/gate/web/helper"
+	"github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/web/status"
 	"time"
 )
 
@@ -21,14 +21,14 @@ type State struct {
 	script      string
 	createdAt   time.Time
 
-	dirty *dirty2.Dirty
+	dirty *dirty.Dirty
 	store *mysqlStore
 }
 
 func NewState(s *mysqlStore, id int64) *State {
 	return &State{
 		id:    id,
-		dirty: dirty2.New(),
+		dirty: dirty.New(),
 		store: s,
 	}
 }
@@ -41,8 +41,8 @@ func (s *State) OrganizationID() int64 {
 	return 0
 }
 
-func (s *State) ResourceClass() resource2.Class {
-	return resource2.State
+func (s *State) ResourceClass() resource.Class {
+	return resource.State
 }
 
 func (s *State) ResourceID() int64 {
@@ -57,8 +57,8 @@ func (s *State) ResourceDesc() string {
 	return s.desc
 }
 
-func (s *State) GetChildrenResources(options ...helper2.OptionFN) ([]model2.Resource, int64, error) {
-	return []model2.Resource{}, 0, nil
+func (s *State) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
+	return []model.Resource{}, 0, nil
 }
 
 func (s *State) GetID() int64 {
@@ -73,7 +73,7 @@ func (s *State) Save() error {
 	if s.dirty.Any() {
 		err := SaveData(s.store.db, TbStates, s.dirty.Data(true), "id=?", s.id)
 		if err != nil {
-			return lang2.InternalError(err)
+			return lang.InternalError(err)
 		}
 	}
 	return nil
@@ -94,8 +94,8 @@ func (s *State) Destroy() error {
 }
 
 func (s *State) Enable() {
-	if s.enable != status2.Enable {
-		s.enable = status2.Enable
+	if s.enable != status.Enable {
+		s.enable = status.Enable
 		s.dirty.Set("enable", func() interface{} {
 			return s.enable
 		})
@@ -103,8 +103,8 @@ func (s *State) Enable() {
 }
 
 func (s *State) Disable() {
-	if s.enable != status2.Disable {
-		s.enable = status2.Disable
+	if s.enable != status.Disable {
+		s.enable = status.Disable
 		s.dirty.Set("enable", func() interface{} {
 			return s.enable
 		})
@@ -112,7 +112,7 @@ func (s *State) Disable() {
 }
 
 func (s *State) IsEnabled() bool {
-	return s.enable == status2.Enable
+	return s.enable == status.Enable
 }
 
 func (s *State) Title() string {
@@ -154,7 +154,7 @@ func (s *State) SetScript(script string) {
 	}
 }
 
-func (s *State) Measure() model2.Measure {
+func (s *State) Measure() model.Measure {
 	if s.measureID > 0 {
 		measure, _ := s.store.GetMeasure(s.measureID)
 		if measure != nil {
@@ -164,7 +164,7 @@ func (s *State) Measure() model2.Measure {
 	return nil
 }
 
-func (s *State) Equipment() model2.Equipment {
+func (s *State) Equipment() model.Equipment {
 	if s.equipmentID > 0 {
 		equipment, _ := s.store.GetEquipment(s.equipmentID)
 		if equipment != nil {
@@ -179,7 +179,7 @@ func (s *State) SetMeasure(measure interface{}) {
 	switch v := measure.(type) {
 	case int64:
 		measureID = v
-	case model2.Measure:
+	case model.Measure:
 		measureID = v.GetID()
 	default:
 		panic(errors.New("state SetMeasure: unknown measure"))
@@ -193,22 +193,22 @@ func (s *State) SetMeasure(measure interface{}) {
 	}
 }
 
-func (s *State) Simple() model2.Map {
+func (s *State) Simple() model.Map {
 	if s == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
-	return model2.Map{
+	return model.Map{
 		"id":     s.id,
 		"enable": s.IsEnabled(),
 		"title":  s.title,
 	}
 }
 
-func (s *State) Brief() model2.Map {
+func (s *State) Brief() model.Map {
 	if s == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
-	return model2.Map{
+	return model.Map{
 		"id":         s.id,
 		"enable":     s.IsEnabled(),
 		"title":      s.title,
@@ -217,12 +217,12 @@ func (s *State) Brief() model2.Map {
 	}
 }
 
-func (s *State) Detail() model2.Map {
+func (s *State) Detail() model.Map {
 	if s == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
 
-	detail := model2.Map{
+	detail := model.Map{
 		"id":         s.id,
 		"enable":     s.IsEnabled(),
 		"title":      s.title,

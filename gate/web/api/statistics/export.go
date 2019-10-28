@@ -6,9 +6,9 @@ import (
 	"github.com/360EntSecGroup-Skylar/excelize"
 	"github.com/influxdata/influxdb1-client/models"
 	"github.com/kataras/iris"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	app2 "github.com/maritimusj/centrum/gate/web/app"
-	resource2 "github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/app"
+	"github.com/maritimusj/centrum/gate/web/resource"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -50,7 +50,7 @@ func Export(ctx iris.Context) {
 
 		axisMap := AxisMap{}
 
-		s := app2.Store()
+		s := app.Store()
 		admin := s.MustGetUserFromContext(ctx)
 		excel := excelize.NewFile()
 		alarmStyle, _ := excel.NewStyle(`{"font":{"color":"#f44336"}}`)
@@ -86,13 +86,13 @@ func Export(ctx iris.Context) {
 				return err
 			}
 
-			if !app2.Allow(admin, measure, resource2.View) {
-				return lang2.Error(lang2.ErrNoPermission)
+			if !app.Allow(admin, measure, resource.View) {
+				return lang.Error(lang.ErrNoPermission)
 			}
 
 			device := measure.Device()
 			if device == nil {
-				return lang2.Error(lang2.ErrDeviceNotFound)
+				return lang.Error(lang.ErrDeviceNotFound)
 			}
 
 			org, err := device.Organization()
@@ -100,7 +100,7 @@ func Export(ctx iris.Context) {
 				return err
 			}
 
-			rows, err := app2.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &form.Start, form.End, 0)
+			rows, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &form.Start, form.End, 0)
 			if err != nil {
 				return err
 			}
@@ -115,23 +115,23 @@ func Export(ctx iris.Context) {
 				return err
 			}
 
-			if !app2.Allow(admin, state, resource2.View) {
-				return lang2.Error(lang2.ErrNoPermission)
+			if !app.Allow(admin, state, resource.View) {
+				return lang.Error(lang.ErrNoPermission)
 			}
 
 			equipment := state.Equipment()
 			if equipment == nil {
-				return lang2.Error(lang2.ErrEquipmentNotFound)
+				return lang.Error(lang.ErrEquipmentNotFound)
 			}
 
 			measure := state.Measure()
 			if measure == nil {
-				return lang2.Error(lang2.ErrMeasureNotFound)
+				return lang.Error(lang.ErrMeasureNotFound)
 			}
 
 			device := measure.Device()
 			if device == nil {
-				return lang2.Error(lang2.ErrDeviceNotFound)
+				return lang.Error(lang.ErrDeviceNotFound)
 			}
 
 			org, err := equipment.Organization()
@@ -139,7 +139,7 @@ func Export(ctx iris.Context) {
 				return err
 			}
 
-			rows, err := app2.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &form.Start, form.End, 0)
+			rows, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &form.Start, form.End, 0)
 			if err != nil {
 				return err
 			}

@@ -1,12 +1,12 @@
 package mysqlStore
 
 import (
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	dirty2 "github.com/maritimusj/centrum/gate/web/dirty"
-	helper2 "github.com/maritimusj/centrum/gate/web/helper"
-	model2 "github.com/maritimusj/centrum/gate/web/model"
-	resource2 "github.com/maritimusj/centrum/gate/web/resource"
-	status2 "github.com/maritimusj/centrum/gate/web/status"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/dirty"
+	"github.com/maritimusj/centrum/gate/web/helper"
+	"github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/web/status"
 	"time"
 )
 
@@ -20,14 +20,14 @@ type Measure struct {
 	tag       string
 	createdAt time.Time
 
-	dirty *dirty2.Dirty
+	dirty *dirty.Dirty
 	store *mysqlStore
 }
 
 func NewMeasure(s *mysqlStore, id int64) *Measure {
 	return &Measure{
 		id:    id,
-		dirty: dirty2.New(),
+		dirty: dirty.New(),
 		store: s,
 	}
 }
@@ -40,8 +40,8 @@ func (m *Measure) OrganizationID() int64 {
 	return 0
 }
 
-func (m *Measure) ResourceClass() resource2.Class {
-	return resource2.Measure
+func (m *Measure) ResourceClass() resource.Class {
+	return resource.Measure
 }
 
 func (m *Measure) ResourceID() int64 {
@@ -56,8 +56,8 @@ func (m *Measure) ResourceDesc() string {
 	return m.title
 }
 
-func (m *Measure) GetChildrenResources(options ...helper2.OptionFN) ([]model2.Resource, int64, error) {
-	return []model2.Resource{}, 0, nil
+func (m *Measure) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
+	return []model.Resource{}, 0, nil
 }
 
 func (m *Measure) GetID() int64 {
@@ -65,8 +65,8 @@ func (m *Measure) GetID() int64 {
 }
 
 func (m *Measure) Enable() {
-	if m.enable != status2.Enable {
-		m.enable = status2.Enable
+	if m.enable != status.Enable {
+		m.enable = status.Enable
 		m.dirty.Set("enable", func() interface{} {
 			return m.enable
 		})
@@ -74,8 +74,8 @@ func (m *Measure) Enable() {
 }
 
 func (m *Measure) Disable() {
-	if m.enable != status2.Disable {
-		m.enable = status2.Disable
+	if m.enable != status.Disable {
+		m.enable = status.Disable
 		m.dirty.Set("enable", func() interface{} {
 			return m.enable
 		})
@@ -83,10 +83,10 @@ func (m *Measure) Disable() {
 }
 
 func (m *Measure) IsEnabled() bool {
-	return m.enable == status2.Enable
+	return m.enable == status.Enable
 }
 
-func (m *Measure) Device() model2.Device {
+func (m *Measure) Device() model.Device {
 	if m.deviceID > 0 {
 		device, _ := m.store.GetDevice(m.deviceID)
 		return device
@@ -111,8 +111,8 @@ func (m *Measure) TagName() string {
 	return m.tag
 }
 
-func (m *Measure) Kind() resource2.MeasureKind {
-	return resource2.MeasureKind(m.kind)
+func (m *Measure) Kind() resource.MeasureKind {
+	return resource.MeasureKind(m.kind)
 }
 
 func (m *Measure) CreatedAt() time.Time {
@@ -121,7 +121,7 @@ func (m *Measure) CreatedAt() time.Time {
 
 func (m *Measure) Destroy() error {
 
-	alarms, _, err := m.store.GetAlarmList(nil, nil, helper2.Measure(m.GetID()))
+	alarms, _, err := m.store.GetAlarmList(nil, nil, helper.Measure(m.GetID()))
 	if err != nil {
 		return err
 	}
@@ -150,17 +150,17 @@ func (m *Measure) Save() error {
 	if m.dirty.Any() {
 		err := SaveData(m.store.db, TbMeasures, m.dirty.Data(true), "id=?", m.id)
 		if err != nil {
-			return lang2.InternalError(err)
+			return lang.InternalError(err)
 		}
 	}
 	return nil
 }
 
-func (m *Measure) Simple() model2.Map {
+func (m *Measure) Simple() model.Map {
 	if m == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
-	return model2.Map{
+	return model.Map{
 		"id":     m.id,
 		"enable": m.IsEnabled(),
 		"kind":   m.kind,
@@ -168,11 +168,11 @@ func (m *Measure) Simple() model2.Map {
 	}
 }
 
-func (m *Measure) Brief() model2.Map {
+func (m *Measure) Brief() model.Map {
 	if m == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
-	return model2.Map{
+	return model.Map{
 		"id":         m.id,
 		"enable":     m.IsEnabled(),
 		"kind":       m.kind,
@@ -182,11 +182,11 @@ func (m *Measure) Brief() model2.Map {
 	}
 }
 
-func (m *Measure) Detail() model2.Map {
+func (m *Measure) Detail() model.Map {
 	if m == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
-	detail := model2.Map{
+	detail := model.Map{
 		"id":         m.id,
 		"enable":     m.IsEnabled(),
 		"kind":       m.kind,

@@ -4,12 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	dirty2 "github.com/maritimusj/centrum/gate/web/dirty"
-	helper2 "github.com/maritimusj/centrum/gate/web/helper"
-	model2 "github.com/maritimusj/centrum/gate/web/model"
-	resource2 "github.com/maritimusj/centrum/gate/web/resource"
-	status2 "github.com/maritimusj/centrum/gate/web/status"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/dirty"
+	"github.com/maritimusj/centrum/gate/web/helper"
+	"github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/web/status"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -26,14 +26,14 @@ type Device struct {
 	options   []byte
 	createdAt time.Time
 
-	dirty *dirty2.Dirty
+	dirty *dirty.Dirty
 	store *mysqlStore
 }
 
 func NewDDevice(store *mysqlStore, id int64) *Device {
 	return &Device{
 		id:    id,
-		dirty: dirty2.New(),
+		dirty: dirty.New(),
 		store: store,
 	}
 }
@@ -45,11 +45,11 @@ func (d *Device) OrganizationID() int64 {
 	return 0
 }
 
-func (d *Device) Organization() (model2.Organization, error) {
+func (d *Device) Organization() (model.Organization, error) {
 	if d != nil {
 		return d.store.GetOrganization(d.orgID)
 	}
-	return nil, lang2.Error(lang2.ErrDeviceNotFound)
+	return nil, lang.Error(lang.ErrDeviceNotFound)
 }
 
 func (d *Device) UID() string {
@@ -73,8 +73,8 @@ func (d *Device) ResourceID() int64 {
 	return 0
 }
 
-func (d *Device) ResourceClass() resource2.Class {
-	return resource2.Device
+func (d *Device) ResourceClass() resource.Class {
+	return resource.Device
 }
 
 func (d *Device) ResourceTitle() string {
@@ -91,15 +91,15 @@ func (d *Device) ResourceDesc() string {
 	return "<unknown>"
 }
 
-func (d *Device) GetChildrenResources(options ...helper2.OptionFN) ([]model2.Resource, int64, error) {
+func (d *Device) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
 	if d != nil {
-		options = append(options, helper2.Device(d.GetID()))
+		options = append(options, helper.Device(d.GetID()))
 		measures, total, err := d.store.GetMeasureList(options...)
 		if err != nil {
 			return nil, 0, err
 		}
 
-		result := make([]model2.Resource, 0, len(measures))
+		result := make([]model.Resource, 0, len(measures))
 		for _, measure := range measures {
 			result = append(result, measure)
 		}
@@ -107,7 +107,7 @@ func (d *Device) GetChildrenResources(options ...helper2.OptionFN) ([]model2.Res
 		return result, total, nil
 	}
 
-	return nil, 0, lang2.Error(lang2.ErrDeviceNotFound)
+	return nil, 0, lang.Error(lang.ErrDeviceNotFound)
 }
 
 func (d *Device) GetID() int64 {
@@ -118,8 +118,8 @@ func (d *Device) GetID() int64 {
 }
 
 func (d *Device) Enable() {
-	if d != nil && d.enable != status2.Enable {
-		d.enable = status2.Enable
+	if d != nil && d.enable != status.Enable {
+		d.enable = status.Enable
 		d.dirty.Set("enable", func() interface{} {
 			return d.enable
 		})
@@ -127,8 +127,8 @@ func (d *Device) Enable() {
 }
 
 func (d *Device) Disable() {
-	if d != nil && d.enable != status2.Disable {
-		d.enable = status2.Disable
+	if d != nil && d.enable != status.Disable {
+		d.enable = status.Disable
 		d.dirty.Set("enable", func() interface{} {
 			return d.enable
 		})
@@ -136,7 +136,7 @@ func (d *Device) Disable() {
 }
 
 func (d *Device) IsEnabled() bool {
-	return d != nil && d.enable == status2.Enable
+	return d != nil && d.enable == status.Enable
 }
 
 func (d *Device) Title() string {
@@ -180,7 +180,7 @@ func (d *Device) SetOption(key string, value interface{}) error {
 
 		return nil
 	}
-	return lang2.Error(lang2.ErrDeviceNotFound)
+	return lang.Error(lang.ErrDeviceNotFound)
 }
 
 func (d *Device) SetGroups(groups ...interface{}) error {
@@ -188,7 +188,7 @@ func (d *Device) SetGroups(groups ...interface{}) error {
 		err := RemoveData(d.store.db, TbDeviceGroups, "device_id=?", d.id)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return lang2.InternalError(err)
+				return lang.InternalError(err)
 			}
 		}
 		now := time.Now()
@@ -197,7 +197,7 @@ func (d *Device) SetGroups(groups ...interface{}) error {
 			switch v := group.(type) {
 			case int64:
 				groupID = v
-			case model2.Group:
+			case model.Group:
 				groupID = v.GetID()
 			default:
 				panic(errors.New("device SetGroups: unknown groups"))
@@ -212,15 +212,15 @@ func (d *Device) SetGroups(groups ...interface{}) error {
 				"created_at": now,
 			})
 			if err != nil {
-				return lang2.InternalError(err)
+				return lang.InternalError(err)
 			}
 		}
 		return nil
 	}
-	return lang2.Error(lang2.ErrDeviceNotFound)
+	return lang.Error(lang.ErrDeviceNotFound)
 }
 
-func (d *Device) Groups() ([]model2.Group, error) {
+func (d *Device) Groups() ([]model.Group, error) {
 	if d != nil {
 		groups, err := d.store.GetDeviceGroups(d.GetID())
 		if err != nil {
@@ -228,21 +228,21 @@ func (d *Device) Groups() ([]model2.Group, error) {
 		}
 		return groups, nil
 	}
-	return nil, lang2.Error(lang2.ErrDeviceNotFound)
+	return nil, lang.Error(lang.ErrDeviceNotFound)
 }
 
-func (d *Device) GetMeasureList(options ...helper2.OptionFN) ([]model2.Measure, int64, error) {
+func (d *Device) GetMeasureList(options ...helper.OptionFN) ([]model.Measure, int64, error) {
 	if d != nil {
 		return d.store.GetMeasureList(options...)
 	}
-	return nil, 0, lang2.Error(lang2.ErrDeviceNotFound)
+	return nil, 0, lang.Error(lang.ErrDeviceNotFound)
 }
 
-func (d *Device) CreateMeasure(title string, tag string, kind resource2.MeasureKind) (model2.Measure, error) {
+func (d *Device) CreateMeasure(title string, tag string, kind resource.MeasureKind) (model.Measure, error) {
 	if d != nil {
 		return d.store.CreateMeasure(d.GetID(), title, tag, kind)
 	}
-	return nil, lang2.Error(lang2.ErrDeviceNotFound)
+	return nil, lang.Error(lang.ErrDeviceNotFound)
 }
 
 func (d *Device) CreatedAt() time.Time {
@@ -254,10 +254,10 @@ func (d *Device) CreatedAt() time.Time {
 
 func (d *Device) Destroy() error {
 	if d == nil {
-		return lang2.Error(lang2.ErrDeviceNotFound)
+		return lang.Error(lang.ErrDeviceNotFound)
 	}
 
-	alarms, _, err := d.store.GetAlarmList(nil, nil, helper2.Device(d.GetID()))
+	alarms, _, err := d.store.GetAlarmList(nil, nil, helper.Device(d.GetID()))
 	if err != nil {
 		return err
 	}
@@ -269,7 +269,7 @@ func (d *Device) Destroy() error {
 		}
 	}
 
-	measures, _, err := d.store.GetMeasureList(helper2.Device(d.GetID()))
+	measures, _, err := d.store.GetMeasureList(helper.Device(d.GetID()))
 	if err != nil {
 		return err
 	}
@@ -304,30 +304,30 @@ func (d *Device) Save() error {
 		if d.dirty.Any() {
 			err := SaveData(d.store.db, TbDevices, d.dirty.Data(true), "id=?", d.id)
 			if err != nil {
-				return lang2.InternalError(err)
+				return lang.InternalError(err)
 			}
 		}
 		return nil
 	}
-	return lang2.Error(lang2.ErrDeviceNotFound)
+	return lang.Error(lang.ErrDeviceNotFound)
 }
 
-func (d *Device) Simple() model2.Map {
+func (d *Device) Simple() model.Map {
 	if d == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
-	return model2.Map{
+	return model.Map{
 		"id":     d.id,
 		"enable": d.IsEnabled(),
 		"title":  d.title,
 	}
 }
 
-func (d *Device) Brief() model2.Map {
+func (d *Device) Brief() model.Map {
 	if d == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
-	return model2.Map{
+	return model.Map{
 		"id":             d.id,
 		"enable":         d.IsEnabled(),
 		"title":          d.title,
@@ -336,12 +336,12 @@ func (d *Device) Brief() model2.Map {
 	}
 }
 
-func (d *Device) Detail() model2.Map {
+func (d *Device) Detail() model.Map {
 	if d == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
 
-	detail := model2.Map{
+	detail := model.Map{
 		"id":              d.id,
 		"enable":          d.IsEnabled(),
 		"title":           d.title,
@@ -352,7 +352,7 @@ func (d *Device) Detail() model2.Map {
 
 	groups, _ := d.Groups()
 	if len(groups) > 0 {
-		groupsProfile := make([]model2.Map, 0, len(groups))
+		groupsProfile := make([]model.Map, 0, len(groups))
 		for _, g := range groups {
 			groupsProfile = append(groupsProfile, g.Simple())
 		}

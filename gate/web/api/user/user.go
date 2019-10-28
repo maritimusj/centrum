@@ -7,26 +7,26 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/event"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	app2 "github.com/maritimusj/centrum/gate/web/app"
-	helper2 "github.com/maritimusj/centrum/gate/web/helper"
-	model2 "github.com/maritimusj/centrum/gate/web/model"
-	resource2 "github.com/maritimusj/centrum/gate/web/resource"
-	response2 "github.com/maritimusj/centrum/gate/web/response"
-	status2 "github.com/maritimusj/centrum/gate/web/status"
-	store2 "github.com/maritimusj/centrum/gate/web/store"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/app"
+	"github.com/maritimusj/centrum/gate/web/helper"
+	"github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/web/response"
+	"github.com/maritimusj/centrum/gate/web/status"
+	"github.com/maritimusj/centrum/gate/web/store"
 	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/centrum/util"
 )
 
 func List(ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		var params []helper2.OptionFN
+	return response.Wrap(func() interface{} {
+		var params []helper.OptionFN
 		var orgID int64
 
-		s := app2.Store()
+		s := app.Store()
 		admin := s.MustGetUserFromContext(ctx)
-		if app2.IsDefaultAdminUser(admin) {
+		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)
 			}
@@ -35,21 +35,21 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		if orgID > 0 {
-			params = append(params, helper2.Organization(orgID))
+			params = append(params, helper.Organization(orgID))
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app2.Config.DefaultPageSize())
-		params = append(params, helper2.Page(page, pageSize))
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
-		params = append(params, helper2.Keyword(keyword))
+		params = append(params, helper.Keyword(keyword))
 
 		users, total, err := s.GetUserList(params...)
 		if err != nil {
 			return err
 		}
-		var result = make([]model2.Map, 0, len(users))
+		var result = make([]model.Map, 0, len(users))
 		for _, user := range users {
 			result = append(result, user.Brief())
 		}
@@ -62,7 +62,7 @@ func List(ctx iris.Context) hero.Result {
 }
 
 func Create(ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
+	return response.Wrap(func() interface{} {
 		var form struct {
 			OrgID    int64   `json:"org"`
 			Username string  `json:"username" valid:"required"`
@@ -71,19 +71,19 @@ func Create(ctx iris.Context) hero.Result {
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
-			return lang2.ErrInvalidRequestData
+			return lang.ErrInvalidRequestData
 		}
 
 		if _, err := govalidator.ValidateStruct(&form); err != nil {
-			return lang2.ErrInvalidRequestData
+			return lang.ErrInvalidRequestData
 		}
 
-		result := app2.TransactionDo(func(s store2.Store) interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			admin := s.MustGetUserFromContext(ctx)
 			if exists, err := s.IsUserExists(form.Username); err != nil {
 				return err
 			} else if exists {
-				return lang2.ErrUserExists
+				return lang.ErrUserExists
 			}
 
 			var roles []interface{}
@@ -100,19 +100,19 @@ func Create(ctx iris.Context) hero.Result {
 			}
 
 			//创建用户同名的role，并设置guest权限
-			role, err := s.CreateRole(app2.Config.DefaultOrganization(), form.Username, form.Username, lang2.Str(lang2.UserDefaultRoleDesc))
+			role, err := s.CreateRole(app.Config.DefaultOrganization(), form.Username, form.Username, lang.Str(lang.UserDefaultRoleDesc))
 			if err != nil {
 				return err
 			}
-			for _, res := range resource2.Guest {
-				if res == resource2.Unknown {
+			for _, res := range resource.Guest {
+				if res == resource.Unknown {
 					continue
 				}
 				res, err := s.GetApiResource(res)
 				if err != nil {
 					return err
 				}
-				_, err = role.SetPolicy(res, resource2.Invoke, resource2.Allow, nil)
+				_, err = role.SetPolicy(res, resource.Invoke, resource.Allow, nil)
 				if err != nil {
 					return err
 				}
@@ -121,11 +121,11 @@ func Create(ctx iris.Context) hero.Result {
 			roles = append(roles, role)
 
 			var org interface{}
-			if app2.IsDefaultAdminUser(admin) {
+			if app.IsDefaultAdminUser(admin) {
 				if form.OrgID > 0 {
 					org = form.OrgID
 				} else {
-					org = app2.Config.DefaultOrganization()
+					org = app.Config.DefaultOrganization()
 				}
 			} else {
 				org = admin.OrganizationID()
@@ -145,7 +145,7 @@ func Create(ctx iris.Context) hero.Result {
 		})
 
 		if data, ok := result.(*event.Data); ok {
-			app2.Event.Publish(event.UserCreated, data.Get("adminID"), data.Get("userID"))
+			app.Event.Publish(event.UserCreated, data.Get("adminID"), data.Get("userID"))
 			return data.Pop("result")
 		}
 
@@ -154,8 +154,8 @@ func Create(ctx iris.Context) hero.Result {
 }
 
 func Detail(userID int64) hero.Result {
-	return response2.Wrap(func() interface{} {
-		user, err := app2.Store().GetUser(userID)
+	return response.Wrap(func() interface{} {
+		user, err := app.Store().GetUser(userID)
 		if err != nil {
 			return err
 		}
@@ -164,16 +164,16 @@ func Detail(userID int64) hero.Result {
 }
 
 func Update(userID int64, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		result := app2.TransactionDo(func(s store2.Store) interface{} {
+	return response.Wrap(func() interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			user, err := s.GetUser(userID)
 			if err != nil {
 				return err
 			}
 
 			admin := s.MustGetUserFromContext(ctx)
-			if app2.IsDefaultAdminUser(user) && !app2.IsDefaultAdminUser(admin) {
-				return lang2.ErrNoPermission
+			if app.IsDefaultAdminUser(user) && !app.IsDefaultAdminUser(admin) {
+				return lang.ErrNoPermission
 			}
 
 			var form struct {
@@ -187,7 +187,7 @@ func Update(userID int64, ctx iris.Context) hero.Result {
 
 			err = ctx.ReadJSON(&form)
 			if err != nil {
-				return lang2.ErrInvalidRequestData
+				return lang.ErrInvalidRequestData
 			}
 
 			if form.Roles != nil {
@@ -205,17 +205,17 @@ func Update(userID int64, ctx iris.Context) hero.Result {
 				user.ResetPassword(*form.Password)
 			}
 
-			var data = model2.Map{}
+			var data = model.Map{}
 			if form.Enable != nil {
 				if false == *form.Enable {
-					if app2.IsDefaultAdminUser(user) {
-						return lang2.ErrFailedDisableDefaultUser
+					if app.IsDefaultAdminUser(user) {
+						return lang.ErrFailedDisableDefaultUser
 					}
 					if user.Name() == admin.Name() {
-						return lang2.ErrFailedDisableUserSelf
+						return lang.ErrFailedDisableUserSelf
 					}
 				}
-				data["enable"] = util.If(*form.Enable, status2.Enable, status2.Disable)
+				data["enable"] = util.If(*form.Enable, status.Enable, status.Disable)
 			}
 			if form.Title != nil {
 				data["title"] = *form.Title
@@ -245,8 +245,8 @@ func Update(userID int64, ctx iris.Context) hero.Result {
 		})
 
 		if data, ok := result.(event.Data); ok {
-			app2.Event.Publish(event.UserUpdated, data.Get("adminID"), data.Get("userID"))
-			return lang2.Ok
+			app.Event.Publish(event.UserUpdated, data.Get("adminID"), data.Get("userID"))
+			return lang.Ok
 		}
 
 		return result
@@ -254,20 +254,20 @@ func Update(userID int64, ctx iris.Context) hero.Result {
 }
 
 func Delete(userID int64, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		result := app2.TransactionDo(func(s store2.Store) interface{} {
+	return response.Wrap(func() interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			user, err := s.GetUser(userID)
 			if err != nil {
 				return err
 			}
 
 			admin := s.MustGetUserFromContext(ctx)
-			if app2.IsDefaultAdminUser(user) {
-				return lang2.ErrFailedRemoveDefaultUser
+			if app.IsDefaultAdminUser(user) {
+				return lang.ErrFailedRemoveDefaultUser
 			}
 
 			if user.Name() == admin.Name() {
-				return lang2.ErrFailedRemoveUserSelf
+				return lang.ErrFailedRemoveUserSelf
 			}
 
 			//删除用户同名角色
@@ -295,29 +295,29 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 		})
 
 		if data, ok := result.(event.Data); ok {
-			app2.Event.Publish(event.UserDeleted, data.Get("adminID"), data.Get("name"))
-			return lang2.Ok
+			app.Event.Publish(event.UserDeleted, data.Get("adminID"), data.Get("name"))
+			return lang.Ok
 		}
 		return result
 	})
 }
 
 func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
+	return response.Wrap(func() interface{} {
 		key := fmt.Sprintf("UpdatePerm:%d", userID)
 		if _, ok := global.Params.Get(key); ok {
-			return lang2.ErrServerIsBusy
+			return lang.ErrServerIsBusy
 		}
 
 		global.Params.Set(key, true)
-		result := app2.TransactionDo(func(s store2.Store) interface{} {
+		result := app.TransactionDo(func(s store.Store) interface{} {
 			user, err := s.GetUser(userID)
 			if err != nil {
 				return err
 			}
 
-			if app2.IsDefaultAdminUser(user) {
-				return lang2.ErrFailedEditDefaultUser
+			if app.IsDefaultAdminUser(user) {
+				return lang.ErrFailedEditDefaultUser
 			}
 
 			roles, err := user.GetRoles()
@@ -337,7 +337,7 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 				Policies []P `json:"policies"`
 			}
 			if err = ctx.ReadJSON(&form); err != nil {
-				return lang2.ErrInvalidRequestData
+				return lang.ErrInvalidRequestData
 			}
 
 			newRoles := hashset.New()
@@ -354,7 +354,7 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 					if err != nil {
 						return err
 					}
-					if app2.IsDefaultAdminUser(admin) || role.Name() != lang2.RoleSystemAdminName {
+					if app.IsDefaultAdminUser(admin) || role.Name() != lang.RoleSystemAdminName {
 						if *p.Role {
 							newRoles.Add(role.GetID())
 						} else {
@@ -368,33 +368,33 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 				return err
 			}
 
-			update := func(role model2.Role) interface{} {
+			update := func(role model.Role) interface{} {
 				for _, p := range form.Policies {
 					//角色设置，则跳过
 					if p.Role != nil {
 						continue
 					}
 
-					res, err := s.GetResource(resource2.Class(p.ResourceClass), p.ResourceID)
+					res, err := s.GetResource(resource.Class(p.ResourceClass), p.ResourceID)
 					if err != nil {
 						return err
 					}
 
 					//Api权限不允许单独分配（只能通过角色分配）
-					if res.ResourceClass() == resource2.Api {
-						return lang2.ErrNoPermission
+					if res.ResourceClass() == resource.Api {
+						return lang.ErrNoPermission
 					}
 
 					if p.View != nil {
-						effect := util.If(*p.View, resource2.Allow, resource2.Deny).(resource2.Effect)
-						_, err = role.SetPolicy(res, resource2.View, effect, map[model2.Resource]struct{}{})
+						effect := util.If(*p.View, resource.Allow, resource.Deny).(resource.Effect)
+						_, err = role.SetPolicy(res, resource.View, effect, map[model.Resource]struct{}{})
 						if err != nil {
 							return err
 						}
 					}
 					if p.Ctrl != nil {
-						effect := util.If(*p.Ctrl, resource2.Allow, resource2.Deny).(resource2.Effect)
-						_, err = role.SetPolicy(res, resource2.Ctrl, effect, map[model2.Resource]struct{}{})
+						effect := util.If(*p.Ctrl, resource.Allow, resource.Deny).(resource.Effect)
+						_, err = role.SetPolicy(res, resource.Ctrl, effect, map[model.Resource]struct{}{})
 						if err != nil {
 							return err
 						}
@@ -419,13 +419,13 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 				}
 			}
 
-			return lang2.ErrRoleNotFound
+			return lang.ErrRoleNotFound
 		})
 
 		global.Params.Remove(key)
 		if data, ok := result.(event.Data); ok {
-			app2.Event.Publish(event.UserUpdated, data.Get("adminID"), data.Get("userID"))
-			return lang2.Ok
+			app.Event.Publish(event.UserUpdated, data.Get("adminID"), data.Get("userID"))
+			return lang.Ok
 		}
 
 		return result

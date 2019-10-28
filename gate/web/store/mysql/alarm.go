@@ -2,10 +2,10 @@ package mysqlStore
 
 import (
 	"github.com/kataras/iris"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	dirty2 "github.com/maritimusj/centrum/gate/web/dirty"
-	model2 "github.com/maritimusj/centrum/gate/web/model"
-	status2 "github.com/maritimusj/centrum/gate/web/status"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/dirty"
+	"github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/web/status"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"time"
@@ -23,14 +23,14 @@ type Alarm struct {
 	createdAt time.Time
 	updatedAt time.Time
 
-	dirty *dirty2.Dirty
+	dirty *dirty.Dirty
 	store *mysqlStore
 }
 
 func NewAlarm(store *mysqlStore, id int64) *Alarm {
 	return &Alarm{
 		id:    id,
-		dirty: dirty2.New(),
+		dirty: dirty.New(),
 		store: store,
 	}
 }
@@ -48,25 +48,25 @@ func (alarm *Alarm) MeasureID() int64 {
 }
 
 func (alarm *Alarm) Status() (int, string) {
-	return alarm.status, lang2.AlarmStatusDesc(alarm.status)
+	return alarm.status, lang.AlarmStatusDesc(alarm.status)
 }
 
 func (alarm *Alarm) Confirm(data map[string]interface{}) error {
 	if err := alarm.SetOption("confirm", data); err != nil {
 		return err
 	}
-	alarm.status = status2.Confirmated
+	alarm.status = status.Confirmated
 	alarm.dirty.Set("status", func() interface{} {
 		return alarm.status
 	})
 	return alarm.Save()
 }
 
-func (alarm *Alarm) Device() (model2.Device, error) {
+func (alarm *Alarm) Device() (model.Device, error) {
 	return alarm.store.GetDevice(alarm.deviceID)
 }
 
-func (alarm *Alarm) Measure() (model2.Measure, error) {
+func (alarm *Alarm) Measure() (model.Measure, error) {
 	return alarm.store.GetMeasure(alarm.measureID)
 }
 
@@ -89,7 +89,7 @@ func (alarm *Alarm) Save() error {
 	if alarm.dirty.Any() {
 		err := SaveData(alarm.store.db, TbAlarms, alarm.dirty.Data(true), "id=?", alarm.id)
 		if err != nil {
-			return lang2.InternalError(err)
+			return lang.InternalError(err)
 		}
 	}
 	return nil
@@ -121,13 +121,13 @@ func (alarm *Alarm) SetOption(path string, value interface{}) error {
 	return nil
 }
 
-func (alarm *Alarm) Simple() model2.Map {
+func (alarm *Alarm) Simple() model.Map {
 	device, _ := alarm.Device()
 	measure, _ := alarm.Measure()
-	return model2.Map{
+	return model.Map{
 		"id":          alarm.GetID(),
 		"status":      alarm.status,
-		"status_desc": lang2.AlarmStatusDesc(alarm.status),
+		"status_desc": lang.AlarmStatusDesc(alarm.status),
 		"device":      device.Brief(),
 		"measure":     measure.Brief(),
 		"raw": iris.Map{
@@ -138,13 +138,13 @@ func (alarm *Alarm) Simple() model2.Map {
 	}
 }
 
-func (alarm *Alarm) Brief() model2.Map {
+func (alarm *Alarm) Brief() model.Map {
 	device, _ := alarm.Device()
 	measure, _ := alarm.Measure()
-	return model2.Map{
+	return model.Map{
 		"id":          alarm.GetID(),
 		"status":      alarm.status,
-		"status_desc": lang2.AlarmStatusDesc(alarm.status),
+		"status_desc": lang.AlarmStatusDesc(alarm.status),
 		"device":      device.Brief(),
 		"measure":     measure.Brief(),
 		"raw":         alarm.Option(),
@@ -153,13 +153,13 @@ func (alarm *Alarm) Brief() model2.Map {
 	}
 }
 
-func (alarm *Alarm) Detail() model2.Map {
+func (alarm *Alarm) Detail() model.Map {
 	device, _ := alarm.Device()
 	measure, _ := alarm.Measure()
-	return model2.Map{
+	return model.Map{
 		"id":          alarm.GetID(),
 		"status":      alarm.status,
-		"status_desc": lang2.AlarmStatusDesc(alarm.status),
+		"status_desc": lang.AlarmStatusDesc(alarm.status),
 		"device":      device.Brief(),
 		"measure":     measure.Brief(),
 		"raw":         alarm.Option(),

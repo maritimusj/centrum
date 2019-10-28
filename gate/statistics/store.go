@@ -3,7 +3,7 @@ package statistics
 import (
 	_ "github.com/influxdata/influxdb1-client"
 	db "github.com/influxdata/influxdb1-client/v2"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/lang"
 )
 
 type Client struct {
@@ -25,23 +25,23 @@ func (client *Client) Open(option map[string]interface{}) error {
 		})
 
 		if err != nil {
-			return lang2.InternalError(err)
+			return lang.InternalError(err)
 		}
 
 		client.db = c
 		return nil
 	}
-	return lang2.Error(lang2.ErrInvalidDBConnStr)
+	return lang.Error(lang.ErrInvalidDBConnStr)
 }
 
 func (client *Client) queryData(dbName string, cmd string) ([]db.Result, error) {
 	q := db.NewQuery(cmd, dbName, "s")
 	response, err := client.db.Query(q)
 	if err != nil {
-		return nil, lang2.InternalError(err)
+		return nil, lang.InternalError(err)
 	}
 	if response.Error() != nil {
-		return nil, lang2.InternalError(response.Error())
+		return nil, lang.InternalError(response.Error())
 	}
 
 	return response.Results, nil

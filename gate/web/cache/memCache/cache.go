@@ -2,8 +2,8 @@ package memCache
 
 import (
 	"errors"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	model2 "github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/model"
 	goCache "github.com/patrickmn/go-cache"
 	"strconv"
 	"time"
@@ -41,27 +41,27 @@ func getKey(obj interface{}) string {
 	switch v := obj.(type) {
 	case string:
 		return v
-	case model2.Organization:
+	case model.Organization:
 		pref = PrefixOrg
-	case model2.User:
+	case model.User:
 		pref = PrefixUser
-	case model2.Role:
+	case model.Role:
 		pref = PrefixRole
-	case model2.Policy:
+	case model.Policy:
 		pref = prefixPolicy
-	case model2.Group:
+	case model.Group:
 		pref = prefixGroup
-	case model2.Device:
+	case model.Device:
 		pref = prefixDevice
-	case model2.Measure:
+	case model.Measure:
 		pref = prefixMeasure
-	case model2.Equipment:
+	case model.Equipment:
 		pref = prefixEquipment
-	case model2.State:
+	case model.State:
 		pref = prefixState
-	case model2.ApiResource:
+	case model.ApiResource:
 		pref = prefixApiResource
-	case model2.Alarm:
+	case model.Alarm:
 		pref = prefixAlarm
 	}
 	type getID interface {
@@ -92,110 +92,110 @@ func (c *cache) Remove(obj interface{}) {
 	c.client.Delete(getKey(obj))
 }
 
-func (c *cache) LoadConfig(id int64) (model2.Config, error) {
+func (c *cache) LoadConfig(id int64) (model.Config, error) {
 	if v, ok := c.client.Get(PrefixConfig + strconv.FormatInt(id, 10)); ok {
-		if u, ok := v.(model2.Config); ok {
+		if u, ok := v.(model.Config); ok {
 			return u, nil
 		}
 	}
-	return nil, lang2.Error(lang2.ErrCacheNotFound)
+	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadOrganization(id int64) (model2.Organization, error) {
+func (c *cache) LoadOrganization(id int64) (model.Organization, error) {
 	if v, ok := c.client.Get(PrefixOrg + strconv.FormatInt(id, 10)); ok {
-		if u, ok := v.(model2.Organization); ok {
+		if u, ok := v.(model.Organization); ok {
 			return u, nil
 		}
 	}
-	return nil, lang2.Error(lang2.ErrCacheNotFound)
+	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadUser(id int64) (model2.User, error) {
+func (c *cache) LoadUser(id int64) (model.User, error) {
 	if v, ok := c.client.Get(PrefixUser + strconv.FormatInt(id, 10)); ok {
-		if u, ok := v.(model2.User); ok {
+		if u, ok := v.(model.User); ok {
 			return u, nil
 		}
 	}
-	return nil, lang2.Error(lang2.ErrCacheNotFound)
+	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadRole(id int64) (model2.Role, error) {
+func (c *cache) LoadRole(id int64) (model.Role, error) {
 	if v, ok := c.client.Get(PrefixRole + strconv.FormatInt(id, 10)); ok {
-		if u, ok := v.(model2.Role); ok {
+		if u, ok := v.(model.Role); ok {
 			return u, nil
 		}
 	}
-	return nil, lang2.Error(lang2.ErrCacheNotFound)
+	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadPolicy(id int64) (model2.Policy, error) {
+func (c *cache) LoadPolicy(id int64) (model.Policy, error) {
 	if v, ok := c.client.Get(prefixPolicy + strconv.FormatInt(id, 10)); ok {
-		if u, ok := v.(model2.Policy); ok {
+		if u, ok := v.(model.Policy); ok {
 			return u, nil
 		}
 	}
-	return nil, lang2.Error(lang2.ErrCacheNotFound)
+	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadGroup(id int64) (model2.Group, error) {
+func (c *cache) LoadGroup(id int64) (model.Group, error) {
 	if v, ok := c.client.Get(prefixGroup + strconv.FormatInt(id, 10)); ok {
-		if u, ok := v.(model2.Group); ok {
+		if u, ok := v.(model.Group); ok {
 			return u, nil
 		}
 	}
-	return nil, lang2.Error(lang2.ErrCacheNotFound)
+	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadDevice(id int64) (model2.Device, error) {
+func (c *cache) LoadDevice(id int64) (model.Device, error) {
 	if v, ok := c.client.Get(prefixDevice + strconv.FormatInt(id, 10)); ok {
-		if u, ok := v.(model2.Device); ok {
+		if u, ok := v.(model.Device); ok {
 			return u, nil
 		}
 	}
-	return nil, lang2.Error(lang2.ErrCacheNotFound)
+	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadMeasure(id int64) (model2.Measure, error) {
+func (c *cache) LoadMeasure(id int64) (model.Measure, error) {
 	if v, ok := c.client.Get(prefixMeasure + strconv.FormatInt(id, 10)); ok {
-		if u, ok := v.(model2.Measure); ok {
+		if u, ok := v.(model.Measure); ok {
 			return u, nil
 		}
 	}
-	return nil, lang2.Error(lang2.ErrCacheNotFound)
+	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadEquipment(id int64) (model2.Equipment, error) {
+func (c *cache) LoadEquipment(id int64) (model.Equipment, error) {
 	if v, ok := c.client.Get(prefixEquipment + strconv.FormatInt(id, 10)); ok {
-		if u, ok := v.(model2.Equipment); ok {
+		if u, ok := v.(model.Equipment); ok {
 			return u, nil
 		}
 	}
-	return nil, lang2.Error(lang2.ErrCacheNotFound)
+	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadState(id int64) (model2.State, error) {
+func (c *cache) LoadState(id int64) (model.State, error) {
 	if v, ok := c.client.Get(prefixState + strconv.FormatInt(id, 10)); ok {
-		if u, ok := v.(model2.State); ok {
+		if u, ok := v.(model.State); ok {
 			return u, nil
 		}
 	}
-	return nil, lang2.Error(lang2.ErrCacheNotFound)
+	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadApiResource(id int64) (model2.ApiResource, error) {
+func (c *cache) LoadApiResource(id int64) (model.ApiResource, error) {
 	if v, ok := c.client.Get(prefixApiResource + strconv.FormatInt(id, 10)); ok {
-		if u, ok := v.(model2.ApiResource); ok {
+		if u, ok := v.(model.ApiResource); ok {
 			return u, nil
 		}
 	}
-	return nil, lang2.Error(lang2.ErrCacheNotFound)
+	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadAlarm(id int64) (model2.Alarm, error) {
+func (c *cache) LoadAlarm(id int64) (model.Alarm, error) {
 	if v, ok := c.client.Get(prefixAlarm + strconv.FormatInt(id, 10)); ok {
-		if u, ok := v.(model2.Alarm); ok {
+		if u, ok := v.(model.Alarm); ok {
 			return u, nil
 		}
 	}
-	return nil, lang2.Error(lang2.ErrCacheNotFound)
+	return nil, lang.Error(lang.ErrCacheNotFound)
 }

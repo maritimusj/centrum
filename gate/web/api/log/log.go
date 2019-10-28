@@ -4,53 +4,53 @@ import (
 	"encoding/json"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/logStore"
-	app2 "github.com/maritimusj/centrum/gate/web/app"
-	response2 "github.com/maritimusj/centrum/gate/web/response"
+	"github.com/maritimusj/centrum/gate/web/app"
+	"github.com/maritimusj/centrum/gate/web/response"
 	log "github.com/sirupsen/logrus"
 )
 
 func Level() hero.Result {
-	return response2.Wrap(func() interface{} {
+	return response.Wrap(func() interface{} {
 		return []iris.Map{
 			{
 				"id":    "trace",
-				"title": lang2.Str(lang2.LogTrace),
+				"title": lang.Str(lang.LogTrace),
 			},
 			{
 				"id":    "debug",
-				"title": lang2.Str(lang2.LogDebug),
+				"title": lang.Str(lang.LogDebug),
 			},
 			{
 				"id":    "info",
-				"title": lang2.Str(lang2.LogInfo),
+				"title": lang.Str(lang.LogInfo),
 			},
 			{
 				"id":    "warn",
-				"title": lang2.Str(lang2.LogWarn),
+				"title": lang.Str(lang.LogWarn),
 			},
 			{
 				"id":    "error",
-				"title": lang2.Str(lang2.LogError),
+				"title": lang.Str(lang.LogError),
 			},
 			{
 				"id":    "fatal",
-				"title": lang2.Str(lang2.LogFatal),
+				"title": lang.Str(lang.LogFatal),
 			},
 			{
 				"id":    "panic",
-				"title": lang2.Str(lang2.LogPanic),
+				"title": lang.Str(lang.LogPanic),
 			},
 		}
 	})
 }
 
 func List(ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		admin := app2.Store().MustGetUserFromContext(ctx)
+	return response.Wrap(func() interface{} {
+		admin := app.Store().MustGetUserFromContext(ctx)
 		var orgID int64
-		if app2.IsDefaultAdminUser(admin) && ctx.URLParamExists("org") {
+		if app.IsDefaultAdminUser(admin) && ctx.URLParamExists("org") {
 			orgID = ctx.URLParamInt64Default("org", admin.OrganizationID())
 		}
 		return GetLogList(ctx, orgID, logStore.SystemLog)
@@ -58,10 +58,10 @@ func List(ctx iris.Context) hero.Result {
 }
 
 func Delete(ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		admin := app2.Store().MustGetUserFromContext(ctx)
+	return response.Wrap(func() interface{} {
+		admin := app.Store().MustGetUserFromContext(ctx)
 		var orgID int64
-		if app2.IsDefaultAdminUser(admin) && ctx.URLParamExists("org") {
+		if app.IsDefaultAdminUser(admin) && ctx.URLParamExists("org") {
 			orgID = ctx.URLParamInt64Default("org", admin.OrganizationID())
 		}
 		return DeleteLog(ctx, orgID, logStore.SystemLog)
@@ -72,12 +72,12 @@ func GetLogList(ctx iris.Context, orgID int64, src string) interface{} {
 	level := ctx.URLParam("level")
 	start := ctx.URLParamInt64Default("start", 0)
 	page := ctx.URLParamInt64Default("page", 1)
-	pageSize := ctx.URLParamInt64Default("pagesize", app2.Config.DefaultPageSize())
+	pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 
-	admin := app2.Store().MustGetUserFromContext(ctx)
+	admin := app.Store().MustGetUserFromContext(ctx)
 
 	x := uint64(start)
-	logs, total, err := app2.LogDBStore.GetList(orgID, src, level, &x, uint64((page-1)*pageSize), uint64(pageSize))
+	logs, total, err := app.LogDBStore.GetList(orgID, src, level, &x, uint64((page-1)*pageSize), uint64(pageSize))
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func GetLogList(ctx iris.Context, orgID int64, src string) interface{} {
 		}
 	}
 	return iris.Map{
-		"stats": app2.LogDBStore.Stats(admin.OrganizationID()),
+		"stats": app.LogDBStore.Stats(admin.OrganizationID()),
 		"start": x,
 		"total": total,
 		"list":  result,
@@ -108,13 +108,13 @@ func GetLogList(ctx iris.Context, orgID int64, src string) interface{} {
 }
 
 func DeleteLog(ctx iris.Context, orgID int64, src string) interface{} {
-	admin := app2.Store().MustGetUserFromContext(ctx)
+	admin := app.Store().MustGetUserFromContext(ctx)
 
-	err := app2.LogDBStore.Delete(orgID, src)
+	err := app.LogDBStore.Delete(orgID, src)
 	if err != nil {
 		return err
 	}
 
-	log.Info(lang2.Str(lang2.LogDeletedByUser, admin.Name()))
-	return lang2.Ok
+	log.Info(lang.Str(lang.LogDeletedByUser, admin.Name()))
+	return lang.Ok
 }

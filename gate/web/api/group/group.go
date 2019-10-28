@@ -4,24 +4,24 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	app2 "github.com/maritimusj/centrum/gate/web/app"
-	helper2 "github.com/maritimusj/centrum/gate/web/helper"
-	model2 "github.com/maritimusj/centrum/gate/web/model"
-	resource2 "github.com/maritimusj/centrum/gate/web/resource"
-	response2 "github.com/maritimusj/centrum/gate/web/response"
-	store2 "github.com/maritimusj/centrum/gate/web/store"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/app"
+	"github.com/maritimusj/centrum/gate/web/helper"
+	"github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/web/response"
+	"github.com/maritimusj/centrum/gate/web/store"
 )
 
 func List(ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		s := app2.Store()
+	return response.Wrap(func() interface{} {
+		s := app.Store()
 
-		var params []helper2.OptionFN
+		var params []helper.OptionFN
 		var orgID int64
 
 		admin := s.MustGetUserFromContext(ctx)
-		if app2.IsDefaultAdminUser(admin) {
+		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)
 			}
@@ -29,16 +29,16 @@ func List(ctx iris.Context) hero.Result {
 			orgID = admin.OrganizationID()
 		}
 		if orgID > 0 {
-			params = append(params, helper2.Organization(orgID))
+			params = append(params, helper.Organization(orgID))
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app2.Config.DefaultPageSize())
-		params = append(params, helper2.Page(page, pageSize))
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
 		if keyword != "" {
-			params = append(params, helper2.Keyword(keyword))
+			params = append(params, helper.Keyword(keyword))
 		}
 
 		parentGroupID := ctx.URLParamInt64Default("parent", 0)
@@ -47,24 +47,24 @@ func List(ctx iris.Context) hero.Result {
 			if err != nil {
 				return err
 			}
-			params = append(params, helper2.Parent(parentGroupID))
+			params = append(params, helper.Parent(parentGroupID))
 		}
 
-		if !app2.IsDefaultAdminUser(admin) {
-			params = append(params, helper2.User(admin.GetID()))
-			params = append(params, helper2.DefaultEffect(app2.Config.DefaultEffect()))
+		if !app.IsDefaultAdminUser(admin) {
+			params = append(params, helper.User(admin.GetID()))
+			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
 		}
 
 		groups, total, err := s.GetGroupList(params...)
 		if err != nil {
 			return err
 		}
-		var result = make([]model2.Map, 0, len(groups))
+		var result = make([]model.Map, 0, len(groups))
 		for _, group := range groups {
 			brief := group.Brief()
 			brief["perm"] = iris.Map{
 				"view": true,
-				"ctrl": app2.Allow(admin, group, resource2.Ctrl),
+				"ctrl": app.Allow(admin, group, resource.Ctrl),
 			}
 			result = append(result, brief)
 		}
@@ -77,7 +77,7 @@ func List(ctx iris.Context) hero.Result {
 }
 
 func Create(ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
+	return response.Wrap(func() interface{} {
 		var form struct {
 			OrgID         int64  `json:"org"`
 			Title         string `json:"title" valid:"required"`
@@ -86,14 +86,14 @@ func Create(ctx iris.Context) hero.Result {
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
-			return lang2.ErrInvalidRequestData
+			return lang.ErrInvalidRequestData
 		}
 
 		if _, err := govalidator.ValidateStruct(&form); err != nil {
-			return lang2.ErrInvalidRequestData
+			return lang.ErrInvalidRequestData
 		}
 
-		return app2.TransactionDo(func(s store2.Store) interface{} {
+		return app.TransactionDo(func(s store.Store) interface{} {
 			if form.ParentGroupID > 0 {
 				_, err := s.GetGroup(form.ParentGroupID)
 				if err != nil {
@@ -104,11 +104,11 @@ func Create(ctx iris.Context) hero.Result {
 			var org interface{}
 
 			admin := s.MustGetUserFromContext(ctx)
-			if app2.IsDefaultAdminUser(admin) {
+			if app.IsDefaultAdminUser(admin) {
 				if form.OrgID > 0 {
 					org = form.OrgID
 				} else {
-					org = app2.Config.DefaultOrganization()
+					org = app.Config.DefaultOrganization()
 				}
 			} else {
 				org = admin.OrganizationID()
@@ -119,7 +119,7 @@ func Create(ctx iris.Context) hero.Result {
 				return err
 			}
 
-			err = app2.SetAllow(admin, group, resource2.View, resource2.Ctrl)
+			err = app.SetAllow(admin, group, resource.View, resource.Ctrl)
 			if err != nil {
 				return err
 			}
@@ -130,16 +130,16 @@ func Create(ctx iris.Context) hero.Result {
 }
 
 func Detail(groupID int64, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		s := app2.Store()
+	return response.Wrap(func() interface{} {
+		s := app.Store()
 		group, err := s.GetGroup(groupID)
 		if err != nil {
 			return err
 		}
 
 		admin := s.MustGetUserFromContext(ctx)
-		if !app2.Allow(admin, group, resource2.View) {
-			return lang2.ErrNoPermission
+		if !app.Allow(admin, group, resource.View) {
+			return lang.ErrNoPermission
 		}
 
 		return group.Detail()
@@ -147,16 +147,16 @@ func Detail(groupID int64, ctx iris.Context) hero.Result {
 }
 
 func Update(groupID int64, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		s := app2.Store()
+	return response.Wrap(func() interface{} {
+		s := app.Store()
 		group, err := s.GetGroup(groupID)
 		if err != nil {
 			return err
 		}
 
 		admin := s.MustGetUserFromContext(ctx)
-		if !app2.Allow(admin, group, resource2.Ctrl) {
-			return lang2.ErrNoPermission
+		if !app.Allow(admin, group, resource.Ctrl) {
+			return lang.ErrNoPermission
 		}
 
 		var form struct {
@@ -169,7 +169,7 @@ func Update(groupID int64, ctx iris.Context) hero.Result {
 
 		err = ctx.ReadJSON(&form)
 		if err != nil {
-			return lang2.ErrInvalidRequestData
+			return lang.ErrInvalidRequestData
 		}
 
 		if form.ParentGroupID != nil {
@@ -192,12 +192,12 @@ func Update(groupID int64, ctx iris.Context) hero.Result {
 					return err
 				}
 
-				if !app2.Allow(admin, device, resource2.Ctrl) {
-					return lang2.ErrNoPermission
+				if !app.Allow(admin, device, resource.Ctrl) {
+					return lang.ErrNoPermission
 				}
 
 				if device.OrganizationID() != group.OrganizationID() {
-					return lang2.ErrDeviceOrganizationDifferent
+					return lang.ErrDeviceOrganizationDifferent
 				}
 
 				devices = append(devices, device)
@@ -216,12 +216,12 @@ func Update(groupID int64, ctx iris.Context) hero.Result {
 					return err
 				}
 
-				if !app2.Allow(admin, equipment, resource2.Ctrl) {
-					return lang2.ErrNoPermission
+				if !app.Allow(admin, equipment, resource.Ctrl) {
+					return lang.ErrNoPermission
 				}
 
 				if equipment.OrganizationID() != group.OrganizationID() {
-					return lang2.ErrEquipmentOrganizationDifferent
+					return lang.ErrEquipmentOrganizationDifferent
 				}
 
 				equipments = append(equipments, equipment)
@@ -235,21 +235,21 @@ func Update(groupID int64, ctx iris.Context) hero.Result {
 		if err != nil {
 			return err
 		}
-		return lang2.Ok
+		return lang.Ok
 	})
 }
 
 func Delete(groupID int64, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		s := app2.Store()
+	return response.Wrap(func() interface{} {
+		s := app.Store()
 		group, err := s.GetGroup(groupID)
 		if err != nil {
 			return err
 		}
 
 		admin := s.MustGetUserFromContext(ctx)
-		if !app2.Allow(admin, group, resource2.Ctrl) {
-			return lang2.ErrNoPermission
+		if !app.Allow(admin, group, resource.Ctrl) {
+			return lang.ErrNoPermission
 		}
 
 		err = group.Destroy()
@@ -257,6 +257,6 @@ func Delete(groupID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 
-		return lang2.Ok
+		return lang.Ok
 	})
 }

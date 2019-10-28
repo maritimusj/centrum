@@ -3,30 +3,30 @@ package alarm
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	app2 "github.com/maritimusj/centrum/gate/web/app"
-	helper2 "github.com/maritimusj/centrum/gate/web/helper"
-	model2 "github.com/maritimusj/centrum/gate/web/model"
-	resource2 "github.com/maritimusj/centrum/gate/web/resource"
-	response2 "github.com/maritimusj/centrum/gate/web/response"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/app"
+	"github.com/maritimusj/centrum/gate/web/helper"
+	"github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/web/response"
 	"time"
 )
 
 func List(ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		s := app2.Store()
+	return response.Wrap(func() interface{} {
+		s := app.Store()
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app2.Config.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
 
-		var params = []helper2.OptionFN{
-			helper2.Page(page, pageSize),
+		var params = []helper.OptionFN{
+			helper.Page(page, pageSize),
 		}
 
 		admin := s.MustGetUserFromContext(ctx)
-		if !app2.IsDefaultAdminUser(admin) {
-			params = append(params, helper2.DefaultEffect(app2.Config.DefaultEffect()))
-			params = append(params, helper2.User(admin.GetID()))
+		if !app.IsDefaultAdminUser(admin) {
+			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
+			params = append(params, helper.User(admin.GetID()))
 		}
 
 		var (
@@ -36,7 +36,7 @@ func List(ctx iris.Context) hero.Result {
 		if ctx.URLParamExists("start") {
 			s, err := time.Parse("2006-01-02_15:04:05", ctx.URLParam("start"))
 			if err != nil {
-				return lang2.ErrInvalidRequestData
+				return lang.ErrInvalidRequestData
 			}
 			start = &s
 		}
@@ -44,7 +44,7 @@ func List(ctx iris.Context) hero.Result {
 		if ctx.URLParamExists("end") {
 			s, err := time.Parse("2006-01-02_15:04:05", ctx.URLParam("start"))
 			if err != nil {
-				return lang2.ErrInvalidRequestData
+				return lang.ErrInvalidRequestData
 			}
 			end = &s
 		}
@@ -54,7 +54,7 @@ func List(ctx iris.Context) hero.Result {
 			return err
 		}
 
-		var result = make([]model2.Map, 0, len(alarms))
+		var result = make([]model.Map, 0, len(alarms))
 		for _, alarm := range alarms {
 			brief := alarm.Brief()
 			measure, err := alarm.Measure()
@@ -65,7 +65,7 @@ func List(ctx iris.Context) hero.Result {
 			} else {
 				brief["perm"] = iris.Map{
 					"view": true,
-					"ctrl": app2.Allow(admin, measure, resource2.Ctrl),
+					"ctrl": app.Allow(admin, measure, resource.Ctrl),
 				}
 			}
 
@@ -80,8 +80,8 @@ func List(ctx iris.Context) hero.Result {
 }
 
 func Detail(alarmID int64, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		s := app2.Store()
+	return response.Wrap(func() interface{} {
+		s := app.Store()
 		admin := s.MustGetUserFromContext(ctx)
 
 		alarm, err := s.GetAlarm(alarmID)
@@ -94,8 +94,8 @@ func Detail(alarmID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 
-		if !app2.Allow(admin, measure, resource2.View) {
-			return lang2.ErrNoPermission
+		if !app.Allow(admin, measure, resource.View) {
+			return lang.ErrNoPermission
 		}
 
 		return alarm.Detail()
@@ -103,16 +103,16 @@ func Detail(alarmID int64, ctx iris.Context) hero.Result {
 }
 
 func Confirm(alarmID int64, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
+	return response.Wrap(func() interface{} {
 		var form struct {
 			Desc string `json:"desc"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
-			return lang2.ErrInvalidRequestData
+			return lang.ErrInvalidRequestData
 		}
 
-		s := app2.Store()
+		s := app.Store()
 		admin := s.MustGetUserFromContext(ctx)
 
 		alarm, err := s.GetAlarm(alarmID)
@@ -125,8 +125,8 @@ func Confirm(alarmID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 
-		if !app2.Allow(admin, measure, resource2.Ctrl) {
-			return lang2.ErrNoPermission
+		if !app.Allow(admin, measure, resource.Ctrl) {
+			return lang.ErrNoPermission
 		}
 
 		err = alarm.Confirm(map[string]interface{}{
@@ -138,13 +138,13 @@ func Confirm(alarmID int64, ctx iris.Context) hero.Result {
 		if err != nil {
 			return err
 		}
-		return lang2.Ok
+		return lang.Ok
 	})
 }
 
 func Delete(alarmID int64, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		s := app2.Store()
+	return response.Wrap(func() interface{} {
+		s := app.Store()
 		admin := s.MustGetUserFromContext(ctx)
 
 		alarm, err := s.GetAlarm(alarmID)
@@ -157,14 +157,14 @@ func Delete(alarmID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 
-		if !app2.Allow(admin, measure, resource2.Ctrl) {
-			return lang2.ErrNoPermission
+		if !app.Allow(admin, measure, resource.Ctrl) {
+			return lang.ErrNoPermission
 		}
 
 		err = alarm.Destroy()
 		if err != nil {
 			return err
 		}
-		return lang2.Ok
+		return lang.Ok
 	})
 }

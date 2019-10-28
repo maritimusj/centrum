@@ -3,24 +3,24 @@ package my
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	app2 "github.com/maritimusj/centrum/gate/web/app"
-	model2 "github.com/maritimusj/centrum/gate/web/model"
-	resource2 "github.com/maritimusj/centrum/gate/web/resource"
-	response2 "github.com/maritimusj/centrum/gate/web/response"
-	store2 "github.com/maritimusj/centrum/gate/web/store"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/app"
+	"github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/web/response"
+	"github.com/maritimusj/centrum/gate/web/store"
 	"strconv"
 )
 
 func Detail(ctx iris.Context) hero.Result {
-	my := app2.Store().MustGetUserFromContext(ctx)
-	return response2.Wrap(func() interface{} {
+	my := app.Store().MustGetUserFromContext(ctx)
+	return response.Wrap(func() interface{} {
 		return my.Detail()
 	})
 }
 
 func Update(ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
+	return response.Wrap(func() interface{} {
 		var form struct {
 			Password *string `json:"password"`
 			Title    *string `json:"title"`
@@ -30,16 +30,16 @@ func Update(ctx iris.Context) hero.Result {
 
 		err := ctx.ReadJSON(&form)
 		if err != nil {
-			return lang2.ErrInvalidRequestData
+			return lang.ErrInvalidRequestData
 		}
 
-		return app2.TransactionDo(func(s store2.Store) interface{} {
+		return app.TransactionDo(func(s store.Store) interface{} {
 			my := s.MustGetUserFromContext(ctx)
 			if form.Password != nil && *form.Password != "" {
 				my.ResetPassword(*form.Password)
 			}
 
-			var data = model2.Map{}
+			var data = model.Map{}
 			if form.Title != nil {
 				data["title"] = *form.Title
 			}
@@ -58,16 +58,16 @@ func Update(ctx iris.Context) hero.Result {
 			if err != nil {
 				return err
 			}
-			return lang2.Ok
+			return lang.Ok
 		})
 	})
 }
 
 func Perm(class string, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		s := app2.Store()
+	return response.Wrap(func() interface{} {
+		s := app.Store()
 
-		var res model2.Resource
+		var res model.Resource
 		var err error
 		switch class {
 		case "api":
@@ -75,20 +75,20 @@ func Perm(class string, ctx iris.Context) hero.Result {
 			if id != "" {
 				res, err = s.GetApiResource(id)
 			} else {
-				err = lang2.Error(lang2.ErrInvalidRequestData)
+				err = lang.Error(lang.ErrInvalidRequestData)
 			}
 		case "group":
-			res, err = s.GetResource(resource2.Group, ctx.URLParamInt64Default("id", 0))
+			res, err = s.GetResource(resource.Group, ctx.URLParamInt64Default("id", 0))
 		case "device":
-			res, err = s.GetResource(resource2.Device, ctx.URLParamInt64Default("id", 0))
+			res, err = s.GetResource(resource.Device, ctx.URLParamInt64Default("id", 0))
 		case "measure":
-			res, err = s.GetResource(resource2.Measure, ctx.URLParamInt64Default("id", 0))
+			res, err = s.GetResource(resource.Measure, ctx.URLParamInt64Default("id", 0))
 		case "equipment":
-			res, err = s.GetResource(resource2.Equipment, ctx.URLParamInt64Default("id", 0))
+			res, err = s.GetResource(resource.Equipment, ctx.URLParamInt64Default("id", 0))
 		case "state":
-			res, err = s.GetResource(resource2.State, ctx.URLParamInt64Default("id", 0))
+			res, err = s.GetResource(resource.State, ctx.URLParamInt64Default("id", 0))
 		default:
-			err = lang2.Error(lang2.ErrInvalidRequestData)
+			err = lang.Error(lang.ErrInvalidRequestData)
 		}
 
 		if err != nil {
@@ -99,28 +99,28 @@ func Perm(class string, ctx iris.Context) hero.Result {
 
 		if class == "api" {
 			return iris.Map{
-				"invoke": app2.Allow(my, res, resource2.Invoke),
+				"invoke": app.Allow(my, res, resource.Invoke),
 			}
 		}
 		return iris.Map{
-			"view": app2.Allow(my, res, resource2.View),
-			"ctrl": app2.Allow(my, res, resource2.Ctrl),
+			"view": app.Allow(my, res, resource.View),
+			"ctrl": app.Allow(my, res, resource.Ctrl),
 		}
 	})
 }
 
 func MultiPerm(class string, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
+	return response.Wrap(func() interface{} {
 		var form struct {
 			Names []string `json:"names"`
 			IDs   []int64  `json:"res"`
 		}
 
-		if err := ctx.ReadJSON(&form); err != nil || resource2.IsValidClass(class) {
-			return lang2.ErrInvalidRequestData
+		if err := ctx.ReadJSON(&form); err != nil || resource.IsValidClass(class) {
+			return lang.ErrInvalidRequestData
 		}
 
-		s := app2.Store()
+		s := app.Store()
 		my := s.MustGetUserFromContext(ctx)
 
 		var perms = iris.Map{}
@@ -131,22 +131,22 @@ func MultiPerm(class string, ctx iris.Context) hero.Result {
 				if err != nil {
 					return err
 				}
-				perms[name] = app2.Allow(my, res, resource2.Invoke)
+				perms[name] = app.Allow(my, res, resource.Invoke)
 			}
 			return perms
 		case "group", "device", "measure", "equipment", "state":
 			for _, id := range form.IDs {
-				res, err := s.GetResource(resource2.ParseClass(class), id)
+				res, err := s.GetResource(resource.ParseClass(class), id)
 				if err != nil {
 					return err
 				}
 				perms[strconv.FormatInt(id, 10)] = iris.Map{
-					"view": app2.Allow(my, res, resource2.View),
-					"ctrl": app2.Allow(my, res, resource2.Ctrl),
+					"view": app.Allow(my, res, resource.View),
+					"ctrl": app.Allow(my, res, resource.Ctrl),
 				}
 			}
 		default:
-			return lang2.ErrInvalidRequestData
+			return lang.ErrInvalidRequestData
 		}
 		return perms
 	})

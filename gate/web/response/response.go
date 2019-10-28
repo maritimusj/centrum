@@ -3,7 +3,7 @@ package response
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/lang"
 )
 
 type responseData struct {
@@ -17,11 +17,11 @@ func (data *responseData) Dispatch(c iris.Context) {
 
 func Wrap(data interface{}) hero.Result {
 	switch v := data.(type) {
-	case lang2.ErrorCode:
+	case lang.ErrorCode:
 		return &responseData{
-			Status: v == lang2.Ok,
+			Status: v == lang.Ok,
 			Data: map[string]interface{}{
-				"msg": lang2.ErrorStr(v),
+				"msg": lang.ErrorStr(v),
 			},
 		}
 	case error:

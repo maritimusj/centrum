@@ -3,11 +3,11 @@ package mysqlStore
 import (
 	"database/sql"
 	"errors"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	dirty2 "github.com/maritimusj/centrum/gate/web/dirty"
-	helper2 "github.com/maritimusj/centrum/gate/web/helper"
-	model2 "github.com/maritimusj/centrum/gate/web/model"
-	resource2 "github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/dirty"
+	"github.com/maritimusj/centrum/gate/web/helper"
+	"github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/web/resource"
 	"time"
 )
 
@@ -20,14 +20,14 @@ type Group struct {
 	desc      string
 	createdAt time.Time
 
-	dirty *dirty2.Dirty
+	dirty *dirty.Dirty
 	store *mysqlStore
 }
 
 func NewGroup(s *mysqlStore, id int64) *Group {
 	return &Group{
 		id:    id,
-		dirty: dirty2.New(),
+		dirty: dirty.New(),
 		store: s,
 	}
 }
@@ -36,8 +36,8 @@ func (g *Group) OrganizationID() int64 {
 	return g.orgID
 }
 
-func (g *Group) ResourceClass() resource2.Class {
-	return resource2.Group
+func (g *Group) ResourceClass() resource.Class {
+	return resource.Group
 }
 
 func (g *Group) ResourceID() int64 {
@@ -52,10 +52,10 @@ func (g *Group) ResourceDesc() string {
 	return g.desc
 }
 
-func (g *Group) GetChildrenResources(options ...helper2.OptionFN) ([]model2.Resource, int64, error) {
-	var result []model2.Resource
+func (g *Group) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
+	var result []model.Resource
 
-	groups, groupTotal, err := g.store.GetGroupList(append(options, helper2.Parent(g.GetID()))...)
+	groups, groupTotal, err := g.store.GetGroupList(append(options, helper.Parent(g.GetID()))...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -64,14 +64,14 @@ func (g *Group) GetChildrenResources(options ...helper2.OptionFN) ([]model2.Reso
 		result = append(result, group)
 	}
 
-	devices, deviceTotal, err := g.store.GetDeviceList(append(options, helper2.Group(g.GetID()))...)
+	devices, deviceTotal, err := g.store.GetDeviceList(append(options, helper.Group(g.GetID()))...)
 	if err != nil {
 		return nil, 0, err
 	}
 	for _, device := range devices {
 		result = append(result, device)
 	}
-	equipments, equipmentTotal, err := g.store.GetEquipmentList(append(options, helper2.Group(g.GetID()))...)
+	equipments, equipmentTotal, err := g.store.GetEquipmentList(append(options, helper.Group(g.GetID()))...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -82,7 +82,7 @@ func (g *Group) GetChildrenResources(options ...helper2.OptionFN) ([]model2.Reso
 	return result, groupTotal + deviceTotal + equipmentTotal, nil
 }
 
-func (g *Group) Organization() (model2.Organization, error) {
+func (g *Group) Organization() (model.Organization, error) {
 	return g.store.GetOrganization(g.orgID)
 }
 
@@ -98,7 +98,7 @@ func (g *Group) Save() error {
 	if g.dirty.Any() {
 		err := SaveData(g.store.db, TbGroups, g.dirty.Data(true), "id=?", g.id)
 		if err != nil {
-			return lang2.InternalError(err)
+			return lang.InternalError(err)
 		}
 	}
 	return nil
@@ -106,7 +106,7 @@ func (g *Group) Save() error {
 
 func (g *Group) Destroy() error {
 	//处理子分组
-	groups, _, err := g.store.GetGroupList(helper2.Parent(g.GetID()))
+	groups, _, err := g.store.GetGroupList(helper.Parent(g.GetID()))
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func (g *Group) Destroy() error {
 	return g.store.RemoveGroup(g.id)
 }
 
-func (g *Group) Parent() model2.Group {
+func (g *Group) Parent() model.Group {
 	if g.parentID > 0 {
 		group, err := g.store.GetGroup(g.parentID)
 		if err == nil {
@@ -195,7 +195,7 @@ func (g *Group) SetParent(parent interface{}) {
 	switch v := parent.(type) {
 	case int64:
 		parentID = v
-	case model2.Group:
+	case model.Group:
 		parentID = v.GetID()
 	case nil:
 		parentID = 0
@@ -219,7 +219,7 @@ func (g *Group) AddDevice(devices ...interface{}) error {
 		switch v := device.(type) {
 		case int64:
 			deviceID = v
-		case model2.Device:
+		case model.Device:
 			deviceID = v.GetID()
 		default:
 			panic(errors.New("AddDevice: unknown device"))
@@ -231,7 +231,7 @@ func (g *Group) AddDevice(devices ...interface{}) error {
 		}
 
 		if exists, err := IsDataExists(g.store.db, TbDeviceGroups, "group_id=? AND device_id=?", g.id, deviceID); err != nil {
-			return lang2.InternalError(err)
+			return lang.InternalError(err)
 		} else if exists {
 			continue
 		}
@@ -242,7 +242,7 @@ func (g *Group) AddDevice(devices ...interface{}) error {
 			"created_at": now,
 		})
 		if err != nil {
-			return lang2.InternalError(err)
+			return lang.InternalError(err)
 		}
 	}
 	return nil
@@ -254,7 +254,7 @@ func (g *Group) RemoveDevice(devices ...interface{}) error {
 		switch v := device.(type) {
 		case int64:
 			deviceID = v
-		case model2.Device:
+		case model.Device:
 			deviceID = v.GetID()
 		default:
 			panic(errors.New("RemoveDevice: unknown device"))
@@ -267,15 +267,15 @@ func (g *Group) RemoveDevice(devices ...interface{}) error {
 
 		if err := RemoveData(g.store.db, TbDeviceGroups, "group_id=? AND device_id=?", g.id, deviceID); err != nil {
 			if err != sql.ErrNoRows {
-				return lang2.InternalError(err)
+				return lang.InternalError(err)
 			}
 		}
 	}
 	return nil
 }
 
-func (g *Group) GetDeviceList(options ...helper2.OptionFN) ([]model2.Device, int64, error) {
-	return g.store.GetDeviceList(append(options, helper2.Group(g.GetID()))...)
+func (g *Group) GetDeviceList(options ...helper.OptionFN) ([]model.Device, int64, error) {
+	return g.store.GetDeviceList(append(options, helper.Group(g.GetID()))...)
 }
 
 func (g *Group) AddEquipment(equipments ...interface{}) error {
@@ -286,7 +286,7 @@ func (g *Group) AddEquipment(equipments ...interface{}) error {
 		switch v := equipment.(type) {
 		case int64:
 			equipmentID = v
-		case model2.Equipment:
+		case model.Equipment:
 			equipmentID = v.GetID()
 		default:
 			panic(errors.New("AddEquipment: unknown equipment"))
@@ -298,7 +298,7 @@ func (g *Group) AddEquipment(equipments ...interface{}) error {
 		}
 
 		if exists, err := IsDataExists(g.store.db, TbEquipmentGroups, "group_id=? AND equipment_id=?", g.id, equipmentID); err != nil {
-			return lang2.InternalError(err)
+			return lang.InternalError(err)
 		} else if exists {
 			continue
 		}
@@ -309,7 +309,7 @@ func (g *Group) AddEquipment(equipments ...interface{}) error {
 			"created_at":   now,
 		})
 		if err != nil {
-			return lang2.InternalError(err)
+			return lang.InternalError(err)
 		}
 	}
 	return nil
@@ -321,7 +321,7 @@ func (g *Group) RemoveEquipment(equipments ...interface{}) error {
 		switch v := equipment.(type) {
 		case int64:
 			equipmentID = v
-		case model2.Equipment:
+		case model.Equipment:
 			equipmentID = v.GetID()
 		default:
 			panic(errors.New("RemoveEquipment: unknown equipment"))
@@ -334,32 +334,32 @@ func (g *Group) RemoveEquipment(equipments ...interface{}) error {
 
 		if err := RemoveData(g.store.db, TbDeviceGroups, "group_id=? AND equipment_id=?", g.id, equipmentID); err != nil {
 			if err != sql.ErrNoRows {
-				return lang2.InternalError(err)
+				return lang.InternalError(err)
 			}
 		}
 	}
 	return nil
 }
 
-func (g *Group) GetEquipmentList(options ...helper2.OptionFN) ([]model2.Equipment, int64, error) {
-	return g.store.GetEquipmentList(append(options, helper2.Group(g.GetID()))...)
+func (g *Group) GetEquipmentList(options ...helper.OptionFN) ([]model.Equipment, int64, error) {
+	return g.store.GetEquipmentList(append(options, helper.Group(g.GetID()))...)
 }
 
-func (g *Group) Simple() model2.Map {
+func (g *Group) Simple() model.Map {
 	if g == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
-	return model2.Map{
+	return model.Map{
 		"id":    g.id,
 		"title": g.title,
 	}
 }
 
-func (g *Group) Brief() model2.Map {
+func (g *Group) Brief() model.Map {
 	if g == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
-	return model2.Map{
+	return model.Map{
 		"id":         g.id,
 		"title":      g.title,
 		"desc":       g.desc,
@@ -367,11 +367,11 @@ func (g *Group) Brief() model2.Map {
 	}
 }
 
-func (g *Group) Detail() model2.Map {
+func (g *Group) Detail() model.Map {
 	if g == nil {
-		return model2.Map{}
+		return model.Map{}
 	}
-	detail := model2.Map{
+	detail := model.Map{
 		"id":         g.id,
 		"title":      g.title,
 		"desc":       g.desc,

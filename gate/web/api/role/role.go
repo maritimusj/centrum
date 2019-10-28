@@ -4,24 +4,24 @@ import (
 	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	lang2 "github.com/maritimusj/centrum/gate/lang"
-	app2 "github.com/maritimusj/centrum/gate/web/app"
-	helper2 "github.com/maritimusj/centrum/gate/web/helper"
-	model2 "github.com/maritimusj/centrum/gate/web/model"
-	resource2 "github.com/maritimusj/centrum/gate/web/resource"
-	response2 "github.com/maritimusj/centrum/gate/web/response"
-	store2 "github.com/maritimusj/centrum/gate/web/store"
+	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/app"
+	"github.com/maritimusj/centrum/gate/web/helper"
+	"github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/web/response"
+	"github.com/maritimusj/centrum/gate/web/store"
 	"github.com/maritimusj/centrum/util"
 )
 
 func List(ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		s := app2.Store()
+	return response.Wrap(func() interface{} {
+		s := app.Store()
 		admin := s.MustGetUserFromContext(ctx)
 
-		var params []helper2.OptionFN
+		var params []helper.OptionFN
 		var orgID int64
-		if app2.IsDefaultAdminUser(admin) {
+		if app.IsDefaultAdminUser(admin) {
 			if ctx.URLParamExists("org") {
 				orgID = ctx.URLParamInt64Default("org", 0)
 			}
@@ -29,21 +29,21 @@ func List(ctx iris.Context) hero.Result {
 			orgID = admin.OrganizationID()
 		}
 		if orgID > 0 {
-			params = append(params, helper2.Organization(orgID))
+			params = append(params, helper.Organization(orgID))
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app2.Config.DefaultPageSize())
-		params = append(params, helper2.Page(page, pageSize))
+		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+		params = append(params, helper.Page(page, pageSize))
 
 		keyword := ctx.URLParam("keyword")
 		if keyword != "" {
-			params = append(params, helper2.Keyword(keyword))
+			params = append(params, helper.Keyword(keyword))
 		}
 
 		var (
 			userID = ctx.URLParamInt64Default("user", 0)
-			user   model2.User
+			user   model.User
 			err    error
 		)
 
@@ -54,8 +54,8 @@ func List(ctx iris.Context) hero.Result {
 				return err
 			}
 
-			if app2.IsDefaultAdminUser(user) {
-				return lang2.ErrFailedEditDefaultUser
+			if app.IsDefaultAdminUser(user) {
+				return lang.ErrFailedEditDefaultUser
 			}
 
 			roles, err := user.GetRoles()
@@ -71,10 +71,10 @@ func List(ctx iris.Context) hero.Result {
 			return err
 		}
 
-		var result = make([]model2.Map, 0, len(roles))
+		var result = make([]model.Map, 0, len(roles))
 		for _, role := range roles {
 			//普通用户无法查看__sys__角色
-			if role.Name() != lang2.RoleSystemAdminName {
+			if role.Name() != lang.RoleSystemAdminName {
 				brief := role.Brief()
 				if userID > 0 {
 					brief["matched"] = matchRoles.Contains(role.GetID())
@@ -91,7 +91,7 @@ func List(ctx iris.Context) hero.Result {
 }
 
 func Create(ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
+	return response.Wrap(func() interface{} {
 		var form struct {
 			OrgID int64  `json:"org"`
 			Name  string `json:"name"`
@@ -100,24 +100,24 @@ func Create(ctx iris.Context) hero.Result {
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil || form.Name == "" {
-			return lang2.ErrInvalidRequestData
+			return lang.ErrInvalidRequestData
 		}
 
-		return app2.TransactionDo(func(s store2.Store) interface{} {
+		return app.TransactionDo(func(s store.Store) interface{} {
 			if exists, err := s.IsRoleExists(form.Name); err != nil {
 				return err
 			} else if exists {
-				return lang2.ErrRoleExists
+				return lang.ErrRoleExists
 			}
 
 			var org interface{}
 
 			admin := s.MustGetUserFromContext(ctx)
-			if app2.IsDefaultAdminUser(admin) {
+			if app.IsDefaultAdminUser(admin) {
 				if form.OrgID > 0 {
 					org = form.OrgID
 				} else {
-					org = app2.Config.DefaultOrganization()
+					org = app.Config.DefaultOrganization()
 				}
 			} else {
 				org = admin.OrganizationID()
@@ -133,29 +133,29 @@ func Create(ctx iris.Context) hero.Result {
 }
 
 func Detail(roleID int64, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		role, err := app2.Store().GetRole(roleID)
+	return response.Wrap(func() interface{} {
+		role, err := app.Store().GetRole(roleID)
 		if err != nil {
 			return err
 		}
-		admin := app2.Store().MustGetUserFromContext(ctx)
-		if app2.IsDefaultAdminUser(admin) || role.Name() != lang2.RoleSystemAdminName {
+		admin := app.Store().MustGetUserFromContext(ctx)
+		if app.IsDefaultAdminUser(admin) || role.Name() != lang.RoleSystemAdminName {
 			return role.Detail()
 		}
-		return lang2.ErrNoPermission
+		return lang.ErrNoPermission
 	})
 }
 
 func Update(roleID int64, ctx iris.Context) hero.Result {
-	return response2.Wrap(func() interface{} {
-		s := app2.Store()
+	return response.Wrap(func() interface{} {
+		s := app.Store()
 		role, err := s.GetRole(roleID)
 		if err != nil {
 			return err
 		}
 
-		if role.Name() == lang2.RoleSystemAdminName {
-			return lang2.ErrFailedEditDefaultUser
+		if role.Name() == lang.RoleSystemAdminName {
+			return lang.ErrFailedEditDefaultUser
 		}
 
 		type P struct {
@@ -172,32 +172,32 @@ func Update(roleID int64, ctx iris.Context) hero.Result {
 		}
 
 		if err = ctx.ReadJSON(&form); err != nil {
-			return lang2.ErrInvalidRequestData
+			return lang.ErrInvalidRequestData
 		}
 
 		if len(form.Policies) > 0 {
 			for _, p := range form.Policies {
-				res, err := s.GetResource(resource2.Class(p.ResourceClass), p.ResourceID)
+				res, err := s.GetResource(resource.Class(p.ResourceClass), p.ResourceID)
 				if err != nil {
 					return err
 				}
 				if p.Invoke != nil {
-					effect := util.If(*p.Invoke, resource2.Allow, resource2.Deny).(resource2.Effect)
-					_, err = role.SetPolicy(res, resource2.Invoke, effect, make(map[model2.Resource]struct{}))
+					effect := util.If(*p.Invoke, resource.Allow, resource.Deny).(resource.Effect)
+					_, err = role.SetPolicy(res, resource.Invoke, effect, make(map[model.Resource]struct{}))
 					if err != nil {
 						return err
 					}
 				}
 				if p.View != nil {
-					effect := util.If(*p.View, resource2.Allow, resource2.Deny).(resource2.Effect)
-					_, err = role.SetPolicy(res, resource2.View, effect, make(map[model2.Resource]struct{}))
+					effect := util.If(*p.View, resource.Allow, resource.Deny).(resource.Effect)
+					_, err = role.SetPolicy(res, resource.View, effect, make(map[model.Resource]struct{}))
 					if err != nil {
 						return err
 					}
 				}
 				if p.Ctrl != nil {
-					effect := util.If(*p.Ctrl, resource2.Allow, resource2.Deny).(resource2.Effect)
-					_, err = role.SetPolicy(res, resource2.Ctrl, effect, make(map[model2.Resource]struct{}))
+					effect := util.If(*p.Ctrl, resource.Allow, resource.Deny).(resource.Effect)
+					_, err = role.SetPolicy(res, resource.Ctrl, effect, make(map[model.Resource]struct{}))
 					if err != nil {
 						return err
 					}
@@ -213,13 +213,13 @@ func Update(roleID int64, ctx iris.Context) hero.Result {
 		if err != nil {
 			return err
 		}
-		return lang2.Ok
+		return lang.Ok
 	})
 }
 
 func Delete(roleID int64) hero.Result {
-	return response2.Wrap(func() interface{} {
-		return app2.TransactionDo(func(s store2.Store) interface{} {
+	return response.Wrap(func() interface{} {
+		return app.TransactionDo(func(s store.Store) interface{} {
 			role, err := s.GetRole(roleID)
 			if err != nil {
 				return err
@@ -229,7 +229,7 @@ func Delete(roleID int64) hero.Result {
 			if err != nil {
 				return err
 			}
-			return lang2.Ok
+			return lang.Ok
 		})
 	})
 }
