@@ -4,34 +4,34 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/web/app"
-	"github.com/maritimusj/centrum/web/helper"
-	"github.com/maritimusj/centrum/web/model"
-	"github.com/maritimusj/centrum/web/response"
-	"github.com/maritimusj/centrum/web/store"
+	lang2 "github.com/maritimusj/centrum/gate/lang"
+	app2 "github.com/maritimusj/centrum/gate/web/app"
+	helper2 "github.com/maritimusj/centrum/gate/web/helper"
+	model2 "github.com/maritimusj/centrum/gate/web/model"
+	response2 "github.com/maritimusj/centrum/gate/web/response"
+	store2 "github.com/maritimusj/centrum/gate/web/store"
 	"github.com/sirupsen/logrus"
 )
 
 func List(ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		s := app.Store()
+	return response2.Wrap(func() interface{} {
+		s := app2.Store()
 		admin := s.MustGetUserFromContext(ctx)
 
-		if !app.IsDefaultAdminUser(admin) {
-			return lang.ErrNoPermission
+		if !app2.IsDefaultAdminUser(admin) {
+			return lang2.ErrNoPermission
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
+		pageSize := ctx.URLParamInt64Default("pagesize", app2.Config.DefaultPageSize())
 
-		var params = []helper.OptionFN{
-			helper.Page(page, pageSize),
+		var params = []helper2.OptionFN{
+			helper2.Page(page, pageSize),
 		}
 
 		keyword := ctx.URLParam("keyword")
 		if keyword != "" {
-			params = append(params, helper.Keyword(keyword))
+			params = append(params, helper2.Keyword(keyword))
 		}
 
 		organizations, total, err := s.GetOrganizationList(params...)
@@ -39,7 +39,7 @@ func List(ctx iris.Context) hero.Result {
 			return err
 		}
 
-		var result = make([]model.Map, 0, len(organizations))
+		var result = make([]model2.Map, 0, len(organizations))
 		for _, org := range organizations {
 			brief := org.Brief()
 			result = append(result, brief)
@@ -53,11 +53,11 @@ func List(ctx iris.Context) hero.Result {
 }
 
 func Create(ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		return app.TransactionDo(func(s store.Store) interface{} {
+	return response2.Wrap(func() interface{} {
+		return app2.TransactionDo(func(s store2.Store) interface{} {
 			admin := s.MustGetUserFromContext(ctx)
-			if !app.IsDefaultAdminUser(admin) {
-				return lang.ErrNoPermission
+			if !app2.IsDefaultAdminUser(admin) {
+				return lang2.ErrNoPermission
 			}
 
 			var form struct {
@@ -66,17 +66,17 @@ func Create(ctx iris.Context) hero.Result {
 			}
 
 			if err := ctx.ReadJSON(&form); err != nil {
-				return lang.ErrInvalidRequestData
+				return lang2.ErrInvalidRequestData
 			}
 
 			if _, err := govalidator.ValidateStruct(&form); err != nil {
-				return lang.ErrInvalidRequestData
+				return lang2.ErrInvalidRequestData
 			}
 
 			if exists, err := s.IsOrganizationExists(form.Name); err != nil {
 				return err
 			} else if exists {
-				return lang.ErrOrganizationExists
+				return lang2.ErrOrganizationExists
 			}
 
 			org, err := s.CreateOrganization(form.Name, form.Title)
@@ -84,10 +84,10 @@ func Create(ctx iris.Context) hero.Result {
 				go admin.Logger().WithFields(logrus.Fields{
 					"name":  form.Name,
 					"title": form.Title,
-				}).Info(lang.Str(lang.CreateOrgFail, form.Name, form.Title, err))
+				}).Info(lang2.Str(lang2.CreateOrgFail, form.Name, form.Title, err))
 				return err
 			} else {
-				go admin.Logger().WithFields(logrus.Fields(org.Brief())).Info(lang.Str(lang.CreateOrgOk, org.Title(), org.Name()))
+				go admin.Logger().WithFields(logrus.Fields(org.Brief())).Info(lang2.Str(lang2.CreateOrgOk, org.Title(), org.Name()))
 			}
 
 			return org.Simple()
@@ -96,12 +96,12 @@ func Create(ctx iris.Context) hero.Result {
 }
 
 func Detail(orgID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		s := app.Store()
+	return response2.Wrap(func() interface{} {
+		s := app2.Store()
 
 		admin := s.MustGetUserFromContext(ctx)
-		if !app.IsDefaultAdminUser(admin) {
-			return lang.ErrNoPermission
+		if !app2.IsDefaultAdminUser(admin) {
+			return lang2.ErrNoPermission
 		}
 
 		org, err := s.GetOrganization(orgID)
@@ -114,11 +114,11 @@ func Detail(orgID int64, ctx iris.Context) hero.Result {
 }
 
 func Update(orgID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		return app.TransactionDo(func(s store.Store) interface{} {
+	return response2.Wrap(func() interface{} {
+		return app2.TransactionDo(func(s store2.Store) interface{} {
 			admin := s.MustGetUserFromContext(ctx)
-			if !app.IsDefaultAdminUser(admin) {
-				return lang.ErrNoPermission
+			if !app2.IsDefaultAdminUser(admin) {
+				return lang2.ErrNoPermission
 			}
 
 			org, err := s.GetOrganization(orgID)
@@ -131,7 +131,7 @@ func Update(orgID int64, ctx iris.Context) hero.Result {
 			}
 
 			if err = ctx.ReadJSON(&form); err != nil {
-				return lang.ErrInvalidRequestData
+				return lang2.ErrInvalidRequestData
 			}
 
 			logFields := make(map[string]interface{})
@@ -145,17 +145,17 @@ func Update(orgID int64, ctx iris.Context) hero.Result {
 			if err != nil {
 				return err
 			}
-			return lang.Ok
+			return lang2.Ok
 		})
 	})
 }
 
 func Delete(orgID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		return app.TransactionDo(func(s store.Store) interface{} {
+	return response2.Wrap(func() interface{} {
+		return app2.TransactionDo(func(s store2.Store) interface{} {
 			admin := s.MustGetUserFromContext(ctx)
-			if !app.IsDefaultAdminUser(admin) {
-				return lang.ErrNoPermission
+			if !app2.IsDefaultAdminUser(admin) {
+				return lang2.ErrNoPermission
 			}
 
 			org, err := s.GetOrganization(orgID)
@@ -163,8 +163,8 @@ func Delete(orgID int64, ctx iris.Context) hero.Result {
 				return err
 			}
 
-			if org.Name() == app.Config.DefaultOrganization() {
-				return lang.ErrFailedRemoveDefaultOrganization
+			if org.Name() == app2.Config.DefaultOrganization() {
+				return lang2.ErrFailedRemoveDefaultOrganization
 			}
 
 			err = org.Destroy()
@@ -172,7 +172,7 @@ func Delete(orgID int64, ctx iris.Context) hero.Result {
 				return err
 			}
 
-			return lang.Ok
+			return lang2.Ok
 		})
 	})
 }

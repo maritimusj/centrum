@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"github.com/maritimusj/centrum/lang"
+	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/modbus"
 	log "github.com/sirupsen/logrus"
 	"net"

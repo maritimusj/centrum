@@ -4,18 +4,18 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/web/app"
-	"github.com/maritimusj/centrum/web/helper"
-	"github.com/maritimusj/centrum/web/model"
-	"github.com/maritimusj/centrum/web/resource"
-	"github.com/maritimusj/centrum/web/response"
-	"github.com/maritimusj/centrum/web/store"
+	lang2 "github.com/maritimusj/centrum/gate/lang"
+	app2 "github.com/maritimusj/centrum/gate/web/app"
+	helper2 "github.com/maritimusj/centrum/gate/web/helper"
+	model2 "github.com/maritimusj/centrum/gate/web/model"
+	resource2 "github.com/maritimusj/centrum/gate/web/resource"
+	response2 "github.com/maritimusj/centrum/gate/web/response"
+	store2 "github.com/maritimusj/centrum/gate/web/store"
 )
 
 func MeasureList(deviceID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		s := app.Store()
+	return response2.Wrap(func() interface{} {
+		s := app2.Store()
 
 		device, err := s.GetDevice(deviceID)
 		if err != nil {
@@ -23,28 +23,28 @@ func MeasureList(deviceID int64, ctx iris.Context) hero.Result {
 		}
 
 		admin := s.MustGetUserFromContext(ctx)
-		if !app.Allow(admin, device, resource.View) {
-			return lang.ErrNoPermission
+		if !app2.Allow(admin, device, resource2.View) {
+			return lang2.ErrNoPermission
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
-		kind := ctx.URLParamIntDefault("kind", int(resource.AllKind))
+		pageSize := ctx.URLParamInt64Default("pagesize", app2.Config.DefaultPageSize())
+		kind := ctx.URLParamIntDefault("kind", int(resource2.AllKind))
 
-		var params = []helper.OptionFN{
-			helper.Page(page, pageSize),
-			helper.Kind(resource.MeasureKind(kind)),
-			helper.Device(device.GetID()),
+		var params = []helper2.OptionFN{
+			helper2.Page(page, pageSize),
+			helper2.Kind(resource2.MeasureKind(kind)),
+			helper2.Device(device.GetID()),
 		}
 
 		keyword := ctx.URLParam("keyword")
 		if keyword != "" {
-			params = append(params, helper.Keyword(keyword))
+			params = append(params, helper2.Keyword(keyword))
 		}
 
-		if !app.IsDefaultAdminUser(admin) {
-			params = append(params, helper.User(admin.GetID()))
-			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
+		if !app2.IsDefaultAdminUser(admin) {
+			params = append(params, helper2.User(admin.GetID()))
+			params = append(params, helper2.DefaultEffect(app2.Config.DefaultEffect()))
 		}
 
 		measures, total, err := s.GetMeasureList(params...)
@@ -52,12 +52,12 @@ func MeasureList(deviceID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 
-		var result = make([]model.Map, 0, len(measures))
+		var result = make([]model2.Map, 0, len(measures))
 		for _, measure := range measures {
 			brief := measure.Brief()
 			brief["perm"] = iris.Map{
 				"view": true,
-				"ctrl": app.Allow(admin, measure, resource.Ctrl),
+				"ctrl": app2.Allow(admin, measure, resource2.Ctrl),
 			}
 			result = append(result, brief)
 		}
@@ -70,7 +70,7 @@ func MeasureList(deviceID int64, ctx iris.Context) hero.Result {
 }
 
 func CreateMeasure(deviceID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
+	return response2.Wrap(func() interface{} {
 		var form struct {
 			Title string `json:"title" valid:"required"`
 			Tag   string `json:"tag" valid:"required"`
@@ -78,30 +78,30 @@ func CreateMeasure(deviceID int64, ctx iris.Context) hero.Result {
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
-			return lang.ErrInvalidRequestData
+			return lang2.ErrInvalidRequestData
 		}
 
 		if _, err := govalidator.ValidateStruct(&form); err != nil {
-			return lang.ErrInvalidRequestData
+			return lang2.ErrInvalidRequestData
 		}
 
-		return app.TransactionDo(func(s store.Store) interface{} {
+		return app2.TransactionDo(func(s store2.Store) interface{} {
 			device, err := s.GetDevice(deviceID)
 			if err != nil {
 				return err
 			}
 
 			admin := s.MustGetUserFromContext(ctx)
-			if !app.Allow(admin, device, resource.Ctrl) {
-				return lang.ErrNoPermission
+			if !app2.Allow(admin, device, resource2.Ctrl) {
+				return lang2.ErrNoPermission
 			}
 
-			measure, err := s.CreateMeasure(device.GetID(), form.Title, form.Tag, resource.MeasureKind(form.Kind))
+			measure, err := s.CreateMeasure(device.GetID(), form.Title, form.Tag, resource2.MeasureKind(form.Kind))
 			if err != nil {
 				return err
 			}
 
-			err = app.SetAllow(admin, measure, resource.View, resource.Ctrl)
+			err = app2.SetAllow(admin, measure, resource2.View, resource2.Ctrl)
 			if err != nil {
 				return err
 			}
@@ -112,16 +112,16 @@ func CreateMeasure(deviceID int64, ctx iris.Context) hero.Result {
 }
 
 func MeasureDetail(measureID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		s := app.Store()
+	return response2.Wrap(func() interface{} {
+		s := app2.Store()
 		measure, err := s.GetMeasure(measureID)
 		if err != nil {
 			return err
 		}
 
 		admin := s.MustGetUserFromContext(ctx)
-		if !app.Allow(admin, measure, resource.View) {
-			return lang.ErrNoPermission
+		if !app2.Allow(admin, measure, resource2.View) {
+			return lang2.ErrNoPermission
 		}
 
 		return measure.Detail()
@@ -129,22 +129,22 @@ func MeasureDetail(measureID int64, ctx iris.Context) hero.Result {
 }
 
 func DeleteMeasure(measureID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		s := app.Store()
+	return response2.Wrap(func() interface{} {
+		s := app2.Store()
 		measure, err := s.GetMeasure(measureID)
 		if err != nil {
 			return err
 		}
 
 		admin := s.MustGetUserFromContext(ctx)
-		if !app.Allow(admin, measure, resource.View) {
-			return lang.ErrNoPermission
+		if !app2.Allow(admin, measure, resource2.View) {
+			return lang2.ErrNoPermission
 		}
 
 		err = measure.Destroy()
 		if err != nil {
 			return err
 		}
-		return lang.Ok
+		return lang2.Ok
 	})
 }

@@ -1,6 +1,8 @@
 package model
 
-import "github.com/maritimusj/centrum/web/resource"
+import (
+	resource2 "github.com/maritimusj/centrum/gate/web/resource"
+)
 
 //点位
 type Measure interface {
@@ -16,5 +18,5 @@ type Measure interface {
 	SetTitle(title string)
 
 	TagName() string
-	Kind() resource.MeasureKind
+	Kind() resource2.MeasureKind
 }

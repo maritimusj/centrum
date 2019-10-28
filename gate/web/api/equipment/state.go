@@ -4,41 +4,41 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/web/app"
-	"github.com/maritimusj/centrum/web/helper"
-	"github.com/maritimusj/centrum/web/model"
-	"github.com/maritimusj/centrum/web/resource"
-	"github.com/maritimusj/centrum/web/response"
-	"github.com/maritimusj/centrum/web/store"
+	lang2 "github.com/maritimusj/centrum/gate/lang"
+	app2 "github.com/maritimusj/centrum/gate/web/app"
+	helper2 "github.com/maritimusj/centrum/gate/web/helper"
+	model2 "github.com/maritimusj/centrum/gate/web/model"
+	resource2 "github.com/maritimusj/centrum/gate/web/resource"
+	response2 "github.com/maritimusj/centrum/gate/web/response"
+	store2 "github.com/maritimusj/centrum/gate/web/store"
 )
 
 func StateList(equipmentID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		s := app.Store()
+	return response2.Wrap(func() interface{} {
+		s := app2.Store()
 		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
 
 		admin := s.MustGetUserFromContext(ctx)
-		if !app.Allow(admin, equipment, resource.View) {
-			return lang.ErrNoPermission
+		if !app2.Allow(admin, equipment, resource2.View) {
+			return lang2.ErrNoPermission
 		}
 
 		page := ctx.URLParamInt64Default("page", 1)
-		pageSize := ctx.URLParamInt64Default("pagesize", app.Config.DefaultPageSize())
-		kind := ctx.URLParamIntDefault("kind", int(resource.AllKind))
+		pageSize := ctx.URLParamInt64Default("pagesize", app2.Config.DefaultPageSize())
+		kind := ctx.URLParamIntDefault("kind", int(resource2.AllKind))
 
-		var params = []helper.OptionFN{
-			helper.Page(page, pageSize),
-			helper.Kind(resource.MeasureKind(kind)),
-			helper.Equipment(equipment.GetID()),
+		var params = []helper2.OptionFN{
+			helper2.Page(page, pageSize),
+			helper2.Kind(resource2.MeasureKind(kind)),
+			helper2.Equipment(equipment.GetID()),
 		}
 
-		if !app.IsDefaultAdminUser(admin) {
-			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
-			params = append(params, helper.User(admin.GetID()))
+		if !app2.IsDefaultAdminUser(admin) {
+			params = append(params, helper2.DefaultEffect(app2.Config.DefaultEffect()))
+			params = append(params, helper2.User(admin.GetID()))
 		}
 
 		states, total, err := s.GetStateList(params...)
@@ -46,12 +46,12 @@ func StateList(equipmentID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 
-		var result = make([]model.Map, 0, len(states))
+		var result = make([]model2.Map, 0, len(states))
 		for _, state := range states {
 			brief := state.Brief()
 			brief["perm"] = iris.Map{
 				"view": true,
-				"ctrl": app.Allow(admin, state, resource.Ctrl),
+				"ctrl": app2.Allow(admin, state, resource2.Ctrl),
 			}
 			result = append(result, brief)
 		}
@@ -64,7 +64,7 @@ func StateList(equipmentID int64, ctx iris.Context) hero.Result {
 }
 
 func CreateState(equipmentID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
+	return response2.Wrap(func() interface{} {
 		var form struct {
 			Title           string `json:"title" valid:"required"`
 			Desc            string `json:"desc"`
@@ -73,28 +73,28 @@ func CreateState(equipmentID int64, ctx iris.Context) hero.Result {
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
-			return lang.ErrInvalidRequestData
+			return lang2.ErrInvalidRequestData
 		}
 		if _, err := govalidator.ValidateStruct(&form); err != nil {
-			return lang.ErrInvalidRequestData
+			return lang2.ErrInvalidRequestData
 		}
 
-		return app.TransactionDo(func(s store.Store) interface{} {
+		return app2.TransactionDo(func(s store2.Store) interface{} {
 			equipment, err := s.GetEquipment(equipmentID)
 			if err != nil {
 				return err
 			}
 
 			admin := s.MustGetUserFromContext(ctx)
-			if !app.Allow(admin, equipment, resource.Ctrl) {
-				return lang.ErrNoPermission
+			if !app2.Allow(admin, equipment, resource2.Ctrl) {
+				return lang2.ErrNoPermission
 			}
 
 			state, err := equipment.CreateState(form.Title, form.Desc, form.MeasureID, form.TransformScript)
 			if err != nil {
 				return err
 			}
-			err = app.SetAllow(admin, state, resource.View, resource.Ctrl)
+			err = app2.SetAllow(admin, state, resource2.View, resource2.Ctrl)
 			if err != nil {
 				return err
 			}
@@ -105,16 +105,16 @@ func CreateState(equipmentID int64, ctx iris.Context) hero.Result {
 }
 
 func StateDetail(stateID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		s := app.Store()
+	return response2.Wrap(func() interface{} {
+		s := app2.Store()
 		state, err := s.GetState(stateID)
 		if err != nil {
 			return err
 		}
 
 		admin := s.MustGetUserFromContext(ctx)
-		if !app.Allow(admin, state, resource.View) {
-			return lang.ErrNoPermission
+		if !app2.Allow(admin, state, resource2.View) {
+			return lang2.ErrNoPermission
 		}
 
 		return state.Detail()
@@ -122,16 +122,16 @@ func StateDetail(stateID int64, ctx iris.Context) hero.Result {
 }
 
 func UpdateState(stateID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		s := app.Store()
+	return response2.Wrap(func() interface{} {
+		s := app2.Store()
 		state, err := s.GetState(stateID)
 		if err != nil {
 			return err
 		}
 
 		admin := s.MustGetUserFromContext(ctx)
-		if !app.Allow(admin, state, resource.Ctrl) {
-			return lang.ErrNoPermission
+		if !app2.Allow(admin, state, resource2.Ctrl) {
+			return lang2.ErrNoPermission
 		}
 
 		var form struct {
@@ -141,7 +141,7 @@ func UpdateState(stateID int64, ctx iris.Context) hero.Result {
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
-			return lang.ErrInvalidRequestData
+			return lang2.ErrInvalidRequestData
 		}
 
 		if form.Title != nil {
@@ -161,27 +161,27 @@ func UpdateState(stateID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 
-		return lang.Ok
+		return lang2.Ok
 	})
 }
 
 func DeleteState(stateID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		s := app.Store()
+	return response2.Wrap(func() interface{} {
+		s := app2.Store()
 		state, err := s.GetState(stateID)
 		if err != nil {
 			return err
 		}
 
 		admin := s.MustGetUserFromContext(ctx)
-		if !app.Allow(admin, state, resource.Ctrl) {
-			return lang.ErrNoPermission
+		if !app2.Allow(admin, state, resource2.Ctrl) {
+			return lang2.ErrNoPermission
 		}
 
 		err = state.Destroy()
 		if err != nil {
 			return err
 		}
-		return lang.Ok
+		return lang2.Ok
 	})
 }

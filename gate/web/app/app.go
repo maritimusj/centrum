@@ -2,18 +2,18 @@ package app
 
 import (
 	"context"
-	"github.com/maritimusj/centrum/config"
-	"github.com/maritimusj/centrum/lang"
-	logStore "github.com/maritimusj/centrum/logStore/bolt"
-	"github.com/maritimusj/centrum/statistics"
-	"github.com/maritimusj/centrum/web/db"
-	mysqlDB "github.com/maritimusj/centrum/web/db/mysql"
-	"github.com/maritimusj/centrum/web/edge"
-	"github.com/maritimusj/centrum/web/helper"
-	"github.com/maritimusj/centrum/web/model"
-	"github.com/maritimusj/centrum/web/resource"
-	"github.com/maritimusj/centrum/web/store"
-	mysqlStore "github.com/maritimusj/centrum/web/store/mysql"
+	"github.com/maritimusj/centrum/gate/config"
+	lang2 "github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/logStore/bolt"
+	"github.com/maritimusj/centrum/gate/statistics"
+	db2 "github.com/maritimusj/centrum/gate/web/db"
+	"github.com/maritimusj/centrum/gate/web/db/mysql"
+	edge2 "github.com/maritimusj/centrum/gate/web/edge"
+	helper2 "github.com/maritimusj/centrum/gate/web/helper"
+	model2 "github.com/maritimusj/centrum/gate/web/model"
+	resource2 "github.com/maritimusj/centrum/gate/web/resource"
+	store2 "github.com/maritimusj/centrum/gate/web/store"
+	mysqlStore2 "github.com/maritimusj/centrum/gate/web/store/mysql"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/asaskevich/EventBus"
@@ -24,42 +24,42 @@ var (
 
 	Ctx    context.Context
 	cancel context.CancelFunc
-	DB     db.WithTransaction
+	DB     db2.WithTransaction
 
 	Event      = EventBus.New()
-	LogDBStore = logStore.New()
-	s          store.Store
+	LogDBStore = bolt.New()
+	s          store2.Store
 	StatsDB    = statistics.New()
 )
 
-func IsDefaultAdminUser(user model.User) bool {
+func IsDefaultAdminUser(user model2.User) bool {
 	return user.Name() == Config.DefaultUserName()
 }
 
-func Allow(user model.User, res model.Resource, action resource.Action) bool {
+func Allow(user model2.User, res model2.Resource, action resource2.Action) bool {
 	if IsDefaultAdminUser(user) {
 		return true
 	}
 
 	allow, err := user.IsAllow(res, action)
-	if err != nil && err == lang.Error(lang.ErrPolicyNotFound) {
-		return Config.DefaultEffect() == resource.Allow
+	if err != nil && err == lang2.Error(lang2.ErrPolicyNotFound) {
+		return Config.DefaultEffect() == resource2.Allow
 	}
 	return allow
 }
 
-func Store() store.Store {
+func Store() store2.Store {
 	return s
 }
 
-func NewStore(db db.DB) store.Store {
-	return mysqlStore.Attach(Ctx, db, func(key string, _ interface{}) {
+func NewStore(db db2.DB) store2.Store {
+	return mysqlStore2.Attach(Ctx, db, func(key string, _ interface{}) {
 		s.Cache().Remove(key)
 	})
 }
 
-func TransactionDo(fn func(store.Store) interface{}) interface{} {
-	return DB.TransactionDo(func(db db.DB) interface{} {
+func TransactionDo(fn func(store2.Store) interface{}) interface{} {
+	return DB.TransactionDo(func(db db2.DB) interface{} {
 		s := NewStore(db)
 		defer s.Close()
 
@@ -68,12 +68,12 @@ func TransactionDo(fn func(store.Store) interface{}) interface{} {
 }
 
 func InitDB(params map[string]interface{}) error {
-	conn, err := mysqlDB.Open(Ctx, params)
+	conn, err := mysql.Open(Ctx, params)
 	if err != nil {
 		log.Fatal(err)
 	}
 	DB = conn
-	s = mysqlStore.Attach(Ctx, DB)
+	s = mysqlStore2.Attach(Ctx, DB)
 	return nil
 }
 
@@ -130,8 +130,8 @@ func Init(ctx context.Context, logLevel string) error {
 		return err
 	}
 
-	result := TransactionDo(func(s store.Store) interface{} {
-		_, total, err := s.GetApiResourceList(helper.Limit(1))
+	result := TransactionDo(func(s store2.Store) interface{} {
+		_, total, err := s.GetApiResourceList(helper2.Limit(1))
 		if err != nil {
 			return err
 		}
@@ -148,7 +148,7 @@ func Init(ctx context.Context, logLevel string) error {
 		defaultOrg := Config.DefaultOrganization()
 		org, err := s.GetOrganization(defaultOrg)
 		if err != nil {
-			if err != lang.Error(lang.ErrOrganizationNotFound) {
+			if err != lang2.Error(lang2.ErrOrganizationNotFound) {
 				return err
 			}
 			org, err = s.CreateOrganization(defaultOrg, defaultOrg)
@@ -156,7 +156,7 @@ func Init(ctx context.Context, logLevel string) error {
 				return err
 			}
 
-			_, err = s.CreateGroup(org, lang.Str(lang.DefaultGroupTitle), lang.Str(lang.DefaultGroupDesc), 0)
+			_, err = s.CreateGroup(org, lang2.Str(lang2.DefaultGroupTitle), lang2.Str(lang2.DefaultGroupDesc), 0)
 			if err != nil {
 				return err
 			}
@@ -168,9 +168,9 @@ func Init(ctx context.Context, logLevel string) error {
 		}
 
 		//初始化系统角色
-		_, err = s.GetRole(lang.RoleSystemAdminName)
+		_, err = s.GetRole(lang2.RoleSystemAdminName)
 		if err != nil {
-			if err != lang.Error(lang.ErrRoleNotFound) {
+			if err != lang2.Error(lang2.ErrRoleNotFound) {
 				return err
 			}
 			err = s.InitDefaultRoles(defaultOrg)
@@ -183,10 +183,10 @@ func Init(ctx context.Context, logLevel string) error {
 		defaultUserName := Config.DefaultUserName()
 		_, err = s.GetUser(defaultUserName)
 		if err != nil {
-			if err != lang.Error(lang.ErrUserNotFound) {
+			if err != lang2.Error(lang2.ErrUserNotFound) {
 				return err
 			}
-			_, err = s.CreateUser(defaultOrg, defaultUserName, []byte(defaultUserName), lang.RoleSystemAdminName)
+			_, err = s.CreateUser(defaultOrg, defaultUserName, []byte(defaultUserName), lang2.RoleSystemAdminName)
 			if err != nil {
 				return err
 			}
@@ -213,7 +213,7 @@ func BootAllDevices() error {
 		return err
 	}
 	for _, device := range devices {
-		if err := edge.ActiveDevice(device); err != nil {
+		if err := edge2.ActiveDevice(device); err != nil {
 			log.Error(err)
 			device.Logger().Error(err)
 		}
@@ -228,7 +228,7 @@ func Close() {
 }
 
 func FlushDB() error {
-	res := TransactionDo(func(store store.Store) interface{} {
+	res := TransactionDo(func(store store2.Store) interface{} {
 		return store.EraseAllData()
 	})
 	if res != nil {
@@ -248,20 +248,20 @@ func ResetDefaultAdminUser() error {
 	if err = user.Save(); err != nil {
 		return err
 	}
-	if err = user.SetRoles(lang.RoleSystemAdminName); err != nil {
+	if err = user.SetRoles(lang2.RoleSystemAdminName); err != nil {
 		return err
 	}
 	return nil
 }
 
-func SetAllow(user model.User, res model.Resource, actions ...resource.Action) error {
+func SetAllow(user model2.User, res model2.Resource, actions ...resource2.Action) error {
 	if IsDefaultAdminUser(user) {
 		return nil
 	}
 	return user.SetAllow(res, actions...)
 }
 
-func SetDeny(user model.User, res model.Resource, actions ...resource.Action) error {
+func SetDeny(user model2.User, res model2.Resource, actions ...resource2.Action) error {
 	if IsDefaultAdminUser(user) {
 		return nil
 	}

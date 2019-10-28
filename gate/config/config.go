@@ -1,10 +1,10 @@
 package config
 
 import (
+	"github.com/maritimusj/centrum/gate/web/model"
+	"github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/web/store"
 	"github.com/maritimusj/centrum/util"
-	"github.com/maritimusj/centrum/web/model"
-	"github.com/maritimusj/centrum/web/resource"
-	"github.com/maritimusj/centrum/web/store"
 	"sync"
 	"time"
 )

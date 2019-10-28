@@ -1,14 +1,14 @@
 package helper
 
 import (
-	"github.com/maritimusj/centrum/web/resource"
+	resource2 "github.com/maritimusj/centrum/gate/web/resource"
 )
 
 type Option struct {
 	Limit       int64
 	Offset      int64
-	Kind        resource.MeasureKind
-	Class       resource.Class
+	Kind        resource2.MeasureKind
+	Class       resource2.Class
 	OrgID       int64
 	ParentID    *int64
 	RoleID      *int64
@@ -22,7 +22,7 @@ type Option struct {
 	Name          string
 	Keyword       string
 	GetTotal      *bool
-	DefaultEffect resource.Effect
+	DefaultEffect resource2.Effect
 }
 
 type OptionFN func(*Option)
@@ -53,13 +53,13 @@ func GetTotal(get bool) OptionFN {
 	}
 }
 
-func Kind(kind resource.MeasureKind) OptionFN {
+func Kind(kind resource2.MeasureKind) OptionFN {
 	return func(i *Option) {
 		i.Kind = kind
 	}
 }
 
-func Class(class resource.Class) OptionFN {
+func Class(class resource2.Class) OptionFN {
 	return func(i *Option) {
 		i.Class = class
 	}
@@ -98,7 +98,7 @@ func User(userID int64) OptionFN {
 	}
 }
 
-func DefaultEffect(effect resource.Effect) OptionFN {
+func DefaultEffect(effect resource2.Effect) OptionFN {
 	return func(i *Option) {
 		i.DefaultEffect = effect
 	}

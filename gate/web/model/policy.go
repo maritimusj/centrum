@@ -1,6 +1,8 @@
 package model
 
-import "github.com/maritimusj/centrum/web/resource"
+import (
+	resource2 "github.com/maritimusj/centrum/gate/web/resource"
+)
 
 //策略
 type Policy interface {
@@ -9,9 +11,9 @@ type Policy interface {
 
 	Role() Role
 
-	SetEffect(effect resource.Effect)
+	SetEffect(effect resource2.Effect)
 
 	Resource() Resource
-	Action() resource.Action
-	Effect() resource.Effect
+	Action() resource2.Action
+	Effect() resource2.Effect
 }

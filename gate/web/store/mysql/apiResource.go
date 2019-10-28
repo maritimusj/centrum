@@ -1,9 +1,9 @@
 package mysqlStore
 
 import (
-	"github.com/maritimusj/centrum/web/helper"
-	"github.com/maritimusj/centrum/web/model"
-	"github.com/maritimusj/centrum/web/resource"
+	helper2 "github.com/maritimusj/centrum/gate/web/helper"
+	model2 "github.com/maritimusj/centrum/gate/web/model"
+	resource2 "github.com/maritimusj/centrum/gate/web/resource"
 )
 
 type ApiResource struct {
@@ -42,8 +42,8 @@ func (res *ApiResource) ResourceID() int64 {
 	return res.id
 }
 
-func (res *ApiResource) ResourceClass() resource.Class {
-	return resource.Api
+func (res *ApiResource) ResourceClass() resource2.Class {
+	return resource2.Api
 }
 
 func (res *ApiResource) ResourceTitle() string {
@@ -54,6 +54,6 @@ func (res *ApiResource) ResourceDesc() string {
 	return res.desc
 }
 
-func (res *ApiResource) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
-	return []model.Resource{}, 0, nil
+func (res *ApiResource) GetChildrenResources(options ...helper2.OptionFN) ([]model2.Resource, int64, error) {
+	return []model2.Resource{}, 0, nil
 }

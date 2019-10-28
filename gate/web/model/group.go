@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/maritimusj/centrum/web/helper"
+	helper2 "github.com/maritimusj/centrum/gate/web/helper"
 )
 
 //设备分组
@@ -22,11 +22,11 @@ type Group interface {
 	Desc() string
 	SetDesc(desc string)
 
-	GetDeviceList(options ...helper.OptionFN) ([]Device, int64, error)
+	GetDeviceList(options ...helper2.OptionFN) ([]Device, int64, error)
 	AddDevice(devices ...interface{}) error
 	RemoveDevice(devices ...interface{}) error
 
-	GetEquipmentList(options ...helper.OptionFN) ([]Equipment, int64, error)
+	GetEquipmentList(options ...helper2.OptionFN) ([]Equipment, int64, error)
 	AddEquipment(equipments ...interface{}) error
 	RemoveEquipment(equipments ...interface{}) error
 }

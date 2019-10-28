@@ -1,11 +1,11 @@
 package mysqlStore
 
 import (
-	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/web/dirty"
-	"github.com/maritimusj/centrum/web/helper"
-	"github.com/maritimusj/centrum/web/model"
-	"github.com/maritimusj/centrum/web/status"
+	lang2 "github.com/maritimusj/centrum/gate/lang"
+	dirty2 "github.com/maritimusj/centrum/gate/web/dirty"
+	helper2 "github.com/maritimusj/centrum/gate/web/helper"
+	model2 "github.com/maritimusj/centrum/gate/web/model"
+	status2 "github.com/maritimusj/centrum/gate/web/status"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"time"
@@ -20,14 +20,14 @@ type Organization struct {
 	extra     []byte
 	createdAt time.Time
 
-	dirty *dirty.Dirty
+	dirty *dirty2.Dirty
 	store *mysqlStore
 }
 
 func NewOrganization(store *mysqlStore, id int64) *Organization {
 	return &Organization{
 		id:    id,
-		dirty: dirty.New(),
+		dirty: dirty2.New(),
 		store: store,
 	}
 }
@@ -41,8 +41,8 @@ func (o *Organization) CreatedAt() time.Time {
 }
 
 func (o *Organization) Enable() {
-	if o.enable != status.Enable {
-		o.enable = status.Enable
+	if o.enable != status2.Enable {
+		o.enable = status2.Enable
 		o.dirty.Set("enable", func() interface{} {
 			return o.enable
 		})
@@ -50,8 +50,8 @@ func (o *Organization) Enable() {
 }
 
 func (o *Organization) Disable() {
-	if o.enable != status.Disable {
-		o.enable = status.Disable
+	if o.enable != status2.Disable {
+		o.enable = status2.Disable
 		o.dirty.Set("enable", func() interface{} {
 			return o.enable
 		})
@@ -59,7 +59,7 @@ func (o *Organization) Disable() {
 }
 
 func (o *Organization) IsEnabled() bool {
-	return o.enable == status.Enable
+	return o.enable == status2.Enable
 }
 
 func (o *Organization) Option() map[string]interface{} {
@@ -105,14 +105,14 @@ func (o *Organization) Save() error {
 	if o.dirty.Any() {
 		err := SaveData(o.store.db, TbOrganization, o.dirty.Data(true), "id=?", o.id)
 		if err != nil {
-			return lang.InternalError(err)
+			return lang2.InternalError(err)
 		}
 	}
 	return nil
 }
 
 func (o *Organization) Destroy() error {
-	users, _, err := o.store.GetUserList(helper.Organization(o.GetID()))
+	users, _, err := o.store.GetUserList(helper2.Organization(o.GetID()))
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (o *Organization) Destroy() error {
 		}
 	}
 
-	devices, _, err := o.store.GetDeviceList(helper.Organization(o.GetID()))
+	devices, _, err := o.store.GetDeviceList(helper2.Organization(o.GetID()))
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (o *Organization) Destroy() error {
 		}
 	}
 
-	equipments, _, err := o.store.GetEquipmentList(helper.Organization(o.GetID()))
+	equipments, _, err := o.store.GetEquipmentList(helper2.Organization(o.GetID()))
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func (o *Organization) Destroy() error {
 		}
 	}
 
-	groups, _, err := o.store.GetGroupList(helper.Organization(o.GetID()))
+	groups, _, err := o.store.GetGroupList(helper2.Organization(o.GetID()))
 	if err != nil {
 		return err
 	}
@@ -156,22 +156,22 @@ func (o *Organization) Destroy() error {
 	return o.store.RemoveOrganization(o.id)
 }
 
-func (o *Organization) Simple() model.Map {
+func (o *Organization) Simple() model2.Map {
 	if o == nil {
-		return model.Map{}
+		return model2.Map{}
 	}
-	return model.Map{
+	return model2.Map{
 		"id":    o.id,
 		"name":  o.name,
 		"title": o.title,
 	}
 }
 
-func (o *Organization) Brief() model.Map {
+func (o *Organization) Brief() model2.Map {
 	if o == nil {
-		return model.Map{}
+		return model2.Map{}
 	}
-	return model.Map{
+	return model2.Map{
 		"id":         o.id,
 		"name":       o.name,
 		"title":      o.title,
@@ -180,11 +180,11 @@ func (o *Organization) Brief() model.Map {
 	}
 }
 
-func (o *Organization) Detail() model.Map {
+func (o *Organization) Detail() model2.Map {
 	if o == nil {
-		return model.Map{}
+		return model2.Map{}
 	}
-	return model.Map{
+	return model2.Map{
 		"id":         o.id,
 		"name":       o.name,
 		"title":      o.title,

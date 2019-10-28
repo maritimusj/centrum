@@ -1,8 +1,8 @@
 package mysqlStore
 
 import (
-	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/web/dirty"
+	lang2 "github.com/maritimusj/centrum/gate/lang"
+	dirty2 "github.com/maritimusj/centrum/gate/web/dirty"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"time"
@@ -15,14 +15,14 @@ type Config struct {
 	createdAt time.Time
 	updateAt  time.Time
 
-	dirty *dirty.Dirty
+	dirty *dirty2.Dirty
 	store *mysqlStore
 }
 
 func NewConfig(store *mysqlStore, id int64) *Config {
 	return &Config{
 		id:    id,
-		dirty: dirty.New(),
+		dirty: dirty2.New(),
 		store: store,
 	}
 }
@@ -64,7 +64,7 @@ func (config *Config) SetOption(key string, value interface{}) error {
 
 		return nil
 	}
-	return lang.Error(lang.ErrDeviceNotFound)
+	return lang2.Error(lang2.ErrDeviceNotFound)
 }
 
 func (config *Config) CreatedAt() time.Time {
@@ -76,7 +76,7 @@ func (config *Config) CreatedAt() time.Time {
 
 func (config *Config) Destroy() error {
 	if config == nil {
-		return lang.Error(lang.ErrConfigNotFound)
+		return lang2.Error(lang2.ErrConfigNotFound)
 	}
 
 	return config.store.RemoveConfig(config.id)
@@ -87,10 +87,10 @@ func (config *Config) Save() error {
 		if config.dirty.Any() {
 			err := SaveData(config.store.db, TbConfig, config.dirty.Data(true), "id=?", config.id)
 			if err != nil {
-				return lang.InternalError(err)
+				return lang2.InternalError(err)
 			}
 		}
 		return nil
 	}
-	return lang.Error(lang.ErrConfigNotFound)
+	return lang2.Error(lang2.ErrConfigNotFound)
 }

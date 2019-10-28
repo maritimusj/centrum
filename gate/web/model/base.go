@@ -1,8 +1,8 @@
 package model
 
 import (
-	"github.com/maritimusj/centrum/web/helper"
-	"github.com/maritimusj/centrum/web/resource"
+	helper2 "github.com/maritimusj/centrum/gate/web/helper"
+	resource2 "github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"time"
@@ -41,9 +41,9 @@ type LogEntry interface {
 
 type Resource interface {
 	OrganizationID() int64
-	ResourceClass() resource.Class
+	ResourceClass() resource2.Class
 	ResourceID() int64
 	ResourceTitle() string
 	ResourceDesc() string
-	GetChildrenResources(options ...helper.OptionFN) ([]Resource, int64, error)
+	GetChildrenResources(options ...helper2.OptionFN) ([]Resource, int64, error)
 }

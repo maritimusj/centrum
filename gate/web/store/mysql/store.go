@@ -7,19 +7,19 @@ import (
 	"errors"
 	"fmt"
 	"github.com/kataras/iris"
-	"github.com/maritimusj/centrum/web/store"
+	lang2 "github.com/maritimusj/centrum/gate/lang"
+	cache2 "github.com/maritimusj/centrum/gate/web/cache"
+	memCache2 "github.com/maritimusj/centrum/gate/web/cache/memCache"
+	db2 "github.com/maritimusj/centrum/gate/web/db"
+	helper2 "github.com/maritimusj/centrum/gate/web/helper"
+	model2 "github.com/maritimusj/centrum/gate/web/model"
+	resource2 "github.com/maritimusj/centrum/gate/web/resource"
+	status2 "github.com/maritimusj/centrum/gate/web/status"
+	store2 "github.com/maritimusj/centrum/gate/web/store"
 	"time"
 
-	"github.com/maritimusj/centrum/lang"
 	"github.com/maritimusj/centrum/synchronized"
 	"github.com/maritimusj/centrum/util"
-	"github.com/maritimusj/centrum/web/cache"
-	"github.com/maritimusj/centrum/web/cache/memCache"
-	"github.com/maritimusj/centrum/web/db"
-	"github.com/maritimusj/centrum/web/helper"
-	"github.com/maritimusj/centrum/web/model"
-	"github.com/maritimusj/centrum/web/resource"
-	"github.com/maritimusj/centrum/web/status"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -43,19 +43,19 @@ const (
 )
 
 type mysqlStore struct {
-	db       db.DB
-	cache    cache.Cache
+	db       db2.DB
+	cache    cache2.Cache
 	ctx      context.Context
 	cleaners []func(string, interface{})
 }
 
-func New() store.Store {
+func New() store2.Store {
 	return &mysqlStore{
-		cache: memCache.New(),
+		cache: memCache2.New(),
 	}
 }
 
-func Attach(ctx context.Context, db db.DB, cleaners ...func(key string, obj interface{})) store.Store {
+func Attach(ctx context.Context, db db2.DB, cleaners ...func(key string, obj interface{})) store2.Store {
 	s := storePool.Get().(*mysqlStore)
 	s.ctx = ctx
 	s.db = db
@@ -63,8 +63,8 @@ func Attach(ctx context.Context, db db.DB, cleaners ...func(key string, obj inte
 	return s
 }
 
-func parseOption(options ...helper.OptionFN) *helper.Option {
-	option := helper.Option{}
+func parseOption(options ...helper2.OptionFN) *helper2.Option {
+	option := helper2.Option{}
 	for _, opt := range options {
 		if opt != nil {
 			opt(&option)
@@ -109,7 +109,7 @@ func (s *mysqlStore) Close() {
 	storePool.Put(s)
 }
 
-func (s *mysqlStore) Cache() cache.Cache {
+func (s *mysqlStore) Cache() cache2.Cache {
 	return s.cache
 }
 
@@ -123,15 +123,15 @@ func (s *mysqlStore) loadConfig(id int64) (*Config, error) {
 	}, "id=?", id)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return nil, lang.InternalError(err)
+			return nil, lang2.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrConfigNotFound)
+		return nil, lang2.Error(lang2.ErrConfigNotFound)
 	}
 
 	return cfg, nil
 }
 
-func (s *mysqlStore) GetConfig(cfg interface{}) (model.Config, error) {
+func (s *mysqlStore) GetConfig(cfg interface{}) (model2.Config, error) {
 	result := <-synchronized.Do(TbConfig, func() interface{} {
 		var cfgID int64
 		cfgID, err := s.getConfigID(cfg)
@@ -141,7 +141,7 @@ func (s *mysqlStore) GetConfig(cfg interface{}) (model.Config, error) {
 
 		cfg, err := s.cache.LoadConfig(cfgID)
 		if err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang2.Error(lang2.ErrCacheNotFound) {
 				return err
 			}
 		} else {
@@ -163,10 +163,10 @@ func (s *mysqlStore) GetConfig(cfg interface{}) (model.Config, error) {
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Config), nil
+	return result.(model2.Config), nil
 }
 
-func (s *mysqlStore) CreateConfig(name string, data interface{}) (model.Config, error) {
+func (s *mysqlStore) CreateConfig(name string, data interface{}) (model2.Config, error) {
 	result := <-synchronized.Do(TbConfig, func() interface{} {
 		now := time.Now()
 		data, err := json.Marshal(util.If(data != nil, data, "{}"))
@@ -180,7 +180,7 @@ func (s *mysqlStore) CreateConfig(name string, data interface{}) (model.Config, 
 			"update_at":  now,
 		})
 		if err != nil {
-			return lang.InternalError(err)
+			return lang2.InternalError(err)
 		}
 
 		cfg, err := s.loadConfig(cfgID)
@@ -199,7 +199,7 @@ func (s *mysqlStore) CreateConfig(name string, data interface{}) (model.Config, 
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Config), nil
+	return result.(model2.Config), nil
 }
 
 func (s *mysqlStore) RemoveConfig(id interface{}) error {
@@ -210,14 +210,14 @@ func (s *mysqlStore) RemoveConfig(id interface{}) error {
 
 	err = RemoveData(s.db, TbConfig, "id=?", cfgID)
 	if err != nil {
-		return lang.InternalError(err)
+		return lang2.InternalError(err)
 	}
 
 	s.cache.Remove(&Config{id: cfgID})
 	return nil
 }
 
-func (s *mysqlStore) GetConfigList(options ...helper.OptionFN) ([]model.Config, int64, error) {
+func (s *mysqlStore) GetConfigList(options ...helper2.OptionFN) ([]model2.Config, int64, error) {
 	option := parseOption(options...)
 	var (
 		fromSQL = "FROM " + TbConfig + " c  WHERE 1"
@@ -233,11 +233,11 @@ func (s *mysqlStore) GetConfigList(options ...helper.OptionFN) ([]model.Config, 
 	var total int64
 	if option.GetTotal == nil || *option.GetTotal {
 		if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
-			return nil, 0, lang.InternalError(err)
+			return nil, 0, lang2.InternalError(err)
 		}
 
 		if total == 0 {
-			return []model.Config{}, 0, nil
+			return []model2.Config{}, 0, nil
 		}
 	}
 
@@ -254,7 +254,7 @@ func (s *mysqlStore) GetConfigList(options ...helper.OptionFN) ([]model.Config, 
 	}
 	rows, err := s.db.Query("SELECT r.id "+fromSQL, params...)
 	if err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -267,14 +267,14 @@ func (s *mysqlStore) GetConfigList(options ...helper.OptionFN) ([]model.Config, 
 		err = rows.Scan(&cfgID)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return nil, 0, lang.InternalError(err)
+				return nil, 0, lang2.InternalError(err)
 			}
-			return []model.Config{}, total, nil
+			return []model2.Config{}, total, nil
 		}
 		ids = append(ids, cfgID)
 	}
 
-	var result []model.Config
+	var result []model2.Config
 	for _, id := range ids {
 		cfg, err := s.GetConfig(id)
 		if err != nil {
@@ -286,7 +286,7 @@ func (s *mysqlStore) GetConfigList(options ...helper.OptionFN) ([]model.Config, 
 	return result, total, nil
 }
 
-func (s *mysqlStore) MustGetUserFromContext(ctx iris.Context) model.User {
+func (s *mysqlStore) MustGetUserFromContext(ctx iris.Context) model2.User {
 	userID := ctx.Values().GetInt64Default("__userID__", 0)
 	if userID > 0 {
 		user, err := s.GetUser(userID)
@@ -295,12 +295,12 @@ func (s *mysqlStore) MustGetUserFromContext(ctx iris.Context) model.User {
 		}
 		return user
 	}
-	panic(lang.Error(lang.ErrInvalidUser))
+	panic(lang2.Error(lang2.ErrInvalidUser))
 }
 
 func (s *mysqlStore) IsOrganizationExists(org interface{}) (bool, error) {
 	if _, err := s.getOrganizationID(org); err != nil {
-		if err != lang.Error(lang.ErrOrganizationNotFound) {
+		if err != lang2.Error(lang2.ErrOrganizationNotFound) {
 			return false, err
 		}
 		return false, nil
@@ -310,7 +310,7 @@ func (s *mysqlStore) IsOrganizationExists(org interface{}) (bool, error) {
 
 func (s *mysqlStore) IsUserExists(user interface{}) (bool, error) {
 	if _, err := s.getUserID(user); err != nil {
-		if err != lang.Error(lang.ErrUserNotFound) {
+		if err != lang2.Error(lang2.ErrUserNotFound) {
 			return false, err
 		}
 		return false, nil
@@ -320,7 +320,7 @@ func (s *mysqlStore) IsUserExists(user interface{}) (bool, error) {
 
 func (s *mysqlStore) IsRoleExists(role interface{}) (bool, error) {
 	if _, err := s.getRoleID(role); err != nil {
-		if err != lang.Error(lang.ErrRoleNotFound) {
+		if err != lang2.Error(lang2.ErrRoleNotFound) {
 			return false, err
 		}
 		return false, nil
@@ -331,28 +331,28 @@ func (s *mysqlStore) IsRoleExists(role interface{}) (bool, error) {
 func (s *mysqlStore) GetResourceGroupList() []interface{} {
 	return []interface{}{
 		map[string]interface{}{
-			"id":    resource.Api,
-			"title": lang.ResourceClassTitle(resource.Api),
+			"id":    resource2.Api,
+			"title": lang2.ResourceClassTitle(resource2.Api),
 		},
 		map[string]interface{}{
-			"id":    resource.Group,
-			"title": lang.ResourceClassTitle(resource.Group),
+			"id":    resource2.Group,
+			"title": lang2.ResourceClassTitle(resource2.Group),
 		},
 		map[string]interface{}{
-			"id":    resource.Device,
-			"title": lang.ResourceClassTitle(resource.Device),
+			"id":    resource2.Device,
+			"title": lang2.ResourceClassTitle(resource2.Device),
 		},
 		map[string]interface{}{
-			"id":    resource.Measure,
-			"title": lang.ResourceClassTitle(resource.Measure),
+			"id":    resource2.Measure,
+			"title": lang2.ResourceClassTitle(resource2.Measure),
 		},
 		map[string]interface{}{
-			"id":    resource.Equipment,
-			"title": lang.ResourceClassTitle(resource.Equipment),
+			"id":    resource2.Equipment,
+			"title": lang2.ResourceClassTitle(resource2.Equipment),
 		},
 		map[string]interface{}{
-			"id":    resource.State,
-			"title": lang.ResourceClassTitle(resource.State),
+			"id":    resource2.State,
+			"title": lang2.ResourceClassTitle(resource2.State),
 		},
 	}
 }
@@ -368,14 +368,14 @@ func (s *mysqlStore) loadOrganization(id int64) (*Organization, error) {
 	}, "id=?", id)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return nil, lang.InternalError(err)
+			return nil, lang2.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrOrganizationNotFound)
+		return nil, lang2.Error(lang2.ErrOrganizationNotFound)
 	}
 	return org, nil
 }
 
-func (s *mysqlStore) GetOrganization(id interface{}) (model.Organization, error) {
+func (s *mysqlStore) GetOrganization(id interface{}) (model2.Organization, error) {
 	result := <-synchronized.Do(TbOrganization, func() interface{} {
 		var orgID int64
 		orgID, err := s.getOrganizationID(id)
@@ -385,7 +385,7 @@ func (s *mysqlStore) GetOrganization(id interface{}) (model.Organization, error)
 
 		org, err := s.cache.LoadOrganization(orgID)
 		if err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang2.Error(lang2.ErrCacheNotFound) {
 				return err
 			}
 		} else {
@@ -407,20 +407,20 @@ func (s *mysqlStore) GetOrganization(id interface{}) (model.Organization, error)
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Organization), nil
+	return result.(model2.Organization), nil
 }
 
-func (s *mysqlStore) CreateOrganization(name string, title string) (model.Organization, error) {
+func (s *mysqlStore) CreateOrganization(name string, title string) (model2.Organization, error) {
 	result := <-synchronized.Do(TbOrganization, func() interface{} {
 		orgID, err := CreateData(s.db, TbOrganization, map[string]interface{}{
-			"enable":     status.Enable,
+			"enable":     status2.Enable,
 			"name":       name,
 			"title":      title,
 			"extra":      `{}`,
 			"created_at": time.Now(),
 		})
 		if err != nil {
-			return lang.InternalError(err)
+			return lang2.InternalError(err)
 		}
 
 		org, err := s.loadOrganization(orgID)
@@ -438,7 +438,7 @@ func (s *mysqlStore) CreateOrganization(name string, title string) (model.Organi
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Organization), nil
+	return result.(model2.Organization), nil
 }
 
 func (s *mysqlStore) RemoveOrganization(id interface{}) error {
@@ -449,14 +449,14 @@ func (s *mysqlStore) RemoveOrganization(id interface{}) error {
 
 	err = RemoveData(s.db, TbOrganization, "id=?", orgID)
 	if err != nil {
-		return lang.InternalError(err)
+		return lang2.InternalError(err)
 	}
 
 	s.cache.Remove(&Organization{id: orgID})
 	return nil
 }
 
-func (s *mysqlStore) GetOrganizationList(options ...helper.OptionFN) ([]model.Organization, int64, error) {
+func (s *mysqlStore) GetOrganizationList(options ...helper2.OptionFN) ([]model2.Organization, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -472,11 +472,11 @@ func (s *mysqlStore) GetOrganizationList(options ...helper.OptionFN) ([]model.Or
 
 	var total int64
 	if err := s.db.QueryRow("SELECT COUNT(DISTINCT o.id) "+from+where, params...).Scan(&total); err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 
 	if total == 0 {
-		return []model.Organization{}, 0, nil
+		return []model2.Organization{}, 0, nil
 	}
 
 	where += " ORDER BY o.id ASC"
@@ -493,7 +493,7 @@ func (s *mysqlStore) GetOrganizationList(options ...helper.OptionFN) ([]model.Or
 
 	rows, err := s.db.Query("SELECT DISTINCT o.id "+from+where, params...)
 	if err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -506,14 +506,14 @@ func (s *mysqlStore) GetOrganizationList(options ...helper.OptionFN) ([]model.Or
 		err = rows.Scan(&userID)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return nil, 0, lang.InternalError(err)
+				return nil, 0, lang2.InternalError(err)
 			}
-			return []model.Organization{}, total, nil
+			return []model2.Organization{}, total, nil
 		}
 		ids = append(ids, userID)
 	}
 
-	var result []model.Organization
+	var result []model2.Organization
 	for _, id := range ids {
 		org, err := s.GetOrganization(id)
 		if err != nil {
@@ -540,15 +540,15 @@ func (s *mysqlStore) loadUser(id int64) (*User, error) {
 	}, "id=?", id)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return nil, lang.InternalError(err)
+			return nil, lang2.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrUserNotFound)
+		return nil, lang2.Error(lang2.ErrUserNotFound)
 	}
 
 	return user, nil
 }
 
-func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
+func (s *mysqlStore) GetUser(user interface{}) (model2.User, error) {
 	result := <-synchronized.Do(TbUsers, func() interface{} {
 		userID, err := s.getUserID(user)
 		if err != nil {
@@ -556,7 +556,7 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 		}
 
 		if user, err := s.cache.LoadUser(userID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang2.Error(lang2.ErrCacheNotFound) {
 				return err
 			}
 		} else {
@@ -579,10 +579,10 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 		return nil, err
 	}
 
-	return result.(model.User), nil
+	return result.(model2.User), nil
 }
 
-func (s *mysqlStore) CreateUser(org interface{}, name string, password []byte, roles ...interface{}) (model.User, error) {
+func (s *mysqlStore) CreateUser(org interface{}, name string, password []byte, roles ...interface{}) (model2.User, error) {
 	result := <-synchronized.Do(TbUsers, func() interface{} {
 		orgID, err := s.getOrganizationID(org)
 		if err != nil {
@@ -591,12 +591,12 @@ func (s *mysqlStore) CreateUser(org interface{}, name string, password []byte, r
 
 		passwordData, err := util.HashPassword(password)
 		if err != nil {
-			return lang.InternalError(err)
+			return lang2.InternalError(err)
 		}
 
 		userID, err := CreateData(s.db, TbUsers, map[string]interface{}{
 			"org_id":     orgID,
-			"enable":     status.Enable,
+			"enable":     status2.Enable,
 			"name":       name,
 			"password":   passwordData,
 			"title":      name,
@@ -606,7 +606,7 @@ func (s *mysqlStore) CreateUser(org interface{}, name string, password []byte, r
 		})
 
 		if err != nil {
-			return lang.InternalError(err)
+			return lang2.InternalError(err)
 		}
 
 		user, err := s.loadUser(userID)
@@ -631,7 +631,7 @@ func (s *mysqlStore) CreateUser(org interface{}, name string, password []byte, r
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.User), nil
+	return result.(model2.User), nil
 }
 
 func (s *mysqlStore) RemoveUser(u interface{}) error {
@@ -652,14 +652,14 @@ func (s *mysqlStore) RemoveUser(u interface{}) error {
 
 	err = RemoveData(s.db, TbUsers, "id=?", userID)
 	if err != nil {
-		return lang.InternalError(err)
+		return lang2.InternalError(err)
 	}
 
 	s.cache.Remove(user)
 	return nil
 }
 
-func (s *mysqlStore) GetUserList(options ...helper.OptionFN) ([]model.User, int64, error) {
+func (s *mysqlStore) GetUserList(options ...helper2.OptionFN) ([]model2.User, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -687,11 +687,11 @@ func (s *mysqlStore) GetUserList(options ...helper.OptionFN) ([]model.User, int6
 
 	var total int64
 	if err := s.db.QueryRow("SELECT COUNT(DISTINCT u.id) "+from+where, params...).Scan(&total); err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 
 	if total == 0 {
-		return []model.User{}, 0, nil
+		return []model2.User{}, 0, nil
 	}
 
 	where += " ORDER BY u.id ASC"
@@ -708,7 +708,7 @@ func (s *mysqlStore) GetUserList(options ...helper.OptionFN) ([]model.User, int6
 
 	rows, err := s.db.Query("SELECT DISTINCT u.id "+from+where, params...)
 	if err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -721,14 +721,14 @@ func (s *mysqlStore) GetUserList(options ...helper.OptionFN) ([]model.User, int6
 		err = rows.Scan(&userID)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return nil, 0, lang.InternalError(err)
+				return nil, 0, lang2.InternalError(err)
 			}
-			return []model.User{}, total, nil
+			return []model2.User{}, total, nil
 		}
 		ids = append(ids, userID)
 	}
 
-	var result []model.User
+	var result []model2.User
 	for _, id := range ids {
 		user, err := s.GetUser(id)
 		if err != nil {
@@ -753,22 +753,22 @@ func (s *mysqlStore) loadRole(id int64) (*Role, error) {
 	}, "id=?", id)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return nil, lang.InternalError(err)
+			return nil, lang2.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrRoleNotFound)
+		return nil, lang2.Error(lang2.ErrRoleNotFound)
 	}
 	return role, nil
 }
 
-func (s *mysqlStore) GetRole(role interface{}) (model.Role, error) {
+func (s *mysqlStore) GetRole(role interface{}) (model2.Role, error) {
 	result := <-synchronized.Do(TbRoles, func() interface{} {
 		roleID, err := s.getRoleID(role)
 		if err != nil {
 			return err
 		}
 		if role, err := s.cache.LoadRole(roleID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
-				return lang.InternalError(err)
+			if err != lang2.Error(lang2.ErrCacheNotFound) {
+				return lang2.InternalError(err)
 			}
 		} else {
 			return role
@@ -789,10 +789,10 @@ func (s *mysqlStore) GetRole(role interface{}) (model.Role, error) {
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Role), nil
+	return result.(model2.Role), nil
 }
 
-func (s *mysqlStore) createRole(db db.DB, org interface{}, name, title, desc string) (model.Role, error) {
+func (s *mysqlStore) createRole(db db2.DB, org interface{}, name, title, desc string) (model2.Role, error) {
 	result := <-synchronized.Do(TbRoles, func() interface{} {
 		orgID, err := s.getOrganizationID(org)
 		if err != nil {
@@ -800,7 +800,7 @@ func (s *mysqlStore) createRole(db db.DB, org interface{}, name, title, desc str
 		}
 		roleID, err := CreateData(s.db, TbRoles, map[string]interface{}{
 			"org_id":     orgID,
-			"enable":     status.Enable,
+			"enable":     status2.Enable,
 			"name":       name,
 			"title":      title,
 			"desc":       desc,
@@ -825,10 +825,10 @@ func (s *mysqlStore) createRole(db db.DB, org interface{}, name, title, desc str
 		return nil, err
 	}
 
-	return result.(model.Role), nil
+	return result.(model2.Role), nil
 }
 
-func (s *mysqlStore) CreateRole(org interface{}, name, title, desc string) (model.Role, error) {
+func (s *mysqlStore) CreateRole(org interface{}, name, title, desc string) (model2.Role, error) {
 	return s.createRole(s.db, org, name, title, desc)
 }
 
@@ -840,13 +840,13 @@ func (s *mysqlStore) RemoveRole(role interface{}) error {
 
 	err = RemoveData(s.db, TbRoles, "id=?", roleID)
 	if err != nil {
-		return lang.InternalError(err)
+		return lang2.InternalError(err)
 	}
 	s.cache.Remove(&Role{id: roleID})
 	return nil
 }
 
-func (s *mysqlStore) GetRoleList(options ...helper.OptionFN) ([]model.Role, int64, error) {
+func (s *mysqlStore) GetRoleList(options ...helper2.OptionFN) ([]model2.Role, int64, error) {
 	option := parseOption(options...)
 	var (
 		fromSQL = "FROM " + TbRoles + " r "
@@ -875,11 +875,11 @@ func (s *mysqlStore) GetRoleList(options ...helper.OptionFN) ([]model.Role, int6
 	var total int64
 	if option.GetTotal == nil || *option.GetTotal {
 		if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
-			return nil, 0, lang.InternalError(err)
+			return nil, 0, lang2.InternalError(err)
 		}
 
 		if total == 0 {
-			return []model.Role{}, 0, nil
+			return []model2.Role{}, 0, nil
 		}
 	}
 
@@ -896,7 +896,7 @@ func (s *mysqlStore) GetRoleList(options ...helper.OptionFN) ([]model.Role, int6
 	}
 	rows, err := s.db.Query("SELECT r.id "+fromSQL, params...)
 	if err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -909,14 +909,14 @@ func (s *mysqlStore) GetRoleList(options ...helper.OptionFN) ([]model.Role, int6
 		err = rows.Scan(&roleID)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return nil, 0, lang.InternalError(err)
+				return nil, 0, lang2.InternalError(err)
 			}
-			return []model.Role{}, total, nil
+			return []model2.Role{}, total, nil
 		}
 		ids = append(ids, roleID)
 	}
 
-	var result []model.Role
+	var result []model2.Role
 	for _, id := range ids {
 		role, err := s.GetRole(id)
 		if err != nil {
@@ -928,7 +928,7 @@ func (s *mysqlStore) GetRoleList(options ...helper.OptionFN) ([]model.Role, int6
 	return result, total, nil
 }
 
-func (s *mysqlStore) loadPolicy(id int64) (model.Policy, error) {
+func (s *mysqlStore) loadPolicy(id int64) (model2.Policy, error) {
 	var policy = NewPolicy(s, id)
 	err := LoadData(s.db, TbPolicies, map[string]interface{}{
 		"role_id":        &policy.roleID,
@@ -940,18 +940,18 @@ func (s *mysqlStore) loadPolicy(id int64) (model.Policy, error) {
 
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return nil, lang.InternalError(err)
+			return nil, lang2.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrPolicyNotFound)
+		return nil, lang2.Error(lang2.ErrPolicyNotFound)
 	}
 	return policy, nil
 }
 
-func (s *mysqlStore) GetPolicy(policyID int64) (model.Policy, error) {
+func (s *mysqlStore) GetPolicy(policyID int64) (model2.Policy, error) {
 	result := <-synchronized.Do(TbPolicies, func() interface{} {
 		if role, err := s.cache.LoadPolicy(policyID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
-				return lang.InternalError(err)
+			if err != lang2.Error(lang2.ErrCacheNotFound) {
+				return lang2.InternalError(err)
 			}
 		} else {
 			return role
@@ -972,10 +972,10 @@ func (s *mysqlStore) GetPolicy(policyID int64) (model.Policy, error) {
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Policy), nil
+	return result.(model2.Policy), nil
 }
 
-func (s *mysqlStore) GetPolicyFrom(roleID int64, res model.Resource, action resource.Action) (model.Policy, error) {
+func (s *mysqlStore) GetPolicyFrom(roleID int64, res model2.Resource, action resource2.Action) (model2.Policy, error) {
 	var policyID int64
 	err := LoadData(s.db, TbPolicies, map[string]interface{}{
 		"id": &policyID,
@@ -983,16 +983,16 @@ func (s *mysqlStore) GetPolicyFrom(roleID int64, res model.Resource, action reso
 
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return nil, lang.InternalError(err)
+			return nil, lang2.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrPolicyNotFound)
+		return nil, lang2.Error(lang2.ErrPolicyNotFound)
 	}
 
 	return s.GetPolicy(policyID)
 
 }
 
-func (s *mysqlStore) CreatePolicy(roleID int64, res model.Resource, action resource.Action, effect resource.Effect) (model.Policy, error) {
+func (s *mysqlStore) CreatePolicy(roleID int64, res model2.Resource, action resource2.Action, effect resource2.Effect) (model2.Policy, error) {
 	result := <-synchronized.Do(TbPolicies, func() interface{} {
 		policyID, err := CreateData(s.db, TbPolicies, map[string]interface{}{
 			"role_id":        roleID,
@@ -1021,19 +1021,19 @@ func (s *mysqlStore) CreatePolicy(roleID int64, res model.Resource, action resou
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Policy), nil
+	return result.(model2.Policy), nil
 }
 
 func (s *mysqlStore) RemovePolicy(policyID int64) error {
 	err := RemoveData(s.db, TbPolicies, "id=?", policyID)
 	if err != nil {
-		return lang.InternalError(err)
+		return lang2.InternalError(err)
 	}
 	s.cache.Remove(&Policy{id: policyID})
 	return nil
 }
 
-func (s *mysqlStore) GetPolicyList(res model.Resource, options ...helper.OptionFN) ([]model.Policy, int64, error) {
+func (s *mysqlStore) GetPolicyList(res model2.Resource, options ...helper2.OptionFN) ([]model2.Policy, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -1054,11 +1054,11 @@ func (s *mysqlStore) GetPolicyList(res model.Resource, options ...helper.OptionF
 
 	var total int64
 	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 
 	if total == 0 {
-		return []model.Policy{}, 0, nil
+		return []model2.Policy{}, 0, nil
 	}
 
 	if option.Limit > 0 {
@@ -1073,7 +1073,7 @@ func (s *mysqlStore) GetPolicyList(res model.Resource, options ...helper.OptionF
 
 	rows, err := s.db.Query("SELECT id "+fromSQL, params...)
 	if err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -1086,14 +1086,14 @@ func (s *mysqlStore) GetPolicyList(res model.Resource, options ...helper.OptionF
 		err = rows.Scan(&policyID)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return nil, 0, lang.InternalError(err)
+				return nil, 0, lang2.InternalError(err)
 			}
-			return []model.Policy{}, total, nil
+			return []model2.Policy{}, total, nil
 		}
 		ids = append(ids, policyID)
 	}
 
-	var result []model.Policy
+	var result []model2.Policy
 	for _, id := range ids {
 		policy, err := s.GetPolicy(id)
 		if err != nil {
@@ -1105,7 +1105,7 @@ func (s *mysqlStore) GetPolicyList(res model.Resource, options ...helper.OptionF
 	return result, total, nil
 }
 
-func (s *mysqlStore) loadGroup(id int64) (model.Group, error) {
+func (s *mysqlStore) loadGroup(id int64) (model2.Group, error) {
 	var group = NewGroup(s, id)
 
 	err := LoadData(s.db, TbGroups, map[string]interface{}{
@@ -1118,17 +1118,17 @@ func (s *mysqlStore) loadGroup(id int64) (model.Group, error) {
 
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return nil, lang.InternalError(err)
+			return nil, lang2.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrGroupNotFound)
+		return nil, lang2.Error(lang2.ErrGroupNotFound)
 	}
 	return group, nil
 }
 
-func (s *mysqlStore) GetGroup(groupID int64) (model.Group, error) {
+func (s *mysqlStore) GetGroup(groupID int64) (model2.Group, error) {
 	result := <-synchronized.Do(TbGroups, func() interface{} {
 		if group, err := s.cache.LoadGroup(groupID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang2.Error(lang2.ErrCacheNotFound) {
 				return err
 			}
 		} else {
@@ -1149,17 +1149,17 @@ func (s *mysqlStore) GetGroup(groupID int64) (model.Group, error) {
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Group), nil
+	return result.(model2.Group), nil
 }
 
-func (s *mysqlStore) GetDeviceGroups(deviceID int64) ([]model.Group, error) {
+func (s *mysqlStore) GetDeviceGroups(deviceID int64) ([]model2.Group, error) {
 	const (
 		SQL = "SELECT group_id FROM " + TbDeviceGroups + " WHERE device_id=?"
 	)
 
 	rows, err := s.db.Query(SQL, deviceID)
 	if err != nil {
-		return nil, lang.InternalError(err)
+		return nil, lang2.InternalError(err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -1172,14 +1172,14 @@ func (s *mysqlStore) GetDeviceGroups(deviceID int64) ([]model.Group, error) {
 		err = rows.Scan(&groupID)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return nil, lang.InternalError(err)
+				return nil, lang2.InternalError(err)
 			}
-			return []model.Group{}, nil
+			return []model2.Group{}, nil
 		}
 		ids = append(ids, groupID)
 	}
 
-	var result []model.Group
+	var result []model2.Group
 	for _, groupID := range ids {
 		group, err := s.GetGroup(groupID)
 		if err != nil {
@@ -1190,14 +1190,14 @@ func (s *mysqlStore) GetDeviceGroups(deviceID int64) ([]model.Group, error) {
 	return result, nil
 }
 
-func (s *mysqlStore) GetEquipmentGroups(equipmentID int64) ([]model.Group, error) {
+func (s *mysqlStore) GetEquipmentGroups(equipmentID int64) ([]model2.Group, error) {
 	const (
 		SQL = "SELECT group_id FROM " + TbEquipmentGroups + " WHERE equipment_id=?"
 	)
 
 	rows, err := s.db.Query(SQL, equipmentID)
 	if err != nil {
-		return nil, lang.InternalError(err)
+		return nil, lang2.InternalError(err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -1210,14 +1210,14 @@ func (s *mysqlStore) GetEquipmentGroups(equipmentID int64) ([]model.Group, error
 		err = rows.Scan(&groupID)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return nil, lang.InternalError(err)
+				return nil, lang2.InternalError(err)
 			}
-			return []model.Group{}, nil
+			return []model2.Group{}, nil
 		}
 		ids = append(ids, groupID)
 	}
 
-	var result []model.Group
+	var result []model2.Group
 	for _, groupID := range ids {
 		group, err := s.GetGroup(groupID)
 		if err != nil {
@@ -1229,7 +1229,7 @@ func (s *mysqlStore) GetEquipmentGroups(equipmentID int64) ([]model.Group, error
 	return result, nil
 }
 
-func (s *mysqlStore) CreateGroup(org interface{}, title string, desc string, parentID int64) (model.Group, error) {
+func (s *mysqlStore) CreateGroup(org interface{}, title string, desc string, parentID int64) (model2.Group, error) {
 	result := <-synchronized.Do(TbGroups, func() interface{} {
 		orgID, err := s.getOrganizationID(org)
 		if err != nil {
@@ -1260,7 +1260,7 @@ func (s *mysqlStore) CreateGroup(org interface{}, title string, desc string, par
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Group), nil
+	return result.(model2.Group), nil
 }
 
 func (s *mysqlStore) RemoveGroup(groupID int64) error {
@@ -1273,7 +1273,7 @@ func (s *mysqlStore) RemoveGroup(groupID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetGroupList(options ...helper.OptionFN) ([]model.Group, int64, error) {
+func (s *mysqlStore) GetGroupList(options ...helper2.OptionFN) ([]model2.Group, int64, error) {
 	option := parseOption(options...)
 	var (
 		from  = "FROM " + TbGroups + " g"
@@ -1295,9 +1295,9 @@ SELECT g.id,p.role_id,p.action,p.effect FROM %s g
 INNER JOIN %s p ON p.resource_class=%d AND p.resource_id=g.id
 INNER JOIN %s r ON p.role_id=r.id
 WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
-) b ON g.id=b.id`, TbGroups, TbPolicies, resource.Group, TbRoles, TbUserRoles, userID)
+) b ON g.id=b.id`, TbGroups, TbPolicies, resource2.Group, TbRoles, TbUserRoles, userID)
 
-			if option.DefaultEffect == resource.Allow {
+			if option.DefaultEffect == resource2.Allow {
 				where += " AND ((b.action=0 AND b.effect=1) OR (ISNULL(b.action) AND ISNULL(b.effect)))"
 			} else {
 				where += " AND (b.action=0 AND b.effect=1)"
@@ -1317,11 +1317,11 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 
 	var total int64
 	if err := s.db.QueryRow("SELECT COUNT(DISTINCT g.id) "+from+where, params...).Scan(&total); err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 
 	if total == 0 {
-		return []model.Group{}, 0, nil
+		return []model2.Group{}, 0, nil
 	}
 
 	where += " ORDER BY g.id ASC"
@@ -1339,7 +1339,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	log.Trace("SELECT DISTINCT g.id " + from + where)
 	rows, err := s.db.Query("SELECT DISTINCT g.id "+from+where, params...)
 	if err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -1352,14 +1352,14 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		err = rows.Scan(&groupID)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return nil, 0, lang.InternalError(err)
+				return nil, 0, lang2.InternalError(err)
 			}
-			return []model.Group{}, total, nil
+			return []model2.Group{}, total, nil
 		}
 		ids = append(ids, groupID)
 	}
 
-	var result []model.Group
+	var result []model2.Group
 	for _, id := range ids {
 		group, err := s.GetGroup(id)
 		if err != nil {
@@ -1372,7 +1372,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	return result, total, nil
 }
 
-func (s *mysqlStore) loadDevice(id int64) (model.Device, error) {
+func (s *mysqlStore) loadDevice(id int64) (model2.Device, error) {
 	var device = NewDDevice(s, id)
 	err := LoadData(s.db, TbDevices, map[string]interface{}{
 		"org_id":     &device.orgID,
@@ -1384,17 +1384,17 @@ func (s *mysqlStore) loadDevice(id int64) (model.Device, error) {
 
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return nil, lang.InternalError(err)
+			return nil, lang2.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrDeviceNotFound)
+		return nil, lang2.Error(lang2.ErrDeviceNotFound)
 	}
 	return device, nil
 }
 
-func (s *mysqlStore) GetDevice(deviceID int64) (model.Device, error) {
+func (s *mysqlStore) GetDevice(deviceID int64) (model2.Device, error) {
 	result := <-synchronized.Do(TbDevices, func() interface{} {
 		if device, err := s.cache.LoadDevice(deviceID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang2.Error(lang2.ErrCacheNotFound) {
 				return err
 			}
 		} else {
@@ -1415,10 +1415,10 @@ func (s *mysqlStore) GetDevice(deviceID int64) (model.Device, error) {
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Device), nil
+	return result.(model2.Device), nil
 }
 
-func (s *mysqlStore) CreateDevice(org interface{}, title string, data map[string]interface{}) (model.Device, error) {
+func (s *mysqlStore) CreateDevice(org interface{}, title string, data map[string]interface{}) (model2.Device, error) {
 	result := <-synchronized.Do(TbDevices, func() interface{} {
 		orgID, err := s.getOrganizationID(org)
 		if err != nil {
@@ -1427,12 +1427,12 @@ func (s *mysqlStore) CreateDevice(org interface{}, title string, data map[string
 
 		o, err := json.Marshal(data)
 		if err != nil {
-			return lang.InternalError(err)
+			return lang2.InternalError(err)
 		}
 
 		deviceID, err := CreateData(s.db, TbDevices, map[string]interface{}{
 			"org_id":     orgID,
-			"enable":     status.Enable,
+			"enable":     status2.Enable,
 			"title":      title,
 			"options":    o,
 			"created_at": time.Now(),
@@ -1453,20 +1453,20 @@ func (s *mysqlStore) CreateDevice(org interface{}, title string, data map[string
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Device), nil
+	return result.(model2.Device), nil
 }
 
 func (s *mysqlStore) RemoveDevice(deviceID int64) error {
 	err := RemoveData(s.db, TbDevices, "id=?", deviceID)
 	if err != nil {
-		return lang.InternalError(err)
+		return lang2.InternalError(err)
 	}
 
 	s.cache.Remove(&Device{id: deviceID})
 	return nil
 }
 
-func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, int64, error) {
+func (s *mysqlStore) GetDeviceList(options ...helper2.OptionFN) ([]model2.Device, int64, error) {
 	option := parseOption(options...)
 	var (
 		from  = "FROM " + TbDevices + " d"
@@ -1488,9 +1488,9 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 	INNER JOIN %s p ON p.resource_class=%d AND p.resource_id=d.id 
 	INNER JOIN %s r ON p.role_id=r.id
 	WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
-) b ON d.id=b.id`, TbDevices, TbPolicies, resource.Device, TbRoles, TbUserRoles, userID)
+) b ON d.id=b.id`, TbDevices, TbPolicies, resource2.Device, TbRoles, TbUserRoles, userID)
 
-			if option.DefaultEffect == resource.Allow {
+			if option.DefaultEffect == resource2.Allow {
 				where += " AND ((b.action=0 AND b.effect=1) OR (ISNULL(b.action) AND ISNULL(b.effect)))"
 			} else {
 				where += " AND (b.action=0 AND b.effect=1)"
@@ -1512,11 +1512,11 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 	var total int64
 	if option.GetTotal == nil || *option.GetTotal {
 		if err := s.db.QueryRow("SELECT COUNT(DISTINCT d.id) "+from+where, params...).Scan(&total); err != nil {
-			return nil, 0, lang.InternalError(err)
+			return nil, 0, lang2.InternalError(err)
 		}
 
 		if total == 0 {
-			return []model.Device{}, 0, nil
+			return []model2.Device{}, 0, nil
 		}
 	}
 
@@ -1535,7 +1535,7 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 	log.Trace("SELECT DISTINCT d.id " + from + where)
 	rows, err := s.db.Query("SELECT DISTINCT d.id "+from+where, params...)
 	if err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -1548,14 +1548,14 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 		err = rows.Scan(&deviceID)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return nil, 0, lang.InternalError(err)
+				return nil, 0, lang2.InternalError(err)
 			}
-			return []model.Device{}, total, nil
+			return []model2.Device{}, total, nil
 		}
 		ids = append(ids, deviceID)
 	}
 
-	var result []model.Device
+	var result []model2.Device
 	for _, id := range ids {
 		device, err := s.GetDevice(id)
 		if err != nil {
@@ -1568,7 +1568,7 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 	return result, total, nil
 }
 
-func (s *mysqlStore) loadMeasure(id int64) (model.Measure, error) {
+func (s *mysqlStore) loadMeasure(id int64) (model2.Measure, error) {
 	var measure = NewMeasure(s, id)
 	err := LoadData(s.db, TbMeasures, map[string]interface{}{
 		"enable":     &measure.enable,
@@ -1580,22 +1580,22 @@ func (s *mysqlStore) loadMeasure(id int64) (model.Measure, error) {
 	}, "id=?", id)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return nil, lang.InternalError(err)
+			return nil, lang2.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrMeasureNotFound)
+		return nil, lang2.Error(lang2.ErrMeasureNotFound)
 	}
 	return measure, nil
 }
 
-func (s *mysqlStore) GetMeasureFromTagName(deviceID int64, tagName string) (model.Measure, error) {
+func (s *mysqlStore) GetMeasureFromTagName(deviceID int64, tagName string) (model2.Measure, error) {
 	result := <-synchronized.Do(TbMeasures, func() interface{} {
 		measureID, err := s.getMeasureID(deviceID, tagName)
 		if err != nil {
 			return err
 		}
 		if measure, err := s.cache.LoadMeasure(measureID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
-				return lang.InternalError(err)
+			if err != lang2.Error(lang2.ErrCacheNotFound) {
+				return lang2.InternalError(err)
 			}
 		} else {
 			return measure
@@ -1616,13 +1616,13 @@ func (s *mysqlStore) GetMeasureFromTagName(deviceID int64, tagName string) (mode
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Measure), nil
+	return result.(model2.Measure), nil
 }
 
-func (s *mysqlStore) GetMeasure(measureID int64) (model.Measure, error) {
+func (s *mysqlStore) GetMeasure(measureID int64) (model2.Measure, error) {
 	result := <-synchronized.Do(TbMeasures, func() interface{} {
 		if measure, err := s.cache.LoadMeasure(measureID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang2.Error(lang2.ErrCacheNotFound) {
 				return err
 			}
 		} else {
@@ -1644,13 +1644,13 @@ func (s *mysqlStore) GetMeasure(measureID int64) (model.Measure, error) {
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Measure), nil
+	return result.(model2.Measure), nil
 }
 
-func (s *mysqlStore) CreateMeasure(deviceID int64, title string, tag string, kind resource.MeasureKind) (model.Measure, error) {
+func (s *mysqlStore) CreateMeasure(deviceID int64, title string, tag string, kind resource2.MeasureKind) (model2.Measure, error) {
 	result := <-synchronized.Do(TbMeasures, func() interface{} {
 		data := map[string]interface{}{
-			"enable":     status.Enable,
+			"enable":     status2.Enable,
 			"device_id":  deviceID,
 			"title":      title,
 			"tag":        tag,
@@ -1677,7 +1677,7 @@ func (s *mysqlStore) CreateMeasure(deviceID int64, title string, tag string, kin
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Measure), nil
+	return result.(model2.Measure), nil
 }
 
 func (s *mysqlStore) RemoveMeasure(measureID int64) error {
@@ -1690,7 +1690,7 @@ func (s *mysqlStore) RemoveMeasure(measureID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetMeasureList(options ...helper.OptionFN) ([]model.Measure, int64, error) {
+func (s *mysqlStore) GetMeasureList(options ...helper2.OptionFN) ([]model2.Measure, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -1708,9 +1708,9 @@ SELECT m.id,p.role_id,p.action,p.effect FROM %s m
 INNER JOIN %s p ON p.resource_class=%d AND p.resource_id=m.id
 INNER JOIN %s r ON p.role_id=r.id
 WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
-) b ON m.id=b.id`, TbMeasures, TbPolicies, resource.Measure, TbRoles, TbUserRoles, userID)
+) b ON m.id=b.id`, TbMeasures, TbPolicies, resource2.Measure, TbRoles, TbUserRoles, userID)
 
-			if option.DefaultEffect == resource.Allow {
+			if option.DefaultEffect == resource2.Allow {
 				where += " AND ((b.action=0 AND b.effect=1) OR (ISNULL(b.action) AND ISNULL(b.effect)))"
 			} else {
 				where += " AND (b.action=0 AND b.effect=1)"
@@ -1723,7 +1723,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		params = append(params, option.DeviceID)
 	}
 
-	if option.Kind != resource.AllKind {
+	if option.Kind != resource2.AllKind {
 		where += " AND m.kind=?"
 		params = append(params, option.Kind)
 	}
@@ -1735,11 +1735,11 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 
 	var total int64
 	if err := s.db.QueryRow("SELECT COUNT(DISTINCT m.id) "+from+where, params...).Scan(&total); err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 
 	if total == 0 {
-		return []model.Measure{}, 0, nil
+		return []model2.Measure{}, 0, nil
 	}
 
 	where += " ORDER BY m.id ASC"
@@ -1757,7 +1757,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	log.Trace("SELECT DISTINCT d.id " + from + where)
 	rows, err := s.db.Query("SELECT DISTINCT m.id "+from+where, params...)
 	if err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -1770,14 +1770,14 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		err = rows.Scan(&measureID)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return nil, 0, lang.InternalError(err)
+				return nil, 0, lang2.InternalError(err)
 			}
-			return []model.Measure{}, total, nil
+			return []model2.Measure{}, total, nil
 		}
 		ids = append(ids, measureID)
 	}
 
-	var result []model.Measure
+	var result []model2.Measure
 	for _, id := range ids {
 		measure, err := s.GetMeasure(id)
 		if err != nil {
@@ -1790,7 +1790,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	return result, total, nil
 }
 
-func (s *mysqlStore) loadEquipment(id int64) (model.Equipment, error) {
+func (s *mysqlStore) loadEquipment(id int64) (model2.Equipment, error) {
 	var equipment = NewEquipment(s, id)
 	err := LoadData(s.db, TbEquipments, map[string]interface{}{
 		"org_id":     &equipment.orgID,
@@ -1803,15 +1803,15 @@ func (s *mysqlStore) loadEquipment(id int64) (model.Equipment, error) {
 		if err != sql.ErrNoRows {
 			return nil, err
 		}
-		return nil, lang.Error(lang.ErrEquipmentNotFound)
+		return nil, lang2.Error(lang2.ErrEquipmentNotFound)
 	}
 	return equipment, nil
 }
 
-func (s *mysqlStore) GetEquipment(equipmentID int64) (model.Equipment, error) {
+func (s *mysqlStore) GetEquipment(equipmentID int64) (model2.Equipment, error) {
 	result := <-synchronized.Do(TbEquipments, func() interface{} {
 		if equipment, err := s.cache.LoadEquipment(equipmentID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang2.Error(lang2.ErrCacheNotFound) {
 				return err
 			}
 		} else {
@@ -1835,10 +1835,10 @@ func (s *mysqlStore) GetEquipment(equipmentID int64) (model.Equipment, error) {
 		return nil, err
 	}
 
-	return result.(model.Equipment), nil
+	return result.(model2.Equipment), nil
 }
 
-func (s *mysqlStore) CreateEquipment(org interface{}, title, desc string) (model.Equipment, error) {
+func (s *mysqlStore) CreateEquipment(org interface{}, title, desc string) (model2.Equipment, error) {
 	result := <-synchronized.Do(TbEquipments, func() interface{} {
 		orgID, err := s.getOrganizationID(org)
 		if err != nil {
@@ -1846,14 +1846,14 @@ func (s *mysqlStore) CreateEquipment(org interface{}, title, desc string) (model
 		}
 
 		equipmentID, err := CreateData(s.db, TbEquipments, map[string]interface{}{
-			"enable":     status.Enable,
+			"enable":     status2.Enable,
 			"org_id":     orgID,
 			"title":      title,
 			"desc":       desc,
 			"created_at": time.Now(),
 		})
 		if err != nil {
-			return lang.InternalError(err)
+			return lang2.InternalError(err)
 		}
 
 		equipment, err := s.loadEquipment(equipmentID)
@@ -1870,7 +1870,7 @@ func (s *mysqlStore) CreateEquipment(org interface{}, title, desc string) (model
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Equipment), nil
+	return result.(model2.Equipment), nil
 }
 
 func (s *mysqlStore) RemoveEquipment(equipmentID int64) error {
@@ -1882,7 +1882,7 @@ func (s *mysqlStore) RemoveEquipment(equipmentID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equipment, int64, error) {
+func (s *mysqlStore) GetEquipmentList(options ...helper2.OptionFN) ([]model2.Equipment, int64, error) {
 	option := parseOption(options...)
 	var (
 		from  = "FROM " + TbEquipments + " e"
@@ -1904,9 +1904,9 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 	INNER JOIN %s p ON p.resource_class=%d AND p.resource_id=e.id 
 	INNER JOIN %s r ON p.role_id=r.id
 	WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
-) b ON e.id=b.id`, TbEquipments, TbPolicies, resource.Equipment, TbRoles, TbUserRoles, userID)
+) b ON e.id=b.id`, TbEquipments, TbPolicies, resource2.Equipment, TbRoles, TbUserRoles, userID)
 
-			if option.DefaultEffect == resource.Allow {
+			if option.DefaultEffect == resource2.Allow {
 				where += " AND ((b.action=0 AND b.effect=1) OR (ISNULL(b.action) AND ISNULL(b.effect)))"
 			} else {
 				where += " AND (b.action=0 AND b.effect=1)"
@@ -1928,11 +1928,11 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 	var total int64
 	if option.GetTotal == nil || *option.GetTotal {
 		if err := s.db.QueryRow("SELECT COUNT(DISTINCT e.id) "+from+where, params...).Scan(&total); err != nil {
-			return nil, 0, lang.InternalError(err)
+			return nil, 0, lang2.InternalError(err)
 		}
 
 		if total == 0 {
-			return []model.Equipment{}, 0, nil
+			return []model2.Equipment{}, 0, nil
 		}
 	}
 
@@ -1950,7 +1950,7 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 
 	rows, err := s.db.Query("SELECT DISTINCT e.id "+from+where, params...)
 	if err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -1963,15 +1963,15 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 		err = rows.Scan(&equipmentID)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return nil, 0, lang.InternalError(err)
+				return nil, 0, lang2.InternalError(err)
 			}
-			return []model.Equipment{}, total, nil
+			return []model2.Equipment{}, total, nil
 		}
 
 		ids = append(ids, equipmentID)
 	}
 
-	var result []model.Equipment
+	var result []model2.Equipment
 	for _, id := range ids {
 		equipment, err := s.GetEquipment(id)
 		if err != nil {
@@ -1984,7 +1984,7 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 	return result, total, nil
 }
 
-func (s *mysqlStore) loadState(id int64) (model.State, error) {
+func (s *mysqlStore) loadState(id int64) (model2.State, error) {
 	var state = NewState(s, id)
 	err := LoadData(s.db, TbStates, map[string]interface{}{
 		"enable":       &state.enable,
@@ -1998,17 +1998,17 @@ func (s *mysqlStore) loadState(id int64) (model.State, error) {
 
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return nil, lang.InternalError(err)
+			return nil, lang2.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrStateNotFound)
+		return nil, lang2.Error(lang2.ErrStateNotFound)
 	}
 	return state, nil
 }
 
-func (s *mysqlStore) GetState(stateID int64) (model.State, error) {
+func (s *mysqlStore) GetState(stateID int64) (model2.State, error) {
 	result := <-synchronized.Do(TbStates, func() interface{} {
 		if state, err := s.cache.LoadState(stateID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang2.Error(lang2.ErrCacheNotFound) {
 				return err
 			}
 		} else {
@@ -2030,13 +2030,13 @@ func (s *mysqlStore) GetState(stateID int64) (model.State, error) {
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.State), nil
+	return result.(model2.State), nil
 }
 
-func (s *mysqlStore) CreateState(equipmentID, measureID int64, title, desc, script string) (model.State, error) {
+func (s *mysqlStore) CreateState(equipmentID, measureID int64, title, desc, script string) (model2.State, error) {
 	result := <-synchronized.Do(TbStates, func() interface{} {
 		data := map[string]interface{}{
-			"enable":       status.Enable,
+			"enable":       status2.Enable,
 			"title":        title,
 			"desc":         desc,
 			"equipment_id": equipmentID,
@@ -2064,7 +2064,7 @@ func (s *mysqlStore) CreateState(equipmentID, measureID int64, title, desc, scri
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.State), nil
+	return result.(model2.State), nil
 }
 
 func (s *mysqlStore) RemoveState(stateID int64) error {
@@ -2077,7 +2077,7 @@ func (s *mysqlStore) RemoveState(stateID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetStateList(options ...helper.OptionFN) ([]model.State, int64, error) {
+func (s *mysqlStore) GetStateList(options ...helper2.OptionFN) ([]model2.State, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -2095,9 +2095,9 @@ SELECT s.id,p.role_id,p.action,p.effect FROM %s s
 INNER JOIN %s p ON p.resource_class=%d AND p.resource_id=s.id
 INNER JOIN %s r ON p.role_id=r.id
 WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
-) b ON s.id=b.id`, TbStates, TbPolicies, resource.State, TbRoles, TbUserRoles, userID)
+) b ON s.id=b.id`, TbStates, TbPolicies, resource2.State, TbRoles, TbUserRoles, userID)
 
-			if option.DefaultEffect == resource.Allow {
+			if option.DefaultEffect == resource2.Allow {
 				where += " AND ((b.action=0 AND b.effect=1) OR (ISNULL(b.action) AND ISNULL(b.effect)))"
 			} else {
 				where += " AND (b.action=0 AND b.effect=1)"
@@ -2122,11 +2122,11 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 
 	var total int64
 	if err := s.db.QueryRow("SELECT COUNT(DISTINCT s.id) "+from+where, params...).Scan(&total); err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 
 	if total == 0 {
-		return []model.State{}, 0, nil
+		return []model2.State{}, 0, nil
 	}
 
 	where += " ORDER BY s.id ASC"
@@ -2144,7 +2144,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	log.Trace("SELECT DISTINCT s.id " + from + where)
 	rows, err := s.db.Query("SELECT DISTINCT s.id "+from+where, params...)
 	if err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -2157,15 +2157,15 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		err = rows.Scan(&stateID)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return nil, 0, lang.InternalError(err)
+				return nil, 0, lang2.InternalError(err)
 			}
-			return []model.State{}, total, nil
+			return []model2.State{}, total, nil
 		}
 
 		ids = append(ids, stateID)
 	}
 
-	var result []model.State
+	var result []model2.State
 	for _, stateID := range ids {
 		state, err := s.GetState(stateID)
 		if err != nil {
@@ -2178,7 +2178,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	return result, total, nil
 }
 
-func (s *mysqlStore) loadAlarm(id int64) (model.Alarm, error) {
+func (s *mysqlStore) loadAlarm(id int64) (model2.Alarm, error) {
 	var alarm = NewAlarm(s, id)
 	err := LoadData(s.db, TbAlarms, map[string]interface{}{
 		"org_id":     &alarm.orgID,
@@ -2191,17 +2191,17 @@ func (s *mysqlStore) loadAlarm(id int64) (model.Alarm, error) {
 	}, "id=?", id)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return nil, lang.InternalError(err)
+			return nil, lang2.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrAlarmNotFound)
+		return nil, lang2.Error(lang2.ErrAlarmNotFound)
 	}
 	return alarm, nil
 }
 
-func (s *mysqlStore) GetAlarm(alarmID int64) (model.Alarm, error) {
+func (s *mysqlStore) GetAlarm(alarmID int64) (model2.Alarm, error) {
 	result := <-synchronized.Do(TbAlarms, func() interface{} {
 		if alarm, err := s.cache.LoadAlarm(alarmID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang2.Error(lang2.ErrCacheNotFound) {
 				return err
 			}
 		} else {
@@ -2223,20 +2223,20 @@ func (s *mysqlStore) GetAlarm(alarmID int64) (model.Alarm, error) {
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Alarm), nil
+	return result.(model2.Alarm), nil
 }
 
-func (s *mysqlStore) CreateAlarm(device model.Device, measureID int64, data map[string]interface{}) (model.Alarm, error) {
+func (s *mysqlStore) CreateAlarm(device model2.Device, measureID int64, data map[string]interface{}) (model2.Alarm, error) {
 	result := <-synchronized.Do(TbAlarms, func() interface{} {
 		extra, err := json.Marshal(data)
 		if err != nil {
-			return lang.InternalError(err)
+			return lang2.InternalError(err)
 		}
 
 		now := time.Now()
 		data := map[string]interface{}{
 			"org_id":     device.OrganizationID(),
-			"status":     status.Unconfirmed,
+			"status":     status2.Unconfirmed,
 			"device_id":  device.GetID(),
 			"measure_id": measureID,
 			"extra":      extra,
@@ -2263,36 +2263,36 @@ func (s *mysqlStore) CreateAlarm(device model.Device, measureID int64, data map[
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
-	return result.(model.Alarm), nil
+	return result.(model2.Alarm), nil
 }
 
 func (s *mysqlStore) RemoveAlarm(alarmID int64) error {
 	err := RemoveData(s.db, TbAlarms, "id=?", alarmID)
 	if err != nil {
-		return lang.InternalError(err)
+		return lang2.InternalError(err)
 	}
 
 	s.cache.Remove(&Alarm{id: alarmID})
 	return nil
 }
 
-func (s *mysqlStore) GetLastUnconfirmedAlarm(device model.Device, measureID int64) (model.Alarm, error) {
+func (s *mysqlStore) GetLastUnconfirmedAlarm(device model2.Device, measureID int64) (model2.Alarm, error) {
 	const (
 		SQL = "SELECT id FROM " + TbAlarms + " WHERE device_id=? AND measure_id=? AND status=? LIMIT 1"
 	)
 
 	var alarmID int64
-	if err := s.db.QueryRow(SQL, device.GetID(), measureID, status.Unconfirmed).Scan(&alarmID); err != nil {
+	if err := s.db.QueryRow(SQL, device.GetID(), measureID, status2.Unconfirmed).Scan(&alarmID); err != nil {
 		if err != sql.ErrNoRows {
-			return nil, lang.InternalError(err)
+			return nil, lang2.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrAlarmNotFound)
+		return nil, lang2.Error(lang2.ErrAlarmNotFound)
 	}
 
 	return s.GetAlarm(alarmID)
 }
 
-func (s *mysqlStore) GetAlarmList(start, end *time.Time, options ...helper.OptionFN) ([]model.Alarm, int64, error) {
+func (s *mysqlStore) GetAlarmList(start, end *time.Time, options ...helper2.OptionFN) ([]model2.Alarm, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -2309,9 +2309,9 @@ SELECT m.id,p.role_id,p.action,p.effect FROM %s m
 INNER JOIN %s p ON p.resource_class=%d AND p.resource_id=m.id
 INNER JOIN %s r ON p.role_id=r.id
 WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
-) b ON a.measure_id=b.id`, TbMeasures, TbPolicies, resource.Measure, TbRoles, TbUserRoles, userID)
+) b ON a.measure_id=b.id`, TbMeasures, TbPolicies, resource2.Measure, TbRoles, TbUserRoles, userID)
 
-			if option.DefaultEffect == resource.Allow {
+			if option.DefaultEffect == resource2.Allow {
 				where += " AND ((b.action=0 AND b.effect=1) OR (ISNULL(b.action) AND ISNULL(b.effect)))"
 			} else {
 				where += " AND (b.action=0 AND b.effect=1)"
@@ -2341,11 +2341,11 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 
 	var total int64
 	if err := s.db.QueryRow("SELECT COUNT(DISTINCT a.id) "+from+where, params...).Scan(&total); err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 
 	if total == 0 {
-		return []model.Alarm{}, 0, nil
+		return []model2.Alarm{}, 0, nil
 	}
 
 	where += " ORDER BY a.updated_at DESC"
@@ -2363,7 +2363,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	log.Trace("SELECT DISTINCT a.id " + from + where)
 	rows, err := s.db.Query("SELECT DISTINCT a.id,a.updated_at "+from+where, params...)
 	if err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -2379,14 +2379,14 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		err = rows.Scan(&alarmID, &updated)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return nil, 0, lang.InternalError(err)
+				return nil, 0, lang2.InternalError(err)
 			}
-			return []model.Alarm{}, total, nil
+			return []model2.Alarm{}, total, nil
 		}
 		ids = append(ids, alarmID)
 	}
 
-	var result []model.Alarm
+	var result []model2.Alarm
 	for _, id := range ids {
 		alarm, err := s.GetAlarm(id)
 		if err != nil {
@@ -2399,10 +2399,10 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	return result, total, nil
 }
 
-func (s *mysqlStore) GetResourceList(class resource.Class, options ...helper.OptionFN) ([]model.Resource, int64, error) {
-	var result []model.Resource
+func (s *mysqlStore) GetResourceList(class resource2.Class, options ...helper2.OptionFN) ([]model2.Resource, int64, error) {
+	var result []model2.Resource
 	switch class {
-	case resource.Api:
+	case resource2.Api:
 		res, total, err := s.GetApiResourceList(options...)
 		if err != nil {
 			return nil, 0, err
@@ -2411,7 +2411,7 @@ func (s *mysqlStore) GetResourceList(class resource.Class, options ...helper.Opt
 			result = append(result, r)
 		}
 		return result, total, nil
-	case resource.Group:
+	case resource2.Group:
 		groups, total, err := s.GetGroupList(options...)
 		if err != nil {
 			return nil, 0, err
@@ -2420,7 +2420,7 @@ func (s *mysqlStore) GetResourceList(class resource.Class, options ...helper.Opt
 			result = append(result, group)
 		}
 		return result, total, nil
-	case resource.Device:
+	case resource2.Device:
 		devices, total, err := s.GetDeviceList(options...)
 		if err != nil {
 			return nil, 0, err
@@ -2429,7 +2429,7 @@ func (s *mysqlStore) GetResourceList(class resource.Class, options ...helper.Opt
 			result = append(result, device)
 		}
 		return result, total, nil
-	case resource.Measure:
+	case resource2.Measure:
 		measures, total, err := s.GetMeasureList(options...)
 		if err != nil {
 			return nil, 0, err
@@ -2438,7 +2438,7 @@ func (s *mysqlStore) GetResourceList(class resource.Class, options ...helper.Opt
 			result = append(result, measure)
 		}
 		return result, total, nil
-	case resource.Equipment:
+	case resource2.Equipment:
 		equipments, total, err := s.GetEquipmentList(options...)
 		if err != nil {
 			return nil, 0, err
@@ -2447,7 +2447,7 @@ func (s *mysqlStore) GetResourceList(class resource.Class, options ...helper.Opt
 			result = append(result, equipment)
 		}
 		return result, total, nil
-	case resource.State:
+	case resource2.State:
 		states, total, err := s.GetStateList(options...)
 		if err != nil {
 			return nil, 0, err
@@ -2461,50 +2461,50 @@ func (s *mysqlStore) GetResourceList(class resource.Class, options ...helper.Opt
 	}
 }
 
-func (s *mysqlStore) GetResource(class resource.Class, resourceID int64) (model.Resource, error) {
+func (s *mysqlStore) GetResource(class resource2.Class, resourceID int64) (model2.Resource, error) {
 	switch class {
-	case resource.Api:
+	case resource2.Api:
 		res, err := s.GetApiResource(resourceID)
 		if err != nil {
 			return nil, err
 		}
 		return res, nil
-	case resource.Group:
+	case resource2.Group:
 		res, err := s.GetGroup(resourceID)
 		if err != nil {
 			return nil, err
 		}
 		return res, nil
-	case resource.Device:
+	case resource2.Device:
 		res, err := s.GetDevice(resourceID)
 		if err != nil {
 			return nil, err
 		}
 		return res, nil
-	case resource.Measure:
+	case resource2.Measure:
 		res, err := s.GetMeasure(resourceID)
 		if err != nil {
 			return nil, err
 		}
 		return res, nil
-	case resource.Equipment:
+	case resource2.Equipment:
 		res, err := s.GetEquipment(resourceID)
 		if err != nil {
 			return nil, err
 		}
 		return res, nil
-	case resource.State:
+	case resource2.State:
 		res, err := s.GetState(resourceID)
 		if err != nil {
 			return nil, err
 		}
 		return res, nil
 	default:
-		return nil, lang.Error(lang.ErrInvalidResourceClassID)
+		return nil, lang2.Error(lang2.ErrInvalidResourceClassID)
 	}
 }
 
-func (s *mysqlStore) loadApiResource(resID int64) (model.ApiResource, error) {
+func (s *mysqlStore) loadApiResource(resID int64) (model2.ApiResource, error) {
 	var apiRes = NewApiResource(s, resID)
 	err := LoadData(s.db, TbApiResources, map[string]interface{}{
 		"name":  &apiRes.name,
@@ -2513,14 +2513,14 @@ func (s *mysqlStore) loadApiResource(resID int64) (model.ApiResource, error) {
 	}, "id=?", resID)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			return nil, lang.InternalError(err)
+			return nil, lang2.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrApiResourceNotFound)
+		return nil, lang2.Error(lang2.ErrApiResourceNotFound)
 	}
 	return apiRes, nil
 }
 
-func (s *mysqlStore) GetApiResource(res interface{}) (model.ApiResource, error) {
+func (s *mysqlStore) GetApiResource(res interface{}) (model2.ApiResource, error) {
 	result := <-synchronized.Do(TbApiResources, func() interface{} {
 		var resID int64
 		switch v := res.(type) {
@@ -2532,16 +2532,16 @@ func (s *mysqlStore) GetApiResource(res interface{}) (model.ApiResource, error) 
 			}, "name=?", v)
 			if err != nil {
 				if err != sql.ErrNoRows {
-					return lang.InternalError(err)
+					return lang2.InternalError(err)
 				}
-				return lang.Error(lang.ErrApiResourceNotFound)
+				return lang2.Error(lang2.ErrApiResourceNotFound)
 			}
 		default:
 			panic(errors.New("GetApiResource: unknown api resource"))
 		}
 
 		if res, err := s.cache.LoadApiResource(resID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang2.Error(lang2.ErrCacheNotFound) {
 				return err
 			}
 		} else {
@@ -2564,10 +2564,10 @@ func (s *mysqlStore) GetApiResource(res interface{}) (model.ApiResource, error) 
 		return nil, err
 	}
 
-	return result.(model.ApiResource), nil
+	return result.(model2.ApiResource), nil
 }
 
-func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.ApiResource, int64, error) {
+func (s *mysqlStore) GetApiResourceList(options ...helper2.OptionFN) ([]model2.ApiResource, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -2587,11 +2587,11 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 
 	var total int64
 	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 
 	if total == 0 {
-		return []model.ApiResource{}, 0, nil
+		return []model2.ApiResource{}, 0, nil
 	}
 
 	fromSQL += " ORDER BY id ASC"
@@ -2608,7 +2608,7 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 
 	rows, err := s.db.Query("SELECT id "+fromSQL, params...)
 	if err != nil {
-		return nil, 0, lang.InternalError(err)
+		return nil, 0, lang2.InternalError(err)
 	}
 	defer func() {
 		_ = rows.Close()
@@ -2621,15 +2621,15 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 		err = rows.Scan(&resID)
 		if err != nil {
 			if err != sql.ErrNoRows {
-				return nil, 0, lang.InternalError(err)
+				return nil, 0, lang2.InternalError(err)
 			}
-			return []model.ApiResource{}, total, nil
+			return []model2.ApiResource{}, total, nil
 		}
 		ids = append(ids, resID)
 	}
 
 	_ = rows.Close()
-	var result []model.ApiResource
+	var result []model2.ApiResource
 	for _, id := range ids {
 		res, err := s.GetApiResource(id)
 		if err != nil {
@@ -2647,7 +2647,7 @@ func (s *mysqlStore) InitApiResource() error {
 		if err != nil {
 			return err
 		}
-		for _, entry := range lang.ApiResourcesMap() {
+		for _, entry := range lang2.ApiResourcesMap() {
 			_, err := CreateData(s.db, TbApiResources, map[string]interface{}{
 				"name":  entry[0],
 				"title": entry[1],
@@ -2667,14 +2667,14 @@ func (s *mysqlStore) InitApiResource() error {
 }
 
 func (s *mysqlStore) InitDefaultRoles(org interface{}) error {
-	for pair, apiRes := range lang.DefaultRoles() {
+	for pair, apiRes := range lang2.DefaultRoles() {
 		role, err := s.createRole(s.db, org, pair[0], pair[1], pair[2])
 		if err != nil {
 			return err
 		}
 
 		for _, api := range apiRes {
-			if api == resource.Unknown {
+			if api == resource2.Unknown {
 				continue
 			}
 
@@ -2682,7 +2682,7 @@ func (s *mysqlStore) InitDefaultRoles(org interface{}) error {
 			if err != nil {
 				return err
 			}
-			_, err = role.SetPolicy(res, resource.Invoke, resource.Allow, nil)
+			_, err = role.SetPolicy(res, resource2.Invoke, resource2.Allow, nil)
 			if err != nil {
 				return err
 			}

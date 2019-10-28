@@ -3,35 +3,35 @@ package user
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/web/api/log"
-	"github.com/maritimusj/centrum/web/app"
-	"github.com/maritimusj/centrum/web/response"
+	lang2 "github.com/maritimusj/centrum/gate/lang"
+	log2 "github.com/maritimusj/centrum/gate/web/api/log"
+	app2 "github.com/maritimusj/centrum/gate/web/app"
+	response2 "github.com/maritimusj/centrum/gate/web/response"
 )
 
 func LogList(userID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		user, err := app.Store().GetUser(userID)
+	return response2.Wrap(func() interface{} {
+		user, err := app2.Store().GetUser(userID)
 		if err != nil {
 			return err
 		}
 
-		return log.GetLogList(ctx, user.OrganizationID(), user.UID())
+		return log2.GetLogList(ctx, user.OrganizationID(), user.UID())
 	})
 }
 
 func LogDelete(userID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		user, err := app.Store().GetUser(userID)
+	return response2.Wrap(func() interface{} {
+		user, err := app2.Store().GetUser(userID)
 		if err != nil {
 			return err
 		}
 
-		admin := app.Store().MustGetUserFromContext(ctx)
-		if !app.IsDefaultAdminUser(admin) {
-			return lang.ErrNoPermission
+		admin := app2.Store().MustGetUserFromContext(ctx)
+		if !app2.IsDefaultAdminUser(admin) {
+			return lang2.ErrNoPermission
 		}
 
-		return log.DeleteLog(ctx, user.OrganizationID(), user.UID())
+		return log2.DeleteLog(ctx, user.OrganizationID(), user.UID())
 	})
 }

@@ -2,8 +2,8 @@ package lang
 
 import (
 	"errors"
-	"github.com/maritimusj/centrum/web/resource"
-	"github.com/maritimusj/centrum/web/status"
+	"github.com/maritimusj/centrum/gate/web/resource"
+	"github.com/maritimusj/centrum/gate/web/status"
 )
 
 const (

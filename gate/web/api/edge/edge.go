@@ -1,14 +1,14 @@
 package edge
 
 import (
+	lang2 "github.com/maritimusj/centrum/gate/lang"
+	app2 "github.com/maritimusj/centrum/gate/web/app"
+	resource2 "github.com/maritimusj/centrum/gate/web/resource"
 	"time"
 
 	"github.com/kataras/iris"
 	edgeLang "github.com/maritimusj/centrum/edge/lang"
 	"github.com/maritimusj/centrum/global"
-	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/web/app"
-	"github.com/maritimusj/centrum/web/resource"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -36,7 +36,7 @@ type Alarm struct {
 }
 
 func Feedback(deviceID int64, ctx iris.Context) {
-	device, err := app.Store().GetDevice(deviceID)
+	device, err := app2.Store().GetDevice(deviceID)
 	if err != nil {
 		log.Error("[Feedback 1]", err)
 		return
@@ -74,18 +74,18 @@ func Feedback(deviceID int64, ctx iris.Context) {
 	}
 
 	if form.Measure != nil {
-		measure, err := app.Store().GetMeasureFromTagName(device.GetID(), form.Measure.TagName)
+		measure, err := app2.Store().GetMeasureFromTagName(device.GetID(), form.Measure.TagName)
 		if err != nil {
-			if err != lang.Error(lang.ErrMeasureNotFound) {
+			if err != lang2.Error(lang2.ErrMeasureNotFound) {
 				log.Error("[Feedback 4]", err)
 				return
 			}
-			kind := resource.ParseMeasureKind(form.Measure.TagName)
-			if kind == resource.UnknownKind {
-				log.Error("[Feedback 5]", lang.Error(lang.ErrMeasureNotFound))
+			kind := resource2.ParseMeasureKind(form.Measure.TagName)
+			if kind == resource2.UnknownKind {
+				log.Error("[Feedback 5]", lang2.Error(lang2.ErrMeasureNotFound))
 				return
 			}
-			measure, err = app.Store().CreateMeasure(device.GetID(), form.Measure.Title, form.Measure.TagName, kind)
+			measure, err = app2.Store().CreateMeasure(device.GetID(), form.Measure.Title, form.Measure.TagName, kind)
 			if err != nil {
 				log.Error("[Feedback 6]", err)
 				return
@@ -102,19 +102,19 @@ func Feedback(deviceID int64, ctx iris.Context) {
 	if form.Alarm != nil {
 		//保存警报信息
 		tag, _ := form.Alarm.Tags["tag"]
-		measure, err := app.Store().GetMeasureFromTagName(device.GetID(), tag)
+		measure, err := app2.Store().GetMeasureFromTagName(device.GetID(), tag)
 		if err != nil {
 			log.Error("[Feedback 8]", err)
 			return
 		}
 
-		alarm, err := app.Store().GetLastUnconfirmedAlarm(device, measure.GetID())
+		alarm, err := app2.Store().GetLastUnconfirmedAlarm(device, measure.GetID())
 		if err != nil {
-			if err != lang.Error(lang.ErrAlarmNotFound) {
+			if err != lang2.Error(lang2.ErrAlarmNotFound) {
 				log.Error("[Feedback 9]", err)
 				return
 			}
-			alarm, err = app.Store().CreateAlarm(device, measure.GetID(), map[string]interface{}{
+			alarm, err = app2.Store().CreateAlarm(device, measure.GetID(), map[string]interface{}{
 				"name":   form.Alarm.Name,
 				"tags":   form.Alarm.Tags,
 				"fields": form.Alarm.Fields,

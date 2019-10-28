@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/influxdata/influxdb1-client/models"
-	"github.com/maritimusj/centrum/lang"
+	lang2 "github.com/maritimusj/centrum/gate/lang"
 	"strings"
 	"time"
 )
@@ -33,12 +33,12 @@ func (client *Client) GetMeasureStats(dbName string, deviceID int64, tagName str
 	}
 
 	if res[0].Err != "" {
-		return nil, lang.InternalError(errors.New(res[0].Err))
+		return nil, lang2.InternalError(errors.New(res[0].Err))
 	}
 
 	if len(res[0].Series) > 0 {
 		return &res[0].Series[0], nil
 	}
 
-	return nil, lang.Error(lang.ErrNotStatisticsData)
+	return nil, lang2.Error(lang2.ErrNotStatisticsData)
 }

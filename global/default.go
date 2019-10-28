@@ -2,7 +2,7 @@ package global
 
 import (
 	"fmt"
-	"github.com/maritimusj/centrum/web/model"
+	"github.com/maritimusj/centrum/gate/web/model"
 )
 
 func UpdateDeviceStatus(device model.Device, index int, title string) {

@@ -3,42 +3,42 @@ package device
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
+	lang2 "github.com/maritimusj/centrum/gate/lang"
+	app2 "github.com/maritimusj/centrum/gate/web/app"
+	edge2 "github.com/maritimusj/centrum/gate/web/edge"
+	model2 "github.com/maritimusj/centrum/gate/web/model"
+	resource2 "github.com/maritimusj/centrum/gate/web/resource"
+	response2 "github.com/maritimusj/centrum/gate/web/response"
 	"github.com/maritimusj/centrum/global"
-	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/web/app"
-	"github.com/maritimusj/centrum/web/edge"
-	"github.com/maritimusj/centrum/web/model"
-	"github.com/maritimusj/centrum/web/resource"
-	"github.com/maritimusj/centrum/web/response"
 	"net"
 )
 
 func Reset(deviceID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		device, err := app.Store().GetDevice(deviceID)
+	return response2.Wrap(func() interface{} {
+		device, err := app2.Store().GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
-		admin := app.Store().MustGetUserFromContext(ctx)
-		if !app.Allow(admin, device, resource.View) {
-			return lang.ErrNoPermission
+		admin := app2.Store().MustGetUserFromContext(ctx)
+		if !app2.Allow(admin, device, resource2.View) {
+			return lang2.ErrNoPermission
 		}
 
-		edge.ResetConfig(device)
-		return lang.Ok
+		edge2.ResetConfig(device)
+		return lang2.Ok
 	})
 }
 
 func Status(deviceID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		device, err := app.Store().GetDevice(deviceID)
+	return response2.Wrap(func() interface{} {
+		device, err := app2.Store().GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
 
-		admin := app.Store().MustGetUserFromContext(ctx)
-		if !app.Allow(admin, device, resource.View) {
-			return lang.ErrNoPermission
+		admin := app2.Store().MustGetUserFromContext(ctx)
+		if !app2.Allow(admin, device, resource2.View) {
+			return lang2.ErrNoPermission
 		}
 
 		if ctx.URLParamExists("simple") {
@@ -49,7 +49,7 @@ func Status(deviceID int64, ctx iris.Context) hero.Result {
 			}
 		}
 
-		baseInfo, err := edge.GetStatus(device)
+		baseInfo, err := edge2.GetStatus(device)
 		if err != nil {
 			return err
 		}
@@ -58,31 +58,31 @@ func Status(deviceID int64, ctx iris.Context) hero.Result {
 }
 
 func Data(deviceID int64, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		s := app.Store()
+	return response2.Wrap(func() interface{} {
+		s := app2.Store()
 		device, err := s.GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
 
 		admin := s.MustGetUserFromContext(ctx)
-		if !app.Allow(admin, device, resource.View) {
-			return lang.ErrNoPermission
+		if !app2.Allow(admin, device, resource2.View) {
+			return lang2.ErrNoPermission
 		}
 
-		data, err := edge.GetData(device)
+		data, err := edge2.GetData(device)
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok {
-				return lang.Error(lang.ErrNetworkFail, netErr.Error())
+				return lang2.Error(lang2.ErrNetworkFail, netErr.Error())
 			}
 			return err
 		}
 
-		testPerm := func(measure model.Measure, action resource.Action) bool {
-			if app.IsDefaultAdminUser(admin) {
+		testPerm := func(measure model2.Measure, action resource2.Action) bool {
+			if app2.IsDefaultAdminUser(admin) {
 				return true
 			}
-			return app.Allow(admin, measure, action)
+			return app2.Allow(admin, measure, action)
 		}
 
 		//过滤掉没有权限的measure
@@ -94,10 +94,10 @@ func Data(deviceID int64, ctx iris.Context) hero.Result {
 					if err != nil {
 						continue
 					}
-					if testPerm(measure, resource.View) {
+					if testPerm(measure, resource2.View) {
 						e["perm"] = map[string]bool{
 							"view": true,
-							"ctrl": testPerm(measure, resource.Ctrl),
+							"ctrl": testPerm(measure, resource2.Ctrl),
 						}
 						result = append(result, entry)
 					}
@@ -110,36 +110,36 @@ func Data(deviceID int64, ctx iris.Context) hero.Result {
 }
 
 func Ctrl(deviceID int64, chTagName string, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
+	return response2.Wrap(func() interface{} {
 		var form struct {
 			Val bool `form:"value" json:"value"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
-			return lang.ErrInvalidRequestData
+			return lang2.ErrInvalidRequestData
 		}
 
-		device, err := app.Store().GetDevice(deviceID)
+		device, err := app2.Store().GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
 
-		measure, err := app.Store().GetMeasureFromTagName(device.GetID(), chTagName)
+		measure, err := app2.Store().GetMeasureFromTagName(device.GetID(), chTagName)
 		if err != nil {
 			return err
 		}
 
-		admin := app.Store().MustGetUserFromContext(ctx)
-		if !app.Allow(admin, measure, resource.Ctrl) {
-			return lang.ErrNoPermission
+		admin := app2.Store().MustGetUserFromContext(ctx)
+		if !app2.Allow(admin, measure, resource2.Ctrl) {
+			return lang2.ErrNoPermission
 		}
 
-		err = edge.SetCHValue(device, chTagName, form.Val)
+		err = edge2.SetCHValue(device, chTagName, form.Val)
 		if err != nil {
 			return err
 		}
 
-		val, err := edge.GetCHValue(device, chTagName)
+		val, err := edge2.GetCHValue(device, chTagName)
 		if err != nil {
 			return err
 		}
@@ -149,23 +149,23 @@ func Ctrl(deviceID int64, chTagName string, ctx iris.Context) hero.Result {
 }
 
 func GetCHValue(deviceID int64, chTagName string, ctx iris.Context) hero.Result {
-	return response.Wrap(func() interface{} {
-		device, err := app.Store().GetDevice(deviceID)
+	return response2.Wrap(func() interface{} {
+		device, err := app2.Store().GetDevice(deviceID)
 		if err != nil {
 			return err
 		}
 
-		measure, err := app.Store().GetMeasureFromTagName(device.GetID(), chTagName)
+		measure, err := app2.Store().GetMeasureFromTagName(device.GetID(), chTagName)
 		if err != nil {
 			return err
 		}
 
-		admin := app.Store().MustGetUserFromContext(ctx)
-		if !app.Allow(admin, measure, resource.View) {
-			return lang.ErrNoPermission
+		admin := app2.Store().MustGetUserFromContext(ctx)
+		if !app2.Allow(admin, measure, resource2.View) {
+			return lang2.ErrNoPermission
 		}
 
-		val, err := edge.GetCHValue(device, chTagName)
+		val, err := edge2.GetCHValue(device, chTagName)
 		if err != nil {
 			return err
 		}

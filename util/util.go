@@ -1,7 +1,7 @@
 package util
 
 import (
-	"github.com/maritimusj/centrum/lang"
+	"github.com/maritimusj/centrum/gate/lang"
 	"golang.org/x/crypto/bcrypt"
 	"math/rand"
 	"time"

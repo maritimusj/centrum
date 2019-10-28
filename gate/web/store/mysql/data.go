@@ -2,10 +2,10 @@ package mysqlStore
 
 import (
 	"database/sql"
+	db2 "github.com/maritimusj/centrum/gate/web/db"
 
 	"github.com/maritimusj/centrum/synchronized"
 	"github.com/maritimusj/centrum/util"
-	"github.com/maritimusj/centrum/web/db"
 	log "github.com/sirupsen/logrus"
 
 	"errors"
@@ -17,7 +17,7 @@ const (
 	writeLockerUID = "writeDBData"
 )
 
-func LoadData(db db.DB, tbName string, data map[string]interface{}, cond string, params ...interface{}) error {
+func LoadData(db db2.DB, tbName string, data map[string]interface{}, cond string, params ...interface{}) error {
 	if len(data) > 0 {
 		var names = make([]string, 0, len(data))
 		var values = make([]interface{}, 0, len(data))
@@ -53,7 +53,7 @@ func LoadData(db db.DB, tbName string, data map[string]interface{}, cond string,
 	panic(errors.New("LoadData: empty data"))
 }
 
-func CreateData(db db.DB, tbName string, data map[string]interface{}) (int64, error) {
+func CreateData(db db2.DB, tbName string, data map[string]interface{}) (int64, error) {
 	if len(data) > 0 {
 		var params = make([]string, 0, len(data))
 		var values = make([]interface{}, 0, len(data))
@@ -100,7 +100,7 @@ func CreateData(db db.DB, tbName string, data map[string]interface{}) (int64, er
 	panic(errors.New("CreateData: empty data"))
 }
 
-func SaveData(db db.DB, tbName string, data map[string]interface{}, cond string, params ...interface{}) error {
+func SaveData(db db2.DB, tbName string, data map[string]interface{}, cond string, params ...interface{}) error {
 	if len(data) > 0 {
 		var values = make([]interface{}, 0, len(data))
 		var placeHolders = make([]string, 0, len(data))
@@ -136,7 +136,7 @@ func SaveData(db db.DB, tbName string, data map[string]interface{}, cond string,
 	panic(errors.New("SaveData: empty data"))
 }
 
-func RemoveData(db db.DB, tbName string, cond string, params ...interface{}) error {
+func RemoveData(db db2.DB, tbName string, cond string, params ...interface{}) error {
 	result := <-synchronized.Do(writeLockerUID, func() interface{} {
 		SQL := "DELETE FROM " + tbName + " WHERE " + cond
 		_, err := db.Exec(SQL, params...)
@@ -154,7 +154,7 @@ func RemoveData(db db.DB, tbName string, cond string, params ...interface{}) err
 	return nil
 }
 
-func IsDataExists(db db.DB, tbName string, cond string, params ...interface{}) (bool, error) {
+func IsDataExists(db db2.DB, tbName string, cond string, params ...interface{}) (bool, error) {
 	var total int64
 	SQL := "SELECT COUNT(*) FROM " + tbName + " WHERE " + cond + " Limit 1"
 	err := db.QueryRow(SQL, params...).Scan(&total)

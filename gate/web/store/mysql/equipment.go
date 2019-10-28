@@ -3,12 +3,12 @@ package mysqlStore
 import (
 	"errors"
 	"fmt"
-	"github.com/maritimusj/centrum/lang"
-	"github.com/maritimusj/centrum/web/dirty"
-	"github.com/maritimusj/centrum/web/helper"
-	"github.com/maritimusj/centrum/web/model"
-	"github.com/maritimusj/centrum/web/resource"
-	"github.com/maritimusj/centrum/web/status"
+	lang2 "github.com/maritimusj/centrum/gate/lang"
+	dirty2 "github.com/maritimusj/centrum/gate/web/dirty"
+	helper2 "github.com/maritimusj/centrum/gate/web/helper"
+	model2 "github.com/maritimusj/centrum/gate/web/model"
+	resource2 "github.com/maritimusj/centrum/gate/web/resource"
+	status2 "github.com/maritimusj/centrum/gate/web/status"
 	log "github.com/sirupsen/logrus"
 	"time"
 )
@@ -22,14 +22,14 @@ type Equipment struct {
 	desc      string
 	createdAt time.Time
 
-	dirty *dirty.Dirty
+	dirty *dirty2.Dirty
 	store *mysqlStore
 }
 
 func NewEquipment(s *mysqlStore, id int64) *Equipment {
 	return &Equipment{
 		id:    id,
-		dirty: dirty.New(),
+		dirty: dirty2.New(),
 		store: s,
 	}
 }
@@ -38,7 +38,7 @@ func (e *Equipment) OrganizationID() int64 {
 	return e.orgID
 }
 
-func (e *Equipment) Organization() (model.Organization, error) {
+func (e *Equipment) Organization() (model2.Organization, error) {
 	return e.store.GetOrganization(e.orgID)
 }
 
@@ -53,8 +53,8 @@ func (e *Equipment) Logger() *log.Entry {
 	})
 }
 
-func (e *Equipment) ResourceClass() resource.Class {
-	return resource.Equipment
+func (e *Equipment) ResourceClass() resource2.Class {
+	return resource2.Equipment
 }
 
 func (e *Equipment) ResourceID() int64 {
@@ -69,15 +69,15 @@ func (e *Equipment) ResourceDesc() string {
 	return e.desc
 }
 
-func (e *Equipment) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
-	options = append(options, helper.Equipment(e.GetID()))
+func (e *Equipment) GetChildrenResources(options ...helper2.OptionFN) ([]model2.Resource, int64, error) {
+	options = append(options, helper2.Equipment(e.GetID()))
 
 	states, total, err := e.store.GetStateList(options...)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	result := make([]model.Resource, 0, len(states))
+	result := make([]model2.Resource, 0, len(states))
 	for _, state := range states {
 		result = append(result, state)
 	}
@@ -98,16 +98,16 @@ func (e *Equipment) Save() error {
 		if e.dirty.Any() {
 			err := SaveData(e.store.db, TbEquipments, e.dirty.Data(true), "id=?", e.id)
 			if err != nil {
-				return lang.InternalError(err)
+				return lang2.InternalError(err)
 			}
 		}
 		return nil
 	}
-	return lang.Error(lang.ErrEquipmentNotFound)
+	return lang2.Error(lang2.ErrEquipmentNotFound)
 }
 
 func (e *Equipment) Destroy() error {
-	states, _, err := e.store.GetStateList(helper.Equipment(e.GetID()))
+	states, _, err := e.store.GetStateList(helper2.Equipment(e.GetID()))
 	if err != nil {
 		return err
 	}
@@ -138,8 +138,8 @@ func (e *Equipment) Destroy() error {
 }
 
 func (e *Equipment) Enable() {
-	if e.enable != status.Enable {
-		e.enable = status.Enable
+	if e.enable != status2.Enable {
+		e.enable = status2.Enable
 		e.dirty.Set("enable", func() interface{} {
 			return e.enable
 		})
@@ -147,8 +147,8 @@ func (e *Equipment) Enable() {
 }
 
 func (e *Equipment) Disable() {
-	if e.enable != status.Disable {
-		e.enable = status.Disable
+	if e.enable != status2.Disable {
+		e.enable = status2.Disable
 		e.dirty.Set("enable", func() interface{} {
 			return e.enable
 		})
@@ -156,7 +156,7 @@ func (e *Equipment) Disable() {
 }
 
 func (e *Equipment) IsEnabled() bool {
-	return e.enable == status.Enable
+	return e.enable == status2.Enable
 }
 
 func (e *Equipment) Title() string {
@@ -196,7 +196,7 @@ func (e *Equipment) SetGroups(groups ...interface{}) error {
 		switch v := group.(type) {
 		case int64:
 			groupID = v
-		case model.Group:
+		case model2.Group:
 			groupID = v.GetID()
 		default:
 			panic(errors.New("equipment SetGroups: unknown groups"))
@@ -211,13 +211,13 @@ func (e *Equipment) SetGroups(groups ...interface{}) error {
 			"created_at":   now,
 		})
 		if err != nil {
-			return lang.InternalError(err)
+			return lang2.InternalError(err)
 		}
 	}
 	return nil
 }
 
-func (e *Equipment) Groups() ([]model.Group, error) {
+func (e *Equipment) Groups() ([]model2.Group, error) {
 	groups, err := e.store.GetEquipmentGroups(e.GetID())
 	if err != nil {
 		return nil, err
@@ -225,16 +225,16 @@ func (e *Equipment) Groups() ([]model.Group, error) {
 	return groups, nil
 }
 
-func (e *Equipment) GetStateList(options ...helper.OptionFN) ([]model.State, int64, error) {
+func (e *Equipment) GetStateList(options ...helper2.OptionFN) ([]model2.State, int64, error) {
 	return e.store.GetStateList(options...)
 }
 
-func (e *Equipment) CreateState(title, desc string, measure interface{}, script string) (model.State, error) {
+func (e *Equipment) CreateState(title, desc string, measure interface{}, script string) (model2.State, error) {
 	var measureID int64
 	switch v := measure.(type) {
 	case int64:
 		measureID = v
-	case model.Measure:
+	case model2.Measure:
 		measureID = v.GetID()
 	default:
 		panic(errors.New("equipment CreateState: unknown measure"))
@@ -242,22 +242,22 @@ func (e *Equipment) CreateState(title, desc string, measure interface{}, script 
 	return e.store.CreateState(e.GetID(), measureID, title, desc, script)
 }
 
-func (e *Equipment) Simple() model.Map {
+func (e *Equipment) Simple() model2.Map {
 	if e == nil {
-		return model.Map{}
+		return model2.Map{}
 	}
-	return model.Map{
+	return model2.Map{
 		"id":     e.id,
 		"enable": e.IsEnabled(),
 		"title":  e.title,
 	}
 }
 
-func (e *Equipment) Brief() model.Map {
+func (e *Equipment) Brief() model2.Map {
 	if e == nil {
-		return model.Map{}
+		return model2.Map{}
 	}
-	return model.Map{
+	return model2.Map{
 		"id":         e.id,
 		"enable":     e.IsEnabled(),
 		"title":      e.title,
@@ -266,11 +266,11 @@ func (e *Equipment) Brief() model.Map {
 	}
 }
 
-func (e *Equipment) Detail() model.Map {
+func (e *Equipment) Detail() model2.Map {
 	if e == nil {
-		return model.Map{}
+		return model2.Map{}
 	}
-	detail := model.Map{
+	detail := model2.Map{
 		"id":         e.id,
 		"enable":     e.IsEnabled(),
 		"title":      e.title,
@@ -280,7 +280,7 @@ func (e *Equipment) Detail() model.Map {
 
 	groups, _ := e.Groups()
 	if len(groups) > 0 {
-		groupsProfile := make([]model.Map, 0, len(groups))
+		groupsProfile := make([]model2.Map, 0, len(groups))
 		for _, g := range groups {
 			groupsProfile = append(groupsProfile, g.Simple())
 		}
