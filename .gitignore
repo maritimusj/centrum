@@ -11,3 +11,7 @@ edge/edge
 *.xlsx
 *.db
 sqlite_test/
+edge/edge.pid
+sqlite.sql
+ptest/edge.pid
+gate/log.data

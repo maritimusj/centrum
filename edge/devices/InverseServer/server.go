@@ -42,6 +42,7 @@ func (server *Server) Start(ctx context.Context, addr string, port int) error {
 	}
 
 	log.Tracef("[inverse] start at %s:%d", addr, port)
+
 	server.wg.Add(2)
 	go func() {
 		defer func() {
@@ -57,7 +58,6 @@ func (server *Server) Start(ctx context.Context, addr string, port int) error {
 			default:
 				conn, err := server.lsr.Accept()
 				if err != nil {
-					log.Errorf("[inverse] %s", err)
 					continue
 				}
 				server.wg.Add(1)
@@ -67,14 +67,23 @@ func (server *Server) Start(ctx context.Context, addr string, port int) error {
 	}()
 
 	go func() {
-		defer server.wg.Done()
+		defer func() {
+			server.connMap.Range(func(mac, v interface{}) bool {
+				_ = v.(net.Conn).Close()
+				server.connMap.Delete(mac)
+				return true
+			})
+
+			if server.lsr != nil {
+				_ = server.lsr.Close()
+				server.lsr = nil
+			}
+
+			server.wg.Done()
+		}()
 		for {
 			select {
 			case <-ctx.Done():
-				if server.lsr != nil {
-					_ = server.lsr.Close()
-					server.lsr = nil
-				}
 				return
 			case <-server.done:
 				return
@@ -98,6 +107,7 @@ func (server *Server) handler(ctx context.Context, conn net.Conn) {
 	}
 
 	log.Debug("[inverse] read:", string(buf[0:n]))
+
 	handler := modbus.NewTCPClientHandlerFrom(conn)
 	handler.IdleTimeout = 0
 
@@ -125,12 +135,6 @@ func (server *Server) handler(ctx context.Context, conn net.Conn) {
 
 func (server *Server) Close() {
 	close(server.done)
-	server.connMap.Range(func(mac, v interface{}) bool {
-		_ = v.(net.Conn).Close()
-		server.connMap.Delete(mac)
-		return true
-	})
-
 	server.wg.Wait()
 }
 

@@ -32,6 +32,14 @@ func New() *Runner {
 	return runner
 }
 
+func (runner *Runner) Close() {
+	runner.adapters.Range(func(key, v interface{}) bool {
+		adapter := v.(*Adapter)
+		adapter.Close()
+		return true
+	})
+}
+
 func (runner *Runner) StartInverseServer(conf *json_rpc.InverseConf) error {
 	return InverseServer.Start(runner.ctx, conf.Address, conf.Port)
 }

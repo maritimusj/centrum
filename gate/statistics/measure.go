@@ -23,7 +23,7 @@ func (client *Client) GetMeasureStats(dbName string, deviceID int64, tagName str
 	}
 
 	if interval > 0 {
-		SQL.WriteString(fmt.Sprintf(` GROUP BY time(%s)  fill(0)`, interval.String()))
+		SQL.WriteString(fmt.Sprintf(` GROUP BY time(%s)  fill(previous)`, interval.String()))
 	}
 
 	println(SQL.String())

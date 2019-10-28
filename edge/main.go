@@ -1,10 +1,13 @@
 package main
 
 import (
-	_ "github.com/maritimusj/centrum/edge/lang/zhCN"
-
 	"context"
 	"github.com/maritimusj/centrum/edge/devices/InverseServer"
+	_ "github.com/maritimusj/centrum/edge/lang/zhCN"
+	"io/ioutil"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"flag"
 	"fmt"
@@ -42,7 +45,8 @@ func main() {
 	server.RegisterCodec(json.NewCodec(), "application/json")
 	server.RegisterCodec(json.NewCodec(), "application/json;charset=UTF-8")
 
-	edge := json_rpc.New(devices.New())
+	runner := devices.New()
+	edge := json_rpc.New(runner)
 	err = server.RegisterService(edge, "")
 	if err != nil {
 		log.Fatal(err)
@@ -51,8 +55,28 @@ func main() {
 	r := mux.NewRouter()
 	r.Handle("/rpc", server)
 
-	log.Println("edge service listen on port ", *port)
-	if err := http.ListenAndServe(fmt.Sprintf("%s:%d", *addr, *port), r); err != nil {
-		log.Fatalf("error serving: %s", err)
+	go func() {
+		log.Println("edge service listen on port ", *port)
+		if err := http.ListenAndServe(fmt.Sprintf("%s:%d", *addr, *port), r); err != nil {
+			log.Fatalf("error serving: %s", err)
+		}
+	}()
+
+	const pidFile = "./edge.pid"
+	pid := fmt.Sprintf("%d", os.Getpid())
+	err = ioutil.WriteFile(pidFile, []byte(pid), os.ModePerm)
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	println("exiting...")
+
+	_ = os.Remove(pidFile)
+
+	InverseServer.Close()
+	runner.Close()
 }
