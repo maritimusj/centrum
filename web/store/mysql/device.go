@@ -60,6 +60,7 @@ func (d *Device) UID() string {
 }
 
 func (d *Device) Logger() *log.Entry {
+	println("device logger:", d.OrganizationID(), d.UID())
 	return log.WithFields(log.Fields{
 		"org": d.OrganizationID(),
 		"src": d.UID(),

@@ -2,6 +2,8 @@ package device
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/asaskevich/govalidator"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
@@ -15,7 +17,6 @@ import (
 	"github.com/maritimusj/centrum/web/response"
 	"github.com/maritimusj/centrum/web/store"
 	"gopkg.in/go-playground/validator.v9"
-	"strings"
 )
 
 func List(ctx iris.Context) hero.Result {
@@ -164,6 +165,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 		})
 
 		if data, ok := result.(event.Data); ok {
+			println("device created")
 			app.Event.Publish(event.DeviceCreated, data.Get("userID"), data.Get("deviceID"))
 			return data.Pop("result")
 		}
@@ -171,11 +173,7 @@ func Create(ctx iris.Context, validate *validator.Validate) hero.Result {
 		return result
 	}
 
-	var result interface{}
-	for i := 0; i < 10; i++ {
-		result = fn()
-	}
-	return response.Wrap(result)
+	return response.Wrap(fn())
 }
 
 func Detail(deviceID int64, ctx iris.Context) hero.Result {

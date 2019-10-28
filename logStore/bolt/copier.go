@@ -5,23 +5,23 @@ import (
 	"encoding/gob"
 )
 
-type JsonCopier struct {
+type gobCopier struct {
 	encoder *gob.Encoder
 	decoder *gob.Decoder
 }
 
-func NewJsonCopier() *JsonCopier {
+func NewCopier() *gobCopier {
 	buffer := bytes.Buffer{}
-	return &JsonCopier{
+	return &gobCopier{
 		encoder: gob.NewEncoder(&buffer),
 		decoder: gob.NewDecoder(&buffer),
 	}
 }
 
-func (c *JsonCopier) encode(v interface{}) error {
+func (c *gobCopier) encode(v interface{}) error {
 	return c.encoder.Encode(v)
 }
 
-func (c *JsonCopier) decode(data interface{}) error {
+func (c *gobCopier) decode(data interface{}) error {
 	return c.decoder.Decode(data)
 }

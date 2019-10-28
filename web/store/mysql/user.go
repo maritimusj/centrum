@@ -47,6 +47,7 @@ func (u *User) UID() string {
 }
 
 func (u *User) Logger() *log.Entry {
+	println("user logger:", u.OrganizationID(), u.UID())
 	return log.WithFields(log.Fields{
 		"org": u.OrganizationID(),
 		"src": u.UID(),
