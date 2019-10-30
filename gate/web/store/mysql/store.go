@@ -226,8 +226,9 @@ func (s *mysqlStore) GetConfigList(options ...helper.OptionFN) ([]model.Config, 
 	)
 
 	if option.Keyword != "" {
-		fromSQL += " AND c.name REGEXP ?"
-		params = append(params, option.Keyword)
+		fromSQL += " AND c.name LIKE ?"
+		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		params = append(params, keyword)
 	}
 
 	var total int64
@@ -466,8 +467,9 @@ func (s *mysqlStore) GetOrganizationList(options ...helper.OptionFN) ([]model.Or
 
 	var params []interface{}
 	if option.Keyword != "" {
-		where += " AND (o.name REGEXP ? OR o.title REGEXP ?)"
-		params = append(params, option.Keyword, option.Keyword)
+		where += " AND (o.name LIKE ? OR o.title LIKE ?)"
+		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		params = append(params, keyword, keyword)
 	}
 
 	var total int64
@@ -681,8 +683,10 @@ func (s *mysqlStore) GetUserList(options ...helper.OptionFN) ([]model.User, int6
 	}
 
 	if option.Keyword != "" {
-		where += " AND (u.name REGEXP ? OR u.title REGEXP ? OR u.mobile REGEXP ? OR u.email REGEXP ?)"
-		params = append(params, option.Keyword, option.Keyword, option.Keyword, option.Keyword)
+		where += " AND (u.name LIKE ? OR u.title LIKE ? OR u.mobile LIKE ? OR u.email LIKE ?)"
+		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		params = append(params, keyword)
+		params = append(params, keyword, keyword, keyword, keyword)
 	}
 
 	var total int64
@@ -1309,8 +1313,9 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	}
 
 	if option.Keyword != "" {
-		where += " AND g.title REGEXP ?"
-		params = append(params, option.Keyword)
+		where += " AND g.title LIKE ?"
+		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		params = append(params, keyword)
 	}
 
 	var total int64
@@ -1503,8 +1508,8 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 	}
 
 	if option.Keyword != "" {
-		where += " AND d.title REGEXP ?"
-		params = append(params, option.Keyword)
+		where += " AND d.title LIKE ?"
+		params = append(params, "%"+option.Keyword+"%")
 	}
 
 	var total int64
@@ -1725,8 +1730,9 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	}
 
 	if option.Keyword != "" {
-		where += " AND m.title REGEXP ?"
-		params = append(params, option.Keyword)
+		where += " AND m.title LIKE ?"
+		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		params = append(params, keyword)
 	}
 
 	var total int64
@@ -1917,8 +1923,9 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 	}
 
 	if option.Keyword != "" {
-		where += " AND e.title REGEXP ?"
-		params = append(params, option.Keyword)
+		where += " AND e.title LIKE ?"
+		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		params = append(params, keyword)
 	}
 
 	var total int64
@@ -2110,8 +2117,9 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	//}
 
 	if option.Keyword != "" {
-		where += " AND s.title REGEXP ?"
-		params = append(params, option.Keyword)
+		where += " AND s.title LIKE ?"
+		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		params = append(params, keyword)
 	}
 
 	var total int64
@@ -2744,13 +2752,15 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 
 	var params []interface{}
 	if option.Name != "" {
-		fromSQL += " AND name REGEXP ?"
-		params = append(params, option.Name)
+		fromSQL += " AND name LIKE ?"
+		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		params = append(params, keyword)
 	}
 
 	if option.Keyword != "" {
-		fromSQL += " AND title REGEXP ?"
-		params = append(params, option.Keyword)
+		fromSQL += " AND title LIKE ?"
+		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		params = append(params, keyword)
 	}
 
 	var total int64
