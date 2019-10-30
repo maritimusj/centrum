@@ -182,7 +182,7 @@ func Export(ctx iris.Context) {
 		for _, index := range timeValues {
 			values := measureValues[index]
 			ts := time.Unix(int64(index), 0)
-			_, err = csvFile.WriteString(ts.Format("2006-01-02 15:06:07") + "," + strings.Join(values, ",") + "\r\n")
+			_, err = csvFile.WriteString(ts.Format("2006-01-02 15:04:05") + "," + strings.Join(values, ",") + "\r\n")
 			if err != nil {
 				return lang.InternalError(err)
 			}
@@ -196,5 +196,5 @@ func Export(ctx iris.Context) {
 	}
 
 	_ = csvFile.Close()
-	_ = ctx.SendFile(csvFile.Name(), time.Now().Format("2006-01-02_15_06_07")+".csv")
+	_ = ctx.SendFile(csvFile.Name(), time.Now().Format("2006-01-02_15_04_05")+".csv")
 }
