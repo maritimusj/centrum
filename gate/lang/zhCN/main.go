@@ -202,6 +202,15 @@ var (
 		lang.AlarmDetailTitle:  "",
 		lang.AlarmDetailDesc:   "",
 
+		lang.CommentListTitle:   "",
+		lang.CommentListDesc:    "",
+		lang.CommentDetailTitle: "",
+		lang.CommentDetailDesc:  "",
+		lang.CommentCreateTitle: "",
+		lang.CommentCreateDesc:  "",
+		lang.CommentDeleteTitle: "",
+		lang.CommentDeleteDesc:  "",
+
 		lang.ResourceLogListTitle:      "系统日志",
 		lang.ResourceLogListDesc:       "查看系统日志",
 		lang.ResourceLogDeleteTitle:    "删除系统日志",
@@ -277,6 +286,7 @@ var (
 		lang.ErrInvalidDeviceConnStr:            "设备连接参数不正确！",
 		lang.ErrConfigNotFound:                  "没找到这个配置项！",
 		lang.ErrAlarmNotFound:                   "没有找到这个警报数据！",
+		lang.ErrCommentNotFound:                 "没有找到这个备注！",
 		lang.ErrNotStatisticsData:               "没有任何数据！",
 	}
 )

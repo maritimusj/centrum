@@ -21,7 +21,8 @@ const (
 	prefixEquipment   = "7."
 	prefixState       = "8."
 	prefixApiResource = "9."
-	prefixAlarm       = "10."
+	prefixAlarm       = "A."
+	prefixComment     = "B."
 )
 
 type cache struct {
@@ -63,7 +64,10 @@ func getKey(obj interface{}) string {
 		pref = prefixApiResource
 	case model.Alarm:
 		pref = prefixAlarm
+	case model.Comment:
+		pref = prefixComment
 	}
+
 	type getID interface {
 		GetID() int64
 	}
@@ -198,4 +202,12 @@ func (c *cache) LoadAlarm(id int64) (model.Alarm, error) {
 		}
 	}
 	return nil, lang.Error(lang.ErrCacheNotFound)
+}
+func (c *cache) LoadComment(id int64) (model.Comment, error) {
+	if v, ok := c.client.Get(prefixComment + strconv.FormatInt(id, 10)); ok {
+		if u, ok := v.(model.Comment); ok {
+			return u, nil
+		}
+	}
+	return nil, lang.Error(lang.ErrCommentNotFound)
 }

@@ -84,6 +84,11 @@ const (
 	AlarmDelete  = "alarm.delete"
 	AlarmDetail  = "alarm.detail"
 
+	CommentList   = "comment.list"
+	CommentDetail = "comment.detail"
+	CommentCreate = "comment.create"
+	CommentDelete = "comment.delete"
+
 	LogLevelList = "log.level.list"
 	LogList      = "log.list"
 	LogDelete    = "log.delete"
@@ -165,6 +170,11 @@ var (
 		AlarmDelete,
 		AlarmDetail,
 
+		CommentList,
+		CommentDetail,
+		CommentCreate,
+		CommentDelete,
+
 		LogLevelList,
 		LogList,
 		LogDelete,
@@ -240,6 +250,10 @@ var (
 		AlarmConfirm,
 		AlarmDelete,
 		AlarmDetail,
+
+		CommentList,
+		CommentDetail,
+		CommentCreate,
 	}
 
 	MenuRoleStats = []string{

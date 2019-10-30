@@ -10,6 +10,7 @@ import (
 	cfg "github.com/maritimusj/centrum/gate/config"
 	"github.com/maritimusj/centrum/gate/event"
 	"github.com/maritimusj/centrum/gate/web/api/alarm"
+	"github.com/maritimusj/centrum/gate/web/api/comment"
 	"github.com/maritimusj/centrum/gate/web/api/config"
 	"github.com/maritimusj/centrum/gate/web/api/device"
 	"github.com/maritimusj/centrum/gate/web/api/edge"
@@ -224,6 +225,16 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 				p.Put("/{id:int64}", hero.Handler(alarm.Confirm)).Name = resourceDef.AlarmConfirm
 				p.Get("/{id:int64}", hero.Handler(alarm.Detail)).Name = resourceDef.AlarmDetail
 				p.Delete("/{id:int64}", hero.Handler(alarm.Delete)).Name = resourceDef.AlarmDelete
+
+				p.Get("/{alarm:int64}/comments", hero.Handler(comment.List)).Name = resourceDef.CommentList
+			})
+
+			//警报备注
+			p.PartyFunc("/comment", func(p router.Party) {
+				p.Get("/", hero.Handler(comment.List)).Name = resourceDef.CommentList
+				p.Post("/", hero.Handler(comment.Create)).Name = resourceDef.CommentCreate
+				p.Get("/{id:int64}", hero.Handler(comment.Detail)).Name = resourceDef.CommentDetail
+				p.Delete("/{id:int64}", hero.Handler(comment.Delete)).Name = resourceDef.CommentDelete
 			})
 
 			//日志等级

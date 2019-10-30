@@ -21,7 +21,6 @@ type Option struct {
 
 	Name          string
 	Keyword       string
-	GetTotal      *bool
 	DefaultEffect resource2.Effect
 }
 
@@ -43,13 +42,6 @@ func Limit(limit int64) OptionFN {
 func Offset(offset int64) OptionFN {
 	return func(i *Option) {
 		i.Offset = offset
-	}
-}
-
-func GetTotal(get bool) OptionFN {
-	return func(i *Option) {
-		var p = get
-		i.GetTotal = &p
 	}
 }
 

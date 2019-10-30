@@ -40,6 +40,7 @@ const (
 	TbEquipmentGroups = "`equipment_groups`"
 	TbApiResources    = "`api_resources`"
 	TbAlarms          = "`alarms`"
+	TbComments        = "`comments`"
 )
 
 type mysqlStore struct {
@@ -221,9 +222,8 @@ func (s *mysqlStore) GetConfigList(options ...helper.OptionFN) ([]model.Config, 
 	option := parseOption(options...)
 	var (
 		fromSQL = "FROM " + TbConfig + " c  WHERE 1"
+		params  []interface{}
 	)
-
-	var params []interface{}
 
 	if option.Keyword != "" {
 		fromSQL += " AND c.name REGEXP ?"
@@ -231,14 +231,12 @@ func (s *mysqlStore) GetConfigList(options ...helper.OptionFN) ([]model.Config, 
 	}
 
 	var total int64
-	if option.GetTotal == nil || *option.GetTotal {
-		if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
-			return nil, 0, lang.InternalError(err)
-		}
+	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
+		return nil, 0, lang.InternalError(err)
+	}
 
-		if total == 0 {
-			return []model.Config{}, 0, nil
-		}
+	if total == 0 {
+		return []model.Config{}, 0, nil
 	}
 
 	fromSQL += " ORDER BY c.id ASC"
@@ -260,8 +258,10 @@ func (s *mysqlStore) GetConfigList(options ...helper.OptionFN) ([]model.Config, 
 		_ = rows.Close()
 	}()
 
-	var ids []int64
-	var cfgID int64
+	var (
+		ids   []int64
+		cfgID int64
+	)
 
 	for rows.Next() {
 		err = rows.Scan(&cfgID)
@@ -873,14 +873,12 @@ func (s *mysqlStore) GetRoleList(options ...helper.OptionFN) ([]model.Role, int6
 	}
 
 	var total int64
-	if option.GetTotal == nil || *option.GetTotal {
-		if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
-			return nil, 0, lang.InternalError(err)
-		}
+	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
+		return nil, 0, lang.InternalError(err)
+	}
 
-		if total == 0 {
-			return []model.Role{}, 0, nil
-		}
+	if total == 0 {
+		return []model.Role{}, 0, nil
 	}
 
 	fromSQL += " ORDER BY r.id ASC"
@@ -1510,14 +1508,12 @@ func (s *mysqlStore) GetDeviceList(options ...helper.OptionFN) ([]model.Device, 
 	}
 
 	var total int64
-	if option.GetTotal == nil || *option.GetTotal {
-		if err := s.db.QueryRow("SELECT COUNT(DISTINCT d.id) "+from+where, params...).Scan(&total); err != nil {
-			return nil, 0, lang.InternalError(err)
-		}
+	if err := s.db.QueryRow("SELECT COUNT(DISTINCT d.id) "+from+where, params...).Scan(&total); err != nil {
+		return nil, 0, lang.InternalError(err)
+	}
 
-		if total == 0 {
-			return []model.Device{}, 0, nil
-		}
+	if total == 0 {
+		return []model.Device{}, 0, nil
 	}
 
 	where += " ORDER BY d.id ASC"
@@ -1926,14 +1922,12 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 	}
 
 	var total int64
-	if option.GetTotal == nil || *option.GetTotal {
-		if err := s.db.QueryRow("SELECT COUNT(DISTINCT e.id) "+from+where, params...).Scan(&total); err != nil {
-			return nil, 0, lang.InternalError(err)
-		}
+	if err := s.db.QueryRow("SELECT COUNT(DISTINCT e.id) "+from+where, params...).Scan(&total); err != nil {
+		return nil, 0, lang.InternalError(err)
+	}
 
-		if total == 0 {
-			return []model.Equipment{}, 0, nil
-		}
+	if total == 0 {
+		return []model.Equipment{}, 0, nil
 	}
 
 	where += " ORDER BY e.id ASC"
@@ -2234,7 +2228,7 @@ func (s *mysqlStore) CreateAlarm(device model.Device, measureID int64, data map[
 		}
 
 		now := time.Now()
-		data := map[string]interface{}{
+		entry := map[string]interface{}{
 			"org_id":     device.OrganizationID(),
 			"status":     status.Unconfirmed,
 			"device_id":  device.GetID(),
@@ -2244,9 +2238,9 @@ func (s *mysqlStore) CreateAlarm(device model.Device, measureID int64, data map[
 			"updated_at": now,
 		}
 
-		alarmID, err := CreateData(s.db, TbAlarms, data)
+		alarmID, err := CreateData(s.db, TbAlarms, entry)
 		if err != nil {
-			return err
+			return lang.InternalError(err)
 		}
 		alarm, err := s.loadAlarm(alarmID)
 		if err != nil {
@@ -2298,9 +2292,10 @@ func (s *mysqlStore) GetAlarmList(start, end *time.Time, options ...helper.Optio
 	var (
 		from  = "FROM " + TbAlarms + " a"
 		where = " WHERE 1"
+
+		params []interface{}
 	)
 
-	var params []interface{}
 	if option.UserID != nil {
 		userID := *option.UserID
 		if userID > 0 {
@@ -2361,6 +2356,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	}
 
 	log.Trace("SELECT DISTINCT a.id " + from + where)
+
 	rows, err := s.db.Query("SELECT DISTINCT a.id,a.updated_at "+from+where, params...)
 	if err != nil {
 		return nil, 0, lang.InternalError(err)
@@ -2394,6 +2390,178 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		}
 
 		result = append(result, alarm)
+	}
+
+	return result, total, nil
+}
+
+func (s *mysqlStore) loadComment(id int64) (model.Comment, error) {
+	var comment = NewComment(s, id)
+	err := LoadData(s.db, TbComments, map[string]interface{}{
+		"ref_id":     &comment.refID,
+		"parent_id":  &comment.parentID,
+		"user_id":    &comment.userID,
+		"extra":      &comment.extra,
+		"created_at": &comment.createdAt,
+	}, "id=?", id)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			return nil, lang.InternalError(err)
+		}
+		return nil, lang.Error(lang.ErrCommentNotFound)
+	}
+	return comment, nil
+}
+
+func (s *mysqlStore) GetComment(commentID int64) (model.Comment, error) {
+	result := <-synchronized.Do(TbComments, func() interface{} {
+		if comment, err := s.cache.LoadComment(commentID); err != nil {
+			if err != lang.Error(lang.ErrCommentNotFound) {
+				return err
+			}
+		} else {
+			return comment
+		}
+
+		comment, err := s.loadComment(commentID)
+		if err != nil {
+			return err
+		}
+
+		err = s.cache.Save(comment)
+		if err != nil {
+			return err
+		}
+		return comment
+	})
+
+	if err, ok := result.(error); ok {
+		return nil, err
+	}
+	return result.(model.Comment), nil
+}
+
+func (s *mysqlStore) CreateComment(userID int64, alarmID int64, parentID int64, data interface{}) (model.Comment, error) {
+	result := <-synchronized.Do(TbComments, func() interface{} {
+		extra, err := json.Marshal(data)
+		if err != nil {
+			return lang.InternalError(err)
+		}
+
+		entry := map[string]interface{}{
+			"ref_id":     alarmID,
+			"parent_id":  parentID,
+			"user_id":    userID,
+			"extra":      extra,
+			"created_at": time.Now(),
+		}
+
+		commentID, err := CreateData(s.db, TbComments, entry)
+		if err != nil {
+			return lang.InternalError(err)
+		}
+		comment, err := s.loadComment(commentID)
+		if err != nil {
+			return err
+		}
+		return comment
+	})
+	if err, ok := result.(error); ok {
+		return nil, err
+	}
+	return result.(model.Comment), nil
+}
+
+func (s *mysqlStore) RemoveComment(commentID int64) error {
+	err := RemoveData(s.db, TbComments, "id=?", commentID)
+	if err != nil {
+		return lang.InternalError(err)
+	}
+
+	s.cache.Remove(&Comment{id: commentID})
+	return nil
+}
+
+func (s *mysqlStore) GetCommentList(alarmID int64, options ...helper.OptionFN) ([]model.Comment, int64, error) {
+	option := parseOption(options...)
+
+	var (
+		from  = "FROM " + TbComments + " t"
+		where = " WHERE 1"
+
+		params []interface{}
+	)
+
+	if alarmID > 0 {
+		where += " AND ref_id=?"
+		params = append(params, alarmID)
+	}
+
+	if option.UserID != nil {
+		where += " AND user_id=?"
+		params = append(params, *option.UserID)
+	}
+
+	if option.ParentID != nil {
+		where += " AND parent_id=?"
+		params = append(params, *option.ParentID)
+	}
+
+	var total int64
+	if err := s.db.QueryRow("SELECT COUNT(DISTINCT t.id) "+from+where, params...).Scan(&total); err != nil {
+		return nil, 0, lang.InternalError(err)
+	}
+
+	if total == 0 {
+		return []model.Comment{}, 0, nil
+	}
+
+	where += " ORDER BY t.created_at DESC"
+
+	if option.Limit > 0 {
+		where += " LIMIT ?"
+		params = append(params, option.Limit)
+	}
+
+	if option.Offset > 0 {
+		where += " OFFSET ?"
+		params = append(params, option.Offset)
+	}
+
+	log.Trace("SELECT DISTINCT t.id " + from + where)
+
+	rows, err := s.db.Query("SELECT DISTINCT t.id "+from+where, params...)
+	if err != nil {
+		return nil, 0, lang.InternalError(err)
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var (
+		ids       []int64
+		commentID int64
+	)
+
+	for rows.Next() {
+		err = rows.Scan(&commentID)
+		if err != nil {
+			if err != sql.ErrNoRows {
+				return nil, 0, lang.InternalError(err)
+			}
+			return []model.Comment{}, total, nil
+		}
+		ids = append(ids, commentID)
+	}
+
+	var result []model.Comment
+	for _, id := range ids {
+		comment, err := s.GetComment(id)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		result = append(result, comment)
 	}
 
 	return result, total, nil

@@ -80,6 +80,11 @@ type Store interface {
 	GetAlarmList(start, end *time.Time, options ...helper.OptionFN) ([]model.Alarm, int64, error)
 	GetLastUnconfirmedAlarm(device model.Device, measureID int64) (model.Alarm, error)
 
+	GetComment(commentID int64) (model.Comment, error)
+	CreateComment(userID int64, alarmID int64, parentID int64, data interface{}) (model.Comment, error)
+	RemoveComment(commentID int64) error
+	GetCommentList(alarmID int64, options ...helper.OptionFN) ([]model.Comment, int64, error)
+
 	GetResourceGroupList() []interface{}
 	GetResourceList(class resource.Class, options ...helper.OptionFN) ([]model.Resource, int64, error)
 	GetResource(class resource.Class, resourceID int64) (model.Resource, error)

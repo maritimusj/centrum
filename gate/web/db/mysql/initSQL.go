@@ -67,6 +67,9 @@ CREATE TABLE user_roles (user_id INTEGER NOT NULL, role_id INTEGER NOT NULL, cre
 -- 表：users
 CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, org_id INTEGER NOT NULL DEFAULT 0, enable INTEGER NOT NULL DEFAULT 0, name TEXT (64) NOT NULL, title TEXT (128) NOT NULL, password TEXT (64) NOT NULL, mobile TEXT (18) NOT NULL, email TEXT (64) NOT NULL, created_at DATETIME NOT NULL);
 
+-- 表：comments
+CREATE TABLE comments (id INTEGER PRIMARY KEY AUTOINCREMENT, ref_id INT NOT NULL, user_id NOT NULL, parent_id INT NOT NULL DEFAULT (0), extra BLOB NOT NULL, created_at DATETIME NOT NULL);
+
 -- 索引：device
 CREATE INDEX device ON measures ("device_id" ASC);
 
@@ -95,6 +98,9 @@ CREATE INDEX orgx ON logs ("org_id" ASC, "src" ASC, "level" ASC);
 
 -- 索引：user_namex
 CREATE UNIQUE INDEX user_namex ON users ("name" ASC);
+
+-- 索引：ref_idx
+CREATE INDEX ref_idx ON comments (ref_id, parent_id);
 
 COMMIT TRANSACTION;
 PRAGMA foreign_keys = on;

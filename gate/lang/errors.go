@@ -60,6 +60,9 @@ const (
 	ErrConfigNotFound
 
 	ErrAlarmNotFound
+
+	ErrCommentNotFound
+
 	ErrNotStatisticsData
 )
 

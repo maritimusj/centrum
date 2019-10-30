@@ -22,4 +22,5 @@ type Cache interface {
 	LoadState(id int64) (model.State, error)
 	LoadApiResource(id int64) (model.ApiResource, error)
 	LoadAlarm(id int64) (model.Alarm, error)
+	LoadComment(id int64) (model.Comment, error)
 }
