@@ -3,40 +3,30 @@ package statistics
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/360EntSecGroup-Skylar/excelize"
-	"github.com/influxdata/influxdb1-client/models"
 	"github.com/kataras/iris"
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/app"
+	"github.com/maritimusj/centrum/gate/web/model"
 	"github.com/maritimusj/centrum/gate/web/resource"
-	"time"
-
+	"github.com/maritimusj/centrum/util"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
+	"sort"
+	"strings"
+	"time"
 )
 
-type AxisMap map[string]byte
-
-func (m AxisMap) Set(name string, start byte) {
-	m[name] = start
-}
-
-func (m AxisMap) Get(name string) byte {
-	if v, ok := m[name]; ok {
-		return v
-	}
-	return 'A'
-}
-func (m AxisMap) Next(name string) byte {
-	if v, ok := m[name]; ok {
-		m[name] = v + 1
-		return v + 1
-	} else {
-		m[name] = 'A'
-		return m.Next(name)
-	}
-}
-
 func Export(ctx iris.Context) {
+	csvFile, err := ioutil.TempFile("", "tempFile")
+	if err != nil {
+		log.Error(err)
+		ctx.StatusCode(iris.StatusInternalServerError)
+		return
+	}
+
+	//写入UTF-8 BOM，防止中文乱码
+	_, _ = csvFile.WriteString("\xEF\xBB\xBF")
+
 	res := func() interface{} {
 		var form struct {
 			MeasureIDs []int64    `json:"measures"`
@@ -49,54 +39,68 @@ func Export(ctx iris.Context) {
 		}
 
 		var (
-			axisMap = AxisMap{}
-
-			s             = app.Store()
-			admin         = s.MustGetUserFromContext(ctx)
-			excel         = excelize.NewFile()
-			alarmStyle, _ = excel.NewStyle(`{"font":{"color":"#f44336"}}`)
+			s     = app.Store()
+			admin = s.MustGetUserFromContext(ctx)
 		)
 
-		exportMeasureFN := func(sheetName string, rows *models.Row) {
-			excel.SetActiveSheet(excel.NewSheet(sheetName))
-			excel.SetColWidth(sheetName, "A", "A", 20)
-
-			col := axisMap.Next(sheetName)
-			excel.SetCellValue(sheetName, fmt.Sprintf("%c1", col), rows.Name)
-
-			for i, data := range rows.Values {
-				cell := fmt.Sprintf("%c%d", col, i+2)
-				sec, _ := data[0].(json.Number).Int64()
-				excel.SetCellValue(sheetName, fmt.Sprintf("A%d", i+2), time.Unix(sec, 0))
-				switch v := data[1].(type) {
-				case json.Number:
-					val, _ := v.Float64()
-					excel.SetCellValue(sheetName, cell, val)
-				case bool:
-					excel.SetCellBool(sheetName, cell, v)
+		rangeMeasuresFN := func(fn func(device model.Device, measure model.Measure) error) error {
+			for _, measureID := range form.MeasureIDs {
+				measure, err := s.GetMeasure(measureID)
+				if err != nil {
+					return err
 				}
 
-				if data[2] != nil {
-					excel.SetCellStyle(sheetName, cell, cell, alarmStyle)
+				if !app.Allow(admin, measure, resource.View) {
+					return lang.Error(lang.ErrNoPermission)
+				}
+
+				device := measure.Device()
+				if device == nil {
+					return lang.Error(lang.ErrDeviceNotFound)
+				}
+
+				if fn != nil {
+					err = fn(device, measure)
+					if err != nil {
+						return err
+					}
 				}
 			}
+			return nil
 		}
 
-		for _, measureID := range form.MeasureIDs {
-			measure, err := s.GetMeasure(measureID)
-			if err != nil {
-				return err
-			}
+		rangeStatesFN := func(fn func(equipment model.Equipment, state model.State) error) error {
+			for _, stateID := range form.StatesIDs {
+				state, err := s.GetState(stateID)
+				if err != nil {
+					return err
+				}
 
-			if !app.Allow(admin, measure, resource.View) {
-				return lang.Error(lang.ErrNoPermission)
-			}
+				if !app.Allow(admin, state, resource.View) {
+					return lang.Error(lang.ErrNoPermission)
+				}
 
-			device := measure.Device()
-			if device == nil {
-				return lang.Error(lang.ErrDeviceNotFound)
-			}
+				equipment := state.Equipment()
+				if equipment == nil {
+					return lang.Error(lang.ErrEquipmentNotFound)
+				}
 
+				if fn != nil {
+					err = fn(equipment, state)
+					if err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		}
+
+		var (
+			measureValues = make(map[int][]string)
+			timeValues    = make([]int, 0)
+		)
+
+		getMeasureDataFN := func(device model.Device, measure model.Measure) error {
 			org, err := device.Organization()
 			if err != nil {
 				return err
@@ -107,25 +111,59 @@ func Export(ctx iris.Context) {
 				return err
 			}
 
-			sheetName := device.Title()
-			exportMeasureFN(sheetName, rows)
+			for _, data := range rows.Values {
+				sec, _ := data[0].(json.Number).Int64()
+				index := int(sec)
+				var val string
+				switch v := data[1].(type) {
+				case json.Number:
+					val = v.String()
+				case bool:
+					val = util.If(v, "1", "0").(string)
+				default:
+					val = "<unknown>"
+				}
+				if _, ok := measureValues[index]; !ok {
+					measureValues[index] = []string{val}
+					timeValues = append(timeValues, index)
+				} else {
+					measureValues[index] = append(measureValues[index], val)
+				}
+			}
+			return nil
 		}
 
-		for _, stateID := range form.StatesIDs {
-			state, err := s.GetState(stateID)
-			if err != nil {
-				return err
-			}
+		header := []string{""}
+		err = rangeMeasuresFN(func(device model.Device, measure model.Measure) error {
+			header = append(header, fmt.Sprintf("%s_%s", device.Title(), measure.Title()))
+			return nil
+		})
+		if err != nil {
+			return err
+		}
 
-			if !app.Allow(admin, state, resource.View) {
-				return lang.Error(lang.ErrNoPermission)
-			}
+		err = rangeStatesFN(func(equipment model.Equipment, state model.State) error {
+			header = append(header, fmt.Sprintf("%s_%s", equipment.Title(), state.Title()))
+			return nil
+		})
 
-			equipment := state.Equipment()
-			if equipment == nil {
-				return lang.Error(lang.ErrEquipmentNotFound)
-			}
+		if err != nil {
+			return err
+		}
 
+		_, err = csvFile.WriteString(strings.Join(header, ",") + "\r\n")
+		if err != nil {
+			return lang.InternalError(err)
+		}
+
+		err = rangeMeasuresFN(func(device model.Device, measure model.Measure) error {
+			return getMeasureDataFN(device, measure)
+		})
+		if err != nil {
+			return err
+		}
+
+		err = rangeStatesFN(func(equipment model.Equipment, state model.State) error {
 			measure := state.Measure()
 			if measure == nil {
 				return lang.Error(lang.ErrMeasureNotFound)
@@ -136,33 +174,27 @@ func Export(ctx iris.Context) {
 				return lang.Error(lang.ErrDeviceNotFound)
 			}
 
-			org, err := equipment.Organization()
-			if err != nil {
-				return err
-			}
+			return getMeasureDataFN(device, measure)
+		})
 
-			rows, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &form.Start, form.End, 0)
-			if err != nil {
-				return err
-			}
+		sort.Ints(timeValues)
 
-			sheetName := equipment.Title()
-			exportMeasureFN(sheetName, rows)
+		for _, index := range timeValues {
+			values := measureValues[index]
+			ts := time.Unix(int64(index), 0)
+			_, err = csvFile.WriteString(ts.Format("2006-01-02 15:06:07") + "," + strings.Join(values, ",") + "\r\n")
+			if err != nil {
+				return lang.InternalError(err)
+			}
 		}
 
-		excel.DeleteSheet("Sheet1")
-		err := excel.Write(ctx)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-
-		return nil
+		return csvFile.Name()
 	}()
 
 	if err, ok := res.(error); ok {
-		excel := excelize.NewFile()
-		excel.SetCellValue("Sheet1", "A1", err.Error())
-		_ = excel.Write(ctx)
+		_, _ = csvFile.WriteString(err.Error())
 	}
+
+	_ = csvFile.Close()
+	_ = ctx.SendFile(csvFile.Name(), time.Now().Format("2006-01-02_15_06_07")+".csv")
 }
