@@ -3,7 +3,7 @@ package lang
 type StrIndex int
 
 const (
-	_ StrIndex = iota
+	EdgeUnknownState StrIndex = iota
 	AdapterInitializing
 	Connecting
 	Connected

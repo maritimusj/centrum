@@ -35,10 +35,7 @@ func initEvent() error {
 }
 
 func eventApiServerStarted() {
-	err := BootAllDevices()
-	if err != nil {
-		log.Error("[BootAllDevices] ", err)
-	}
+	BootAllDevices()
 }
 
 func eventUserCreated(userID int64, newUserID int64) {

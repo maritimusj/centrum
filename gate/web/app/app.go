@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/asaskevich/EventBus"
 	"github.com/maritimusj/centrum/gate/config"
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/logStore/bolt"
@@ -14,10 +15,12 @@ import (
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/store"
 	mysqlStore "github.com/maritimusj/centrum/gate/web/store/mysql"
+	"github.com/maritimusj/centrum/global"
 	log "github.com/sirupsen/logrus"
 	"os"
+	"time"
 
-	"github.com/asaskevich/EventBus"
+	edgeLang "github.com/maritimusj/centrum/edge/lang"
 )
 
 var (
@@ -222,18 +225,29 @@ func Init(ctx context.Context, logLevel string) error {
 	return nil
 }
 
-func BootAllDevices() error {
+func BootAllDevices() {
+	select {
+	case <-Ctx.Done():
+		return
+	default:
+	}
+
+	println("BootAllDevices...")
 	devices, _, err := Store().GetDeviceList()
 	if err != nil {
-		return err
+		log.Error("[BootAllDevices] ", err)
+		return
 	}
 	for _, device := range devices {
 		if err := edge.ActiveDevice(device); err != nil {
-			log.Error(err)
+			log.Error("[BootAllDevices] ", err)
+
 			device.Logger().Error(err)
+			global.UpdateDeviceStatus(device, int(edgeLang.EdgeUnknownState), edgeLang.Str(edgeLang.EdgeUnknownState))
 		}
 	}
-	return nil
+
+	time.AfterFunc(15*time.Second, BootAllDevices)
 }
 
 func Close() {

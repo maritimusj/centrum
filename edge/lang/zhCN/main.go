@@ -8,6 +8,7 @@ func init() {
 
 var (
 	strMap = map[lang.StrIndex]string{
+		lang.EdgeUnknownState:    "未知",
 		lang.AdapterInitializing: "正在初始化",
 		lang.Connecting:          "正在连接",
 		lang.Connected:           "已连接",
