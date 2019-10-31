@@ -2522,9 +2522,15 @@ func (s *mysqlStore) GetCommentList(alarm model.Alarm, lastID int64, options ...
 		params []interface{}
 	)
 
+
 	if alarm != nil {
 		where += " AND ref_id=?"
 		params = append(params, alarm.GetID())
+	}
+
+	if lastID > 0 {
+		where += " AND id>?"
+		params = append(params, lastID)
 	}
 
 	if option.UserID != nil {

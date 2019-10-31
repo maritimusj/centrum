@@ -111,6 +111,7 @@ func Detail(alarmID int64, ctx iris.Context) hero.Result {
 		}
 
 		detail := alarm.Detail()
+
 		lastID := alarm.GetOption(fmt.Sprintf("read.%d", admin.GetID())).Int()
 		_, total, err := s.GetCommentList(alarm, lastID, helper.Limit(1))
 		if err != nil {
