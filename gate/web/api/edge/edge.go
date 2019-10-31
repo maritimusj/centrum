@@ -3,7 +3,10 @@ package edge
 import (
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/app"
+	"github.com/maritimusj/centrum/gate/web/edge"
+	"github.com/maritimusj/centrum/gate/web/helper"
 	"github.com/maritimusj/centrum/gate/web/resource"
+	"strconv"
 	"time"
 
 	"github.com/kataras/iris"
@@ -38,7 +41,11 @@ type Alarm struct {
 func Feedback(deviceID int64, ctx iris.Context) {
 	device, err := app.Store().GetDevice(deviceID)
 	if err != nil {
-		log.Error("[Feedback 1]", err)
+		if err != lang.Error(lang.ErrDeviceNotFound) {
+			log.Error("[Feedback 1]", err)
+		} else {
+			edge.Remove(strconv.FormatInt(deviceID, 10))
+		}
 		return
 	}
 
@@ -108,7 +115,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 			return
 		}
 
-		alarm, err := app.Store().GetLastUnconfirmedAlarm(device, measure.GetID())
+		alarm, _, err := app.Store().GetLastUnconfirmedAlarm(helper.Device(device.GetID()), helper.Measure(measure.GetID()))
 		if err != nil {
 			if err != lang.Error(lang.ErrAlarmNotFound) {
 				log.Error("[Feedback 9]", err)

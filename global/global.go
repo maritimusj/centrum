@@ -1,6 +1,10 @@
 package global
 
-import "sync"
+import (
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
+	"sync"
+)
 
 var (
 	Params = New()
@@ -8,38 +12,63 @@ var (
 )
 
 type stats struct {
-	data sync.Map
+	data []byte
+	sync.RWMutex
 }
 
 func New() *stats {
 	return &stats{}
 }
 
-func (stats *stats) Set(name interface{}, val interface{}) *stats {
-	stats.data.Store(name, val)
-	return stats
-}
-
-func (stats *stats) Get(name interface{}) (interface{}, bool) {
-	return stats.data.Load(name)
-}
-
-func (stats *stats) MustGet(name interface{}) interface{} {
-	if v, ok := stats.data.Load(name); ok {
-		return v
+func (stats *stats) Set(path string, val interface{}) error {
+	stats.Lock()
+	defer stats.Unlock()
+	data, err := sjson.SetBytes(stats.data, path, val)
+	if err != nil {
+		return err
 	}
-	panic("stats not exists")
+	stats.data = data
+	return nil
 }
 
-func (stats *stats) Remove(name interface{}) *stats {
-	stats.data.Delete(name)
-	return stats
+func (stats *stats) Exists(path string) bool {
+	stats.RLock()
+	defer stats.RUnlock()
+
+	return gjson.GetBytes(stats.data, path).Exists()
 }
 
-func (stats *stats) Reset() *stats {
-	stats.data.Range(func(key, _ interface{}) bool {
-		stats.data.Delete(key)
-		return true
-	})
-	return stats
+func (stats *stats) Get(path string) (interface{}, bool) {
+	stats.RLock()
+	defer stats.RUnlock()
+
+	v := gjson.GetBytes(stats.data, path)
+	return v.Value(), v.Exists()
+}
+
+func (stats *stats) MustGet(path string) interface{} {
+	stats.RLock()
+	defer stats.RUnlock()
+
+	v := gjson.GetBytes(stats.data, path)
+	if !v.Exists() {
+		panic("stats not exists")
+	}
+
+	return v.Value()
+}
+
+func (stats *stats) Remove(path string) {
+	stats.Lock()
+	defer stats.Unlock()
+
+	v, err := sjson.DeleteBytes(stats.data, path)
+	if err != nil {
+		return
+	}
+	stats.data = v
+}
+
+func (stats *stats) Reset() {
+	stats.data = []byte{}
 }

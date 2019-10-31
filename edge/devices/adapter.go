@@ -1,6 +1,7 @@
 package devices
 
 import (
+	"fmt"
 	_ "github.com/influxdata/influxdb1-client"
 	"github.com/maritimusj/centrum/edge/devices/ep6v2"
 	"github.com/maritimusj/centrum/edge/devices/event"
@@ -52,9 +53,9 @@ func (adapter *Adapter) OnDeviceStatusChanged(index lang.StrIndex) {
 }
 
 func (adapter *Adapter) OnMeasureDiscovered(tagName, title string) {
-	key := "tag:" + adapter.conf.UID + ":" + tagName
-	if v, ok := global.Params.Get(key); !ok || v.(string) != title {
-		global.Params.Set(key, title)
+	path := fmt.Sprintf("tag.%s.%s", adapter.conf.UID, tagName)
+	if v, ok := global.Params.Get(path); !ok || v.(string) != title {
+		_ = global.Params.Set(path, title)
 		event.Publish(event.MeasureDiscovered, adapter.conf, tagName, title)
 	}
 }

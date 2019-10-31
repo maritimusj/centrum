@@ -2278,20 +2278,42 @@ func (s *mysqlStore) RemoveAlarm(alarmID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetLastUnconfirmedAlarm(device model.Device, measureID int64) (model.Alarm, error) {
-	const (
-		SQL = "SELECT id FROM " + TbAlarms + " WHERE device_id=? AND measure_id=? AND status=? LIMIT 1"
+func (s *mysqlStore) GetLastUnconfirmedAlarm(options ...helper.OptionFN) (model.Alarm, int64, error) {
+	option := parseOption(options...)
+	var (
+		fromSQL = "FROM " + TbAlarms + " WHERE status=?"
+		params  = []interface{}{status.Unconfirmed}
 	)
-
-	var alarmID int64
-	if err := s.db.QueryRow(SQL, device.GetID(), measureID, status.Unconfirmed).Scan(&alarmID); err != nil {
-		if err != sql.ErrNoRows {
-			return nil, lang.InternalError(err)
-		}
-		return nil, lang.Error(lang.ErrAlarmNotFound)
+	if option.DeviceID > 0 {
+		fromSQL += " AND device_id=?"
+		params = append(params, option.DeviceID)
+	}
+	if option.MeasureID > 0 {
+		fromSQL += " AND measure_id=?"
+		params = append(params, option.MeasureID)
 	}
 
-	return s.GetAlarm(alarmID)
+	var total int64
+	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
+		return nil, 0, lang.InternalError(err)
+	}
+
+	fromSQL += " LIMIT 1"
+
+	var alarmID int64
+	if err := s.db.QueryRow("SELECT id "+fromSQL, params...).Scan(&alarmID); err != nil {
+		if err != sql.ErrNoRows {
+			return nil, 0, lang.InternalError(err)
+		}
+		return nil, 0, lang.Error(lang.ErrAlarmNotFound)
+	}
+
+	alarm, err := s.GetAlarm(alarmID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return alarm, total, nil
 }
 
 func (s *mysqlStore) GetAlarmList(start, end *time.Time, options ...helper.OptionFN) ([]model.Alarm, int64, error) {

@@ -78,7 +78,7 @@ type Store interface {
 	CreateAlarm(device model.Device, measureID int64, data map[string]interface{}) (model.Alarm, error)
 	RemoveAlarm(alarmID int64) error
 	GetAlarmList(start, end *time.Time, options ...helper.OptionFN) ([]model.Alarm, int64, error)
-	GetLastUnconfirmedAlarm(device model.Device, measureID int64) (model.Alarm, error)
+	GetLastUnconfirmedAlarm(options ...helper.OptionFN) (model.Alarm, int64, error)
 
 	GetComment(commentID int64) (model.Comment, error)
 	CreateComment(userID int64, alarmID int64, parentID int64, data interface{}) (model.Comment, error)

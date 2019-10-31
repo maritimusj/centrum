@@ -10,6 +10,7 @@ import (
 	cfg "github.com/maritimusj/centrum/gate/config"
 	"github.com/maritimusj/centrum/gate/event"
 	"github.com/maritimusj/centrum/gate/web/api/alarm"
+	"github.com/maritimusj/centrum/gate/web/api/brief"
 	"github.com/maritimusj/centrum/gate/web/api/comment"
 	"github.com/maritimusj/centrum/gate/web/api/config"
 	"github.com/maritimusj/centrum/gate/web/api/device"
@@ -78,7 +79,7 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 		p.Post("/login", hero.Handler(web.Login))
 
 		p.PartyFunc("/edge", func(p router.Party) {
-			global.Params.Set("callbackURL", fmt.Sprintf("http://localhost:%d%s", app.Config.APIPort(), p.GetRelPath()))
+			_ = global.Params.Set("callbackURL", fmt.Sprintf("http://localhost:%d%s", app.Config.APIPort(), p.GetRelPath()))
 			p.Post("/{id:int64}", hero.Handler(edge.Feedback))
 		})
 
@@ -99,6 +100,11 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 				//请求当前用户对于某个资源的权限情况
 				p.Get("/perm/{class:string}", hero.Handler(my.Perm)).Name = resourceDef.MyPerm
 				p.Post("/perm/{class:string}", hero.Handler(my.MultiPerm)).Name = resourceDef.MyPermMulti
+			})
+
+			//系统简讯
+			p.PartyFunc("/brief", func(p router.Party) {
+				p.Get("/", hero.Handler(brief.Simple))
 			})
 
 			//资源

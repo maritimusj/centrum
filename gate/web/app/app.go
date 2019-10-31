@@ -232,12 +232,12 @@ func BootAllDevices() {
 	default:
 	}
 
-	println("BootAllDevices...")
 	devices, _, err := Store().GetDeviceList()
 	if err != nil {
 		log.Error("[BootAllDevices] ", err)
 		return
 	}
+
 	for _, device := range devices {
 		if err := edge.ActiveDevice(device); err != nil {
 			log.Error("[BootAllDevices] ", err)

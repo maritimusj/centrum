@@ -310,12 +310,12 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 
 func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		key := fmt.Sprintf("UpdatePerm:%d", userID)
+		key := fmt.Sprintf("UpdatePerm.%d", userID)
 		if _, ok := global.Params.Get(key); ok {
 			return lang.ErrServerIsBusy
 		}
 
-		global.Params.Set(key, true)
+		_ = global.Params.Set(key, true)
 		result := app.TransactionDo(func(s store.Store) interface{} {
 			user, err := s.GetUser(userID)
 			if err != nil {
