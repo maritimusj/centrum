@@ -72,7 +72,13 @@ func List(ctx iris.Context) hero.Result {
 					"ctrl": app.Allow(admin, measure, resource.Ctrl),
 				}
 			}
-
+			_, total, err := s.GetCommentList(alarm.GetID(), helper.Limit(1))
+			if err != nil {
+				return err
+			}
+			brief["comment"] = iris.Map{
+				"total": total,
+			}
 			result = append(result, brief)
 		}
 
