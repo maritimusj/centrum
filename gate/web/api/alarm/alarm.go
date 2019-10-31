@@ -108,7 +108,15 @@ func Detail(alarmID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		return alarm.Detail()
+		detail := alarm.Detail()
+		_, total, err := s.GetCommentList(alarm.GetID(), helper.Limit(1))
+		if err != nil {
+			return err
+		}
+		detail["comment"] = iris.Map{
+			"total": total,
+		}
+		return detail
 	})
 }
 
