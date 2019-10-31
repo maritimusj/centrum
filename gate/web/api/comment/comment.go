@@ -49,6 +49,7 @@ func List(ctx iris.Context) hero.Result {
 
 		if alarm != nil {
 			_ = alarm.SetOption(fmt.Sprintf("read.%d", admin.GetID()), maxCommentID)
+			_ = alarm.Save()
 		}
 
 		return iris.Map{
