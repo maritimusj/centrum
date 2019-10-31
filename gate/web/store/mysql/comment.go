@@ -89,7 +89,8 @@ func (c *Comment) Parent() (model.Comment, error) {
 
 func (c *Comment) GetReplyList(options ...helper.OptionFN) ([]model.Comment, int64, error) {
 	options = append(options, helper.Parent(c.id))
-	return c.store.GetCommentList(c.AlarmID(), options...)
+	alarm, _ := c.Alarm()
+	return c.store.GetCommentList(alarm, 0, options...)
 }
 
 func (c *Comment) CreatedAt() time.Time {
@@ -110,7 +111,7 @@ func (c *Comment) Destroy() error {
 	if c == nil {
 		return lang.Error(lang.ErrCommentNotFound)
 	}
-	comments, _, err := c.store.GetCommentList(0, helper.Parent(c.id))
+	comments, _, err := c.store.GetCommentList(nil, 0, helper.Parent(c.id))
 	if err != nil {
 		return err
 	}

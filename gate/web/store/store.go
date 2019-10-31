@@ -83,7 +83,7 @@ type Store interface {
 	GetComment(commentID int64) (model.Comment, error)
 	CreateComment(userID int64, alarmID int64, parentID int64, data interface{}) (model.Comment, error)
 	RemoveComment(commentID int64) error
-	GetCommentList(alarmID int64, options ...helper.OptionFN) ([]model.Comment, int64, error)
+	GetCommentList(alarm model.Alarm, lastID int64, options ...helper.OptionFN) ([]model.Comment, int64, error)
 
 	GetResourceGroupList() []interface{}
 	GetResourceList(class resource.Class, options ...helper.OptionFN) ([]model.Resource, int64, error)

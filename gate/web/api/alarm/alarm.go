@@ -1,6 +1,7 @@
 package alarm
 
 import (
+	"fmt"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
@@ -72,7 +73,8 @@ func List(ctx iris.Context) hero.Result {
 					"ctrl": app.Allow(admin, measure, resource.Ctrl),
 				}
 			}
-			_, total, err := s.GetCommentList(alarm.GetID(), helper.Limit(1))
+			lastID := alarm.GetOption(fmt.Sprintf("read.%d", admin.GetID())).Int()
+			_, total, err := s.GetCommentList(alarm, lastID, helper.Limit(1))
 			if err != nil {
 				return err
 			}
@@ -109,7 +111,8 @@ func Detail(alarmID int64, ctx iris.Context) hero.Result {
 		}
 
 		detail := alarm.Detail()
-		_, total, err := s.GetCommentList(alarm.GetID(), helper.Limit(1))
+		lastID := alarm.GetOption(fmt.Sprintf("read.%d", admin.GetID())).Int()
+		_, total, err := s.GetCommentList(alarm, lastID, helper.Limit(1))
 		if err != nil {
 			return err
 		}

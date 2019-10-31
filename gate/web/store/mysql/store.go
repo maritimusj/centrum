@@ -2512,7 +2512,7 @@ func (s *mysqlStore) RemoveComment(commentID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetCommentList(alarmID int64, options ...helper.OptionFN) ([]model.Comment, int64, error) {
+func (s *mysqlStore) GetCommentList(alarm model.Alarm, lastID int64, options ...helper.OptionFN) ([]model.Comment, int64, error) {
 	option := parseOption(options...)
 
 	var (
@@ -2522,9 +2522,9 @@ func (s *mysqlStore) GetCommentList(alarmID int64, options ...helper.OptionFN) (
 		params []interface{}
 	)
 
-	if alarmID > 0 {
+	if alarm != nil {
 		where += " AND ref_id=?"
-		params = append(params, alarmID)
+		params = append(params, alarm.GetID())
 	}
 
 	if option.UserID != nil {

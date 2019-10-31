@@ -1,6 +1,7 @@
 package comment
 
 import (
+	"fmt"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
@@ -13,7 +14,8 @@ import (
 func List(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		var (
-			s = app.Store()
+			s     = app.Store()
+			admin = s.MustGetUserFromContext(ctx)
 
 			alarmID  = ctx.Params().GetInt64Default("alarm", 0)
 			page     = ctx.URLParamInt64Default("page", 1)
@@ -29,14 +31,24 @@ func List(ctx iris.Context) hero.Result {
 			return err
 		}
 
-		comments, total, err := s.GetCommentList(alarm.GetID(), params...)
+		comments, total, err := s.GetCommentList(alarm, 0, params...)
 		if err != nil {
 			return err
 		}
+
 		var result = make([]model.Map, 0, len(comments))
+		var maxCommentID int64
 		for _, comment := range comments {
+			if maxCommentID < comment.GetID() {
+				maxCommentID = comment.GetID()
+			}
+
 			brief := comment.Brief()
 			result = append(result, brief)
+		}
+
+		if alarm != nil {
+			_ = alarm.SetOption(fmt.Sprintf("read.%d", admin.GetID()), maxCommentID)
 		}
 
 		return iris.Map{
