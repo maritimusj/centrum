@@ -796,7 +796,7 @@ func (s *mysqlStore) GetRole(role interface{}) (model.Role, error) {
 	return result.(model.Role), nil
 }
 
-func (s *mysqlStore) createRole(db db.DB, org interface{}, name, title, desc string) (model.Role, error) {
+func (s *mysqlStore) createRole(org interface{}, name, title, desc string) (model.Role, error) {
 	result := <-synchronized.Do(TbRoles, func() interface{} {
 		orgID, err := s.getOrganizationID(org)
 		if err != nil {
@@ -833,7 +833,7 @@ func (s *mysqlStore) createRole(db db.DB, org interface{}, name, title, desc str
 }
 
 func (s *mysqlStore) CreateRole(org interface{}, name, title, desc string) (model.Role, error) {
-	return s.createRole(s.db, org, name, title, desc)
+	return s.createRole(org, name, title, desc)
 }
 
 func (s *mysqlStore) RemoveRole(role interface{}) error {
@@ -2522,7 +2522,6 @@ func (s *mysqlStore) GetCommentList(alarm model.Alarm, lastID int64, options ...
 		params []interface{}
 	)
 
-
 	if alarm != nil {
 		where += " AND ref_id=?"
 		params = append(params, alarm.GetID())
@@ -2874,7 +2873,7 @@ func (s *mysqlStore) InitApiResource() error {
 
 func (s *mysqlStore) InitDefaultRoles(org interface{}) error {
 	for pair, apiRes := range lang.DefaultRoles() {
-		role, err := s.createRole(s.db, org, pair[0], pair[1], pair[2])
+		role, err := s.createRole(org, pair[0], pair[1], pair[2])
 		if err != nil {
 			return err
 		}

@@ -113,7 +113,9 @@ func Create(ctx iris.Context) hero.Result {
 				return lang.ErrRoleExists
 			}
 
-			var org interface{}
+			var (
+				org interface{}
+			)
 
 			admin := s.MustGetUserFromContext(ctx)
 			if app.IsDefaultAdminUser(admin) {

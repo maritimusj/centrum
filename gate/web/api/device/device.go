@@ -34,6 +34,7 @@ func List(ctx iris.Context) hero.Result {
 		} else {
 			orgID = admin.OrganizationID()
 		}
+
 		if orgID > 0 {
 			params = append(params, helper.Organization(orgID))
 		}

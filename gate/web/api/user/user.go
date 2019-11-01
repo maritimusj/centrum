@@ -105,8 +105,19 @@ func Create(ctx iris.Context) hero.Result {
 				}
 			}
 
+			var org interface{}
+			if app.IsDefaultAdminUser(admin) {
+				if form.OrgID > 0 {
+					org = form.OrgID
+				} else {
+					org = app.Config.DefaultOrganization()
+				}
+			} else {
+				org = admin.OrganizationID()
+			}
+
 			//创建用户同名的role，并设置guest权限
-			role, err := s.CreateRole(app.Config.DefaultOrganization(), form.Username, form.Username, lang.Str(lang.UserDefaultRoleDesc))
+			role, err := s.CreateRole(org, form.Username, form.Username, lang.Str(lang.UserDefaultRoleDesc))
 			if err != nil {
 				return err
 			}
@@ -125,18 +136,6 @@ func Create(ctx iris.Context) hero.Result {
 			}
 
 			roles = append(roles, role)
-
-			var org interface{}
-			if app.IsDefaultAdminUser(admin) {
-				if form.OrgID > 0 {
-					org = form.OrgID
-				} else {
-					org = app.Config.DefaultOrganization()
-				}
-			} else {
-				org = admin.OrganizationID()
-			}
-
 			user, err := s.CreateUser(org, form.Username, []byte(form.Password), roles...)
 			if err != nil {
 				return err

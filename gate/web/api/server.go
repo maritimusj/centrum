@@ -78,6 +78,7 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 	v1.PartyFunc("/web", func(p router.Party) {
 		p.Post("/login", hero.Handler(web.Login))
 
+		//edge 回调
 		p.PartyFunc("/edge", func(p router.Party) {
 			_ = global.Params.Set("callbackURL", fmt.Sprintf("http://localhost:%d%s", app.Config.APIPort(), p.GetRelPath()))
 			p.Post("/{id:int64}", hero.Handler(edge.Feedback))
