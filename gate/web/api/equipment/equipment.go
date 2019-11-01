@@ -75,6 +75,29 @@ func List(ctx iris.Context) hero.Result {
 			brief["edge"] = iris.Map{
 				"status": getEquipmentSimpleStatus(admin, equipment),
 			}
+
+			var params = []helper.OptionFN{helper.Equipment(equipment.GetID()), helper.Limit(1)}
+			if !app.IsDefaultAdminUser(admin) {
+				params = append(params, helper.User(admin.GetID()))
+			}
+
+			_, total, err := s.GetStateList(params...)
+			if err != nil {
+				return err
+			}
+			brief["measure"] = iris.Map{
+				"total": total,
+			}
+
+			_, total, err = s.GetLastUnconfirmedAlarm(params...)
+			if err != nil {
+				if err != lang.Error(lang.ErrAlarmNotFound) {
+					return err
+				}
+			}
+			brief["alarm"] = iris.Map{
+				"total": total,
+			}
 			result = append(result, brief)
 		}
 

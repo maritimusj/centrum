@@ -84,6 +84,30 @@ func List(ctx iris.Context) hero.Result {
 					"title": title,
 				},
 			}
+
+			var params = []helper.OptionFN{helper.Device(device.GetID()), helper.Limit(1)}
+			if !app.IsDefaultAdminUser(admin) {
+				params = append(params, helper.User(admin.GetID()))
+			}
+
+			_, total, err := s.GetMeasureList(params...)
+			if err != nil {
+				return err
+			}
+			brief["measure"] = iris.Map{
+				"total": total,
+			}
+
+			_, total, err = s.GetLastUnconfirmedAlarm(params...)
+			if err != nil {
+				if err != lang.Error(lang.ErrAlarmNotFound) {
+					return err
+				}
+			}
+			brief["alarm"] = iris.Map{
+				"total": total,
+			}
+
 			result = append(result, brief)
 		}
 
