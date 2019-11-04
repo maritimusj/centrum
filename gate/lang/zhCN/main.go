@@ -218,6 +218,9 @@ var (
 		lang.ResourceLogLevelListTitle: "",
 		lang.ResourceLogLevelListDesc:  "",
 
+		lang.SysBriefTitle: "",
+		lang.SysBriefDesc:  "",
+
 		lang.ConfirmAdminPassword:       "请输入[ %s ]确认重置数据库：",
 		lang.FlushDBOk:                  "数据库已重置！",
 		lang.DefaultUserPasswordResetOk: "默认用户密码已重置！",

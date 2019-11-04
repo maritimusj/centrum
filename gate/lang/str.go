@@ -2,6 +2,7 @@ package lang
 
 import (
 	"errors"
+
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/status"
 )
@@ -233,6 +234,9 @@ const (
 
 	AlarmUnconfirmed
 	AlarmConfirmed
+
+	SysBriefTitle
+	SysBriefDesc
 )
 
 var (
@@ -382,6 +386,8 @@ func ApiResourcesMap() [][3]string {
 		{resource.LogList, Str(ResourceLogListTitle), Str(ResourceLogListDesc)},
 		{resource.LogDelete, Str(ResourceLogDeleteTitle), Str(ResourceLogDeleteDesc)},
 		{resource.LogLevelList, Str(ResourceLogLevelListTitle), Str(ResourceLogLevelListDesc)},
+
+		{resource.SysBrief, Str(SysBriefTitle), Str(SysBriefDesc)},
 	}
 }
 

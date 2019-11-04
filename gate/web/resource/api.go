@@ -92,6 +92,8 @@ const (
 	LogLevelList = "log.level.list"
 	LogList      = "log.list"
 	LogDelete    = "log.delete"
+
+	SysBrief = "sys.brief"
 )
 
 var (
@@ -100,6 +102,7 @@ var (
 		MyProfileUpdate,
 		MyPerm,
 		MyPermMulti,
+		SysBrief,
 	}
 
 	OrganizationAdmin = append(Guest,
@@ -178,6 +181,8 @@ var (
 		LogLevelList,
 		LogList,
 		LogDelete,
+
+		SysBrief,
 	)
 
 	SystemAdmin = append(OrganizationAdmin,
@@ -263,6 +268,7 @@ var (
 	MenuRoleSMSSettings = []string{
 		Unknown,
 	}
+
 	MenuRoleUsers = []string{
 		UserList,
 		UserCreate,
@@ -270,11 +276,13 @@ var (
 		UserUpdate,
 		UserDelete,
 	}
+
 	MenuRoleSystemSettings = []string{
 		LogLevelList,
 		LogList,
 		LogDelete,
 	}
+
 	MenuRoleSysLogs = []string{
 		LogLevelList,
 		LogList,

@@ -3,6 +3,9 @@ package api
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/iris-contrib/middleware/cors"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/core/router"
@@ -29,8 +32,6 @@ import (
 	"github.com/maritimusj/centrum/gate/web/perm"
 	resourceDef "github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/global"
-	"sync"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -105,7 +106,7 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 
 			//系统简讯
 			p.PartyFunc("/brief", func(p router.Party) {
-				p.Get("/", hero.Handler(brief.Simple))
+				p.Get("/", hero.Handler(brief.Simple)).Name = resourceDef.SysBrief
 			})
 
 			//资源
