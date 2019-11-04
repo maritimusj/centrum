@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/kataras/iris"
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/cache"
@@ -16,7 +18,6 @@ import (
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/status"
 	"github.com/maritimusj/centrum/gate/web/store"
-	"time"
 
 	"github.com/maritimusj/centrum/synchronized"
 	"github.com/maritimusj/centrum/util"
@@ -227,7 +228,7 @@ func (s *mysqlStore) GetConfigList(options ...helper.OptionFN) ([]model.Config, 
 
 	if option.Keyword != "" {
 		fromSQL += " AND c.name LIKE ?"
-		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		keyword := "%" + option.Keyword + "%"
 		params = append(params, keyword)
 	}
 
@@ -468,7 +469,7 @@ func (s *mysqlStore) GetOrganizationList(options ...helper.OptionFN) ([]model.Or
 	var params []interface{}
 	if option.Keyword != "" {
 		where += " AND (o.name LIKE ? OR o.title LIKE ?)"
-		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		keyword := "%" + option.Keyword + "%"
 		params = append(params, keyword, keyword)
 	}
 
@@ -684,8 +685,7 @@ func (s *mysqlStore) GetUserList(options ...helper.OptionFN) ([]model.User, int6
 
 	if option.Keyword != "" {
 		where += " AND (u.name LIKE ? OR u.title LIKE ? OR u.mobile LIKE ? OR u.email LIKE ?)"
-		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
-		params = append(params, keyword)
+		keyword := "%" + option.Keyword + "%"
 		params = append(params, keyword, keyword, keyword, keyword)
 	}
 
@@ -872,7 +872,7 @@ func (s *mysqlStore) GetRoleList(options ...helper.OptionFN) ([]model.Role, int6
 
 	if option.Keyword != "" {
 		fromSQL += " AND (r.name LIKE ? OR r.title LIKE ?)"
-		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		keyword := "%" + option.Keyword + "%"
 		params = append(params, keyword, keyword)
 	}
 
@@ -1314,7 +1314,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 
 	if option.Keyword != "" {
 		where += " AND g.title LIKE ?"
-		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		keyword := "%" + option.Keyword + "%"
 		params = append(params, keyword)
 	}
 
@@ -1731,7 +1731,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 
 	if option.Keyword != "" {
 		where += " AND m.title LIKE ?"
-		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		keyword := "%" + option.Keyword + "%"
 		params = append(params, keyword)
 	}
 
@@ -1924,7 +1924,7 @@ func (s *mysqlStore) GetEquipmentList(options ...helper.OptionFN) ([]model.Equip
 
 	if option.Keyword != "" {
 		where += " AND e.title LIKE ?"
-		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		keyword := "%" + option.Keyword + "%"
 		params = append(params, keyword)
 	}
 
@@ -2118,7 +2118,7 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 
 	if option.Keyword != "" {
 		where += " AND s.title LIKE ?"
-		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		keyword := "%" + option.Keyword + "%"
 		params = append(params, keyword)
 	}
 
@@ -2786,7 +2786,7 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 
 	if option.Keyword != "" {
 		fromSQL += " AND title LIKE ?"
-		keyword := fmt.Sprintf("%%%s%%", option.Keyword)
+		keyword := "%" + option.Keyword + "%"
 		params = append(params, keyword)
 	}
 
