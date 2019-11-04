@@ -38,6 +38,11 @@ func StateList(equipmentID int64, ctx iris.Context) hero.Result {
 			}
 		)
 
+		keyword := ctx.URLParam("keyword")
+		if keyword != "" {
+			params = append(params, helper.Keyword(keyword))
+		}
+
 		if !app.IsDefaultAdminUser(admin) {
 			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
 			params = append(params, helper.User(admin.GetID()))
