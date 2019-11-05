@@ -36,6 +36,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	defaultAPIServer = New()
+)
+
+func Start(ctx context.Context, cfg *cfg.Config) {
+	defaultAPIServer.Start(ctx, cfg)
+}
+
+func Wait() {
+	defaultAPIServer.Wait()
+}
+
 type Server interface {
 	Register(values ...interface{})
 	Start(ctx context.Context, cfg *cfg.Config)

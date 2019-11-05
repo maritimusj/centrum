@@ -2,6 +2,9 @@ package app
 
 import (
 	"context"
+	"os"
+	"time"
+
 	"github.com/asaskevich/EventBus"
 	"github.com/maritimusj/centrum/gate/config"
 	"github.com/maritimusj/centrum/gate/lang"
@@ -17,8 +20,6 @@ import (
 	mysqlStore "github.com/maritimusj/centrum/gate/web/store/mysql"
 	"github.com/maritimusj/centrum/global"
 	log "github.com/sirupsen/logrus"
-	"os"
-	"time"
 
 	edgeLang "github.com/maritimusj/centrum/edge/lang"
 )
@@ -109,7 +110,7 @@ func InitLog(levelStr string) error {
 	return nil
 }
 
-func Init(ctx context.Context, logLevel string) error {
+func Start(ctx context.Context, logLevel string) error {
 	Ctx, cancel = context.WithCancel(ctx)
 
 	const dbFile = "./chuanyan.db"
@@ -126,7 +127,6 @@ func Init(ctx context.Context, logLevel string) error {
 	}
 	//数据库连接
 	if err := InitDB(map[string]interface{}{
-		//"connStr": "root:12345678@/chuanyan?charset=utf8mb4&parseTime=true&loc=Local",
 		"connStr": dbFile,
 		"initDB":  initDB,
 	}); err != nil {

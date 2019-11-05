@@ -30,7 +30,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if err := webApp.Init(ctx, *logLevel); err != nil {
+	if err := webApp.Start(ctx, *logLevel); err != nil {
 		log.Fatal(err)
 	}
 
@@ -62,21 +62,17 @@ func main() {
 	}
 
 	//API服务
-	apiServer := webAPI.New()
-	apiServer.Start(ctx, webApp.Config)
 
-	WaitForExit()
+	webAPI.Start(ctx, webApp.Config)
+
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
 
 	fmt.Println("exit...")
 
 	cancel()
 
-	apiServer.Wait()
+	webAPI.Wait()
 	webApp.Close()
-}
-
-func WaitForExit() {
-	quit := make(chan os.Signal)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
 }
