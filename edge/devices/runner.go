@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kr/pretty"
 	"github.com/maritimusj/centrum/edge/devices/InverseServer"
 	"github.com/maritimusj/centrum/edge/devices/ep6v2"
 	"github.com/maritimusj/centrum/edge/devices/measure"
@@ -86,6 +85,12 @@ func (runner *Runner) needRestartAdapter(conf *json_rpc.Conf, newConf *json_rpc.
 }
 
 func (runner *Runner) Active(conf *json_rpc.Conf) error {
+	select {
+	case <-runner.ctx.Done():
+		return runner.ctx.Err()
+	default:
+	}
+
 	if v, ok := runner.adapters.Load(conf.UID); ok {
 		adapter := v.(*Adapter)
 		if !adapter.IsAlive() || runner.needRestartAdapter(adapter.conf, conf) {
@@ -356,7 +361,7 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 
 	adapter.OnDeviceStatusChanged(lang.AdapterInitializing)
 
-	fmt.Printf("%# v", pretty.Formatter(adapter.conf))
+	//fmt.Printf("%# v", pretty.Formatter(adapter.conf))
 	adapter.logger.Trace("start influx http device")
 
 	c, err := runner.InitInfluxDB(adapter.conf)
@@ -364,6 +369,10 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 		adapter.OnDeviceStatusChanged(lang.InfluxDBError)
 		return err
 	}
+
+	defer func() {
+		_ = c.Close()
+	}()
 
 	adapter.wg.Add(2)
 	go func() {
