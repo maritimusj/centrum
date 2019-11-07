@@ -2,6 +2,7 @@ package mysqlStore
 
 import (
 	"database/sql"
+
 	"github.com/maritimusj/centrum/gate/web/db"
 
 	"github.com/maritimusj/centrum/synchronized"
@@ -155,9 +156,9 @@ func RemoveData(db db.DB, tbName string, cond string, params ...interface{}) err
 }
 
 func IsDataExists(db db.DB, tbName string, cond string, params ...interface{}) (bool, error) {
-	var total int64
-	SQL := "SELECT COUNT(*) FROM " + tbName + " WHERE " + cond + " Limit 1"
-	err := db.QueryRow(SQL, params...).Scan(&total)
+	var exists int64
+	SQL := "SELECT 1 FROM " + tbName + " WHERE " + cond
+	err := db.QueryRow(SQL, params...).Scan(&exists)
 	log.Tracef("IsDataExists: %s => %s", SQL, util.If(err != nil, err, "Ok"))
 	if err != nil {
 		if err != sql.ErrNoRows {
@@ -167,5 +168,5 @@ func IsDataExists(db db.DB, tbName string, cond string, params ...interface{}) (
 		return false, nil
 	}
 
-	return total > 0, nil
+	return exists > 0, nil
 }

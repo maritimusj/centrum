@@ -3,10 +3,11 @@ package statistics
 import (
 	"errors"
 	"fmt"
-	"github.com/influxdata/influxdb1-client/models"
-	"github.com/maritimusj/centrum/gate/lang"
 	"strings"
 	"time"
+
+	"github.com/influxdata/influxdb1-client/models"
+	"github.com/maritimusj/centrum/gate/lang"
 )
 
 func (client *Client) GetMeasureStats(dbName string, deviceID int64, tagName string, start, end *time.Time, interval time.Duration) (*models.Row, error) {
@@ -26,7 +27,6 @@ func (client *Client) GetMeasureStats(dbName string, deviceID int64, tagName str
 		SQL.WriteString(fmt.Sprintf(` GROUP BY time(%s)  fill(previous)`, interval.String()))
 	}
 
-	println(SQL.String())
 	res, err := client.queryData(dbName, SQL.String())
 	if err != nil {
 		return nil, err

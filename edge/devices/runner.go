@@ -88,7 +88,7 @@ func (runner *Runner) needRestartAdapter(conf *json_rpc.Conf, newConf *json_rpc.
 func (runner *Runner) Active(conf *json_rpc.Conf) error {
 	if v, ok := runner.adapters.Load(conf.UID); ok {
 		adapter := v.(*Adapter)
-		if runner.needRestartAdapter(adapter.conf, conf) {
+		if !adapter.IsAlive() || runner.needRestartAdapter(adapter.conf, conf) {
 			adapter.Close()
 			runner.adapters.Delete(conf.UID)
 		} else {
@@ -132,15 +132,21 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 	}
 
 	adapter := &Adapter{
-		device:        ep6v2.New(),
-		conf:          conf,
-		logger:        logger,
-		measureDataCH: make(chan *measure.Data, 100),
-		done:          make(chan struct{}),
+		device:         ep6v2.New(),
+		conf:           conf,
+		logger:         logger,
+		lastActiveTime: time.Now(),
+		measureDataCH:  make(chan *measure.Data, 100),
+		done:           make(chan struct{}),
 	}
 
-	if _, ok := runner.adapters.LoadOrStore(conf.UID, adapter); !ok {
-		return runner.Serve(adapter)
+	err := runner.Serve(adapter)
+	if err != nil {
+		return err
+	}
+
+	if exists, ok := runner.adapters.LoadOrStore(conf.UID, adapter); ok {
+		exists.(*Adapter).Close()
 	}
 
 	return nil
@@ -393,6 +399,9 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 		device := adapter.device
 		for {
 			adapter.logger.Trace("try connect to :", adapter.conf.Address)
+
+			adapter.heartBeat()
+
 			adapter.OnDeviceStatusChanged(lang.Connecting)
 
 			err := device.Connect(runner.ctx, adapter.conf.Address)
@@ -426,6 +435,8 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 				return
 			case <-time.After(adapter.conf.Interval):
 				adapter.logger.Trace("start fetch data from: ", adapter.conf.Address)
+
+				adapter.heartBeat()
 
 				err := runner.gatherData(adapter)
 				if err != nil {

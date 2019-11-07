@@ -2,6 +2,8 @@ package alarm
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
@@ -10,7 +12,6 @@ import (
 	"github.com/maritimusj/centrum/gate/web/model"
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/response"
-	"time"
 )
 
 func List(ctx iris.Context) hero.Result {
@@ -47,7 +48,7 @@ func List(ctx iris.Context) hero.Result {
 		}
 
 		if ctx.URLParamExists("end") {
-			s, err := time.Parse("2006-01-02_15:04:05", ctx.URLParam("start"))
+			s, err := time.Parse("2006-01-02_15:04:05", ctx.URLParam("end"))
 			if err != nil {
 				return lang.ErrInvalidRequestData
 			}

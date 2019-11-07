@@ -2,6 +2,9 @@ package devices
 
 import (
 	"fmt"
+	"sync"
+	"time"
+
 	_ "github.com/influxdata/influxdb1-client"
 	"github.com/maritimusj/centrum/edge/devices/ep6v2"
 	"github.com/maritimusj/centrum/edge/devices/event"
@@ -11,7 +14,6 @@ import (
 	"github.com/maritimusj/centrum/json_rpc"
 	"github.com/maritimusj/centrum/synchronized"
 	log "github.com/sirupsen/logrus"
-	"sync"
 )
 
 type Adapter struct {
@@ -22,8 +24,28 @@ type Adapter struct {
 
 	logger *log.Logger
 
+	lastActiveTime time.Time
+
 	done chan struct{}
 	wg   sync.WaitGroup
+}
+
+func (adapter *Adapter) heartBeat() {
+	adapter.lastActiveTime = time.Now()
+}
+
+func (adapter *Adapter) IsAlive() bool {
+	if adapter == nil || adapter.device == nil {
+		return false
+	}
+
+	select {
+	case <-adapter.done:
+		return false
+	default:
+	}
+
+	return time.Now().Sub(adapter.lastActiveTime) > adapter.conf.Interval*2
 }
 
 func (adapter *Adapter) IsDone() bool {
