@@ -3,6 +3,11 @@ package statistics
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"sort"
+	"strings"
+	"time"
+
 	"github.com/kataras/iris"
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/app"
@@ -10,10 +15,6 @@ import (
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/util"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
-	"sort"
-	"strings"
-	"time"
 )
 
 func Export(ctx iris.Context) {
@@ -33,6 +34,7 @@ func Export(ctx iris.Context) {
 			StatesIDs  []int64    `json:"states"`
 			Start      time.Time  `json:"start"`
 			End        *time.Time `json:"end"`
+			Interval   *string    `json:"interval"`
 		}
 		if err := ctx.ReadJSON(&form); err != nil {
 			return err
@@ -106,7 +108,7 @@ func Export(ctx iris.Context) {
 				return err
 			}
 
-			rows, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &form.Start, form.End, 0)
+			rows, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &form.Start, form.End, form.Interval)
 			if err != nil {
 				return err
 			}

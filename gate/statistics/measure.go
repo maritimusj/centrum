@@ -10,9 +10,24 @@ import (
 	"github.com/maritimusj/centrum/gate/lang"
 )
 
-func (client *Client) GetMeasureStats(dbName string, deviceID int64, tagName string, start, end *time.Time, interval time.Duration) (*models.Row, error) {
+func (client *Client) GetMeasureStats(dbName string, deviceID int64, tagName string, start, end *time.Time, interval interface{}) (*models.Row, error) {
+	var i string
+	switch v := interval.(type) {
+	case time.Duration:
+		i = v.String()
+	case string:
+		i = v
+	case *string:
+		if v != nil {
+			i = *v
+		}
+	case int64:
+		i = time.Duration(v).String()
+	default:
+	}
+
 	var SQL strings.Builder
-	if interval > 0 {
+	if i != "" {
 		SQL.WriteString(`SELECT max("val") FROM `)
 	} else {
 		SQL.WriteString(`SELECT "val","alarm" FROM `)
@@ -23,8 +38,8 @@ func (client *Client) GetMeasureStats(dbName string, deviceID int64, tagName str
 		SQL.WriteString(fmt.Sprintf(` AND "time"<'%s'`, end.UTC().Format(time.RFC3339)))
 	}
 
-	if interval > 0 {
-		SQL.WriteString(fmt.Sprintf(` GROUP BY time(%s)  fill(previous)`, interval.String()))
+	if i != "" {
+		SQL.WriteString(fmt.Sprintf(` GROUP BY time(%s)  fill(previous)`, interval))
 	}
 
 	res, err := client.queryData(dbName, SQL.String())
