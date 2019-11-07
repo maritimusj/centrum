@@ -45,7 +45,7 @@ func (adapter *Adapter) IsAlive() bool {
 	default:
 	}
 
-	return time.Now().Sub(adapter.lastActiveTime) > adapter.conf.Interval*2
+	return time.Now().Sub(adapter.lastActiveTime) < adapter.conf.Interval*2
 }
 
 func (adapter *Adapter) IsDone() bool {
@@ -59,6 +59,7 @@ func (adapter *Adapter) IsDone() bool {
 
 func (adapter *Adapter) Close() {
 	<-synchronized.Do(adapter, func() interface{} {
+		println("close adapter: ", adapter.conf.UID)
 		if adapter.device != nil {
 			adapter.device.Close()
 			adapter.device = nil
