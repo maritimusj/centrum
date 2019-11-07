@@ -39,7 +39,7 @@ func (client *Client) GetMeasureStats(dbName string, deviceID int64, tagName str
 	}
 
 	if i != "" {
-		SQL.WriteString(fmt.Sprintf(` GROUP BY time(%s)  fill(previous)`, interval))
+		SQL.WriteString(fmt.Sprintf(` GROUP BY time(%s)  fill(previous)`, i))
 	}
 
 	res, err := client.queryData(dbName, SQL.String())
