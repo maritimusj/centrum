@@ -2,6 +2,7 @@ package alarm
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/kataras/iris"
@@ -32,6 +33,36 @@ func List(ctx iris.Context) hero.Result {
 		if !app.IsDefaultAdminUser(admin) {
 			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
 			params = append(params, helper.User(admin.GetID()))
+		}
+
+		if ctx.URLParamExists("device") {
+			deviceID, err := strconv.ParseInt(ctx.URLParam("device"), 10, 0)
+			if err != nil {
+				return lang.ErrInvalidRequestData
+			}
+			device, err := s.GetDevice(deviceID)
+			if err != nil {
+				return err
+			}
+			if !app.Allow(admin, device, resource.View) {
+				return lang.ErrNoPermission
+			}
+			params = append(params, helper.Device(deviceID))
+		}
+
+		if ctx.URLParamExists("equipment") {
+			equipmentID, err := strconv.ParseInt(ctx.URLParam("equipment"), 10, 0)
+			if err != nil {
+				return lang.ErrInvalidRequestData
+			}
+			equipment, err := s.GetEquipment(equipmentID)
+			if err != nil {
+				return err
+			}
+			if !app.Allow(admin, equipment, resource.View) {
+				return lang.ErrNoPermission
+			}
+			params = append(params, helper.Equipment(equipmentID))
 		}
 
 		var (
