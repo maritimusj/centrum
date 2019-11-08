@@ -2,6 +2,7 @@ package equipment
 
 import (
 	"errors"
+
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
@@ -22,6 +23,8 @@ func rangeEquipmentStates(user model.User, equipment model.Equipment, fn func(de
 	if user != nil && !app.IsDefaultAdminUser(user) {
 		params = append(params, helper.User(user.GetID()))
 	}
+
+	params = append(params, helper.Equipment(equipment.GetID()))
 
 	states, _, err := equipment.GetStateList(params...)
 	if err != nil {
