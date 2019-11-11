@@ -229,31 +229,50 @@ func UpdateState(stateID int64, ctx iris.Context) hero.Result {
 			} else {
 				state.DisableAlarm()
 			}
+
 			state.SetAlarmDeadBand(form.Alarm.DeadBand)
 			state.SetAlarmDelay(form.Alarm.Delay)
+
 			if form.Alarm.Entries.HF != nil {
 				state.SetAlarmEntry(alarm.HF, *form.Alarm.Entries.HF)
 				state.EnableAlarmEntry(alarm.HF)
+			} else {
+				state.DisableAlarmEntry(alarm.HF)
 			}
+
 			if form.Alarm.Entries.HH != nil {
 				state.SetAlarmEntry(alarm.HH, *form.Alarm.Entries.HH)
 				state.EnableAlarmEntry(alarm.HH)
+			} else {
+				state.DisableAlarmEntry(alarm.HH)
 			}
+
 			if form.Alarm.Entries.HI != nil {
 				state.SetAlarmEntry(alarm.HI, *form.Alarm.Entries.HI)
 				state.EnableAlarmEntry(alarm.HI)
+			} else {
+				state.DisableAlarmEntry(alarm.HI)
 			}
+
 			if form.Alarm.Entries.LF != nil {
 				state.SetAlarmEntry(alarm.LF, *form.Alarm.Entries.LF)
 				state.EnableAlarmEntry(alarm.LF)
+			} else {
+				state.DisableAlarmEntry(alarm.LF)
 			}
+
 			if form.Alarm.Entries.LL != nil {
 				state.SetAlarmEntry(alarm.LL, *form.Alarm.Entries.LL)
 				state.EnableAlarmEntry(alarm.LL)
+			} else {
+				state.DisableAlarmEntry(alarm.LL)
 			}
+
 			if form.Alarm.Entries.LO != nil {
 				state.SetAlarmEntry(alarm.LO, *form.Alarm.Entries.LO)
 				state.EnableAlarmEntry(alarm.LO)
+			} else {
+				state.DisableAlarmEntry(alarm.LO)
 			}
 		}
 
