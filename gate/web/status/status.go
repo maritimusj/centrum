@@ -8,5 +8,5 @@ const (
 //alarm status
 const (
 	Unconfirmed = iota
-	Confirmated
+	Confirmed
 )

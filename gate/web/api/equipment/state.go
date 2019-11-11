@@ -5,6 +5,7 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/web/alarm"
 	"github.com/maritimusj/centrum/gate/web/app"
 	"github.com/maritimusj/centrum/gate/web/helper"
 	"github.com/maritimusj/centrum/gate/web/model"
@@ -73,10 +74,22 @@ func StateList(equipmentID int64, ctx iris.Context) hero.Result {
 func CreateState(equipmentID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
-			Title           string `json:"title" valid:"required"`
-			Desc            string `json:"desc"`
-			MeasureID       int64  `json:"measure_id" valid:"required"`
-			TransformScript string `json:"script"`
+			Title     string `json:"title" valid:"required"`
+			Desc      string `json:"desc"`
+			MeasureID int64  `json:"measure_id" valid:"required"`
+			Alarm     *struct {
+				Enable   bool    `json:"enable"`
+				DeadBand float32 `json:"deadband"`
+				Delay    int     `json:"delay"`
+				Entries  struct {
+					HF *float32 `json:"hf"`
+					HH *float32 `json:"hh"`
+					HI *float32 `json:"hi"`
+					LO *float32 `json:"lo"`
+					LL *float32 `json:"ll"`
+					LF *float32 `json:"lf"`
+				} `json:"entries"`
+			} `json:"alarm"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
@@ -97,13 +110,52 @@ func CreateState(equipmentID int64, ctx iris.Context) hero.Result {
 				return lang.ErrNoPermission
 			}
 
-			state, err := equipment.CreateState(form.Title, form.Desc, form.MeasureID, form.TransformScript)
+			state, err := equipment.CreateState(form.Title, form.Desc, form.MeasureID, map[string]interface{}{})
 			if err != nil {
 				return err
 			}
 			err = app.SetAllow(admin, state, resource.View, resource.Ctrl)
 			if err != nil {
 				return err
+			}
+
+			if form.Alarm != nil {
+				if form.Alarm.Enable {
+					state.EnableAlarm()
+				} else {
+					state.DisableAlarm()
+				}
+				state.SetAlarmDeadBand(form.Alarm.DeadBand)
+				state.SetAlarmDelay(form.Alarm.Delay)
+				if form.Alarm.Entries.HF != nil {
+					state.SetAlarmEntry(alarm.HF, *form.Alarm.Entries.HF)
+					state.EnableAlarmEntry(alarm.HF)
+				}
+				if form.Alarm.Entries.HH != nil {
+					state.SetAlarmEntry(alarm.HH, *form.Alarm.Entries.HH)
+					state.EnableAlarmEntry(alarm.HH)
+				}
+				if form.Alarm.Entries.HI != nil {
+					state.SetAlarmEntry(alarm.HI, *form.Alarm.Entries.HI)
+					state.EnableAlarmEntry(alarm.HI)
+				}
+				if form.Alarm.Entries.LF != nil {
+					state.SetAlarmEntry(alarm.LF, *form.Alarm.Entries.LF)
+					state.EnableAlarmEntry(alarm.LF)
+				}
+				if form.Alarm.Entries.LL != nil {
+					state.SetAlarmEntry(alarm.LL, *form.Alarm.Entries.LL)
+					state.EnableAlarmEntry(alarm.LL)
+				}
+				if form.Alarm.Entries.LO != nil {
+					state.SetAlarmEntry(alarm.LO, *form.Alarm.Entries.LO)
+					state.EnableAlarmEntry(alarm.LO)
+				}
+
+				err = state.Save()
+				if err != nil {
+					return err
+				}
 			}
 
 			return state.Simple()
@@ -142,9 +194,21 @@ func UpdateState(stateID int64, ctx iris.Context) hero.Result {
 		}
 
 		var form struct {
-			Title           *string `json:"title"`
-			MeasureID       *int64  `json:"measure_id"`
-			TransformScript *string `json:"script"`
+			Title     *string `json:"title"`
+			MeasureID *int64  `json:"measure_id"`
+			Alarm     *struct {
+				Enable   bool    `json:"enable"`
+				DeadBand float32 `json:"deadband"`
+				Delay    int     `json:"delay"`
+				Entries  struct {
+					HF *float32 `json:"hf"`
+					HH *float32 `json:"hh"`
+					HI *float32 `json:"hi"`
+					LO *float32 `json:"lo"`
+					LL *float32 `json:"ll"`
+					LF *float32 `json:"lf"`
+				} `json:"entries"`
+			} `json:"alarm"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
@@ -159,8 +223,38 @@ func UpdateState(stateID int64, ctx iris.Context) hero.Result {
 			state.SetMeasure(*form.MeasureID)
 		}
 
-		if form.TransformScript != nil {
-			state.SetScript(*form.TransformScript)
+		if form.Alarm != nil {
+			if form.Alarm.Enable {
+				state.EnableAlarm()
+			} else {
+				state.DisableAlarm()
+			}
+			state.SetAlarmDeadBand(form.Alarm.DeadBand)
+			state.SetAlarmDelay(form.Alarm.Delay)
+			if form.Alarm.Entries.HF != nil {
+				state.SetAlarmEntry(alarm.HF, *form.Alarm.Entries.HF)
+				state.EnableAlarmEntry(alarm.HF)
+			}
+			if form.Alarm.Entries.HH != nil {
+				state.SetAlarmEntry(alarm.HH, *form.Alarm.Entries.HH)
+				state.EnableAlarmEntry(alarm.HH)
+			}
+			if form.Alarm.Entries.HI != nil {
+				state.SetAlarmEntry(alarm.HI, *form.Alarm.Entries.HI)
+				state.EnableAlarmEntry(alarm.HI)
+			}
+			if form.Alarm.Entries.LF != nil {
+				state.SetAlarmEntry(alarm.LF, *form.Alarm.Entries.LF)
+				state.EnableAlarmEntry(alarm.LF)
+			}
+			if form.Alarm.Entries.LL != nil {
+				state.SetAlarmEntry(alarm.LL, *form.Alarm.Entries.LL)
+				state.EnableAlarmEntry(alarm.LL)
+			}
+			if form.Alarm.Entries.LO != nil {
+				state.SetAlarmEntry(alarm.LO, *form.Alarm.Entries.LO)
+				state.EnableAlarmEntry(alarm.LO)
+			}
 		}
 
 		err = state.Save()

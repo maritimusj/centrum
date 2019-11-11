@@ -25,5 +25,5 @@ type Equipment interface {
 	Groups() ([]Group, error)
 
 	GetStateList(options ...helper.OptionFN) ([]State, int64, error)
-	CreateState(title, desc string, measure interface{}, script string) (State, error)
+	CreateState(title, desc string, measure interface{}, extra map[string]interface{}) (State, error)
 }

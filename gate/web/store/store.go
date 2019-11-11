@@ -1,12 +1,13 @@
 package store
 
 import (
+	"time"
+
 	"github.com/kataras/iris"
 	"github.com/maritimusj/centrum/gate/web/cache"
 	"github.com/maritimusj/centrum/gate/web/helper"
 	"github.com/maritimusj/centrum/gate/web/model"
 	"github.com/maritimusj/centrum/gate/web/resource"
-	"time"
 )
 
 type Store interface {
@@ -70,7 +71,7 @@ type Store interface {
 	GetEquipmentList(options ...helper.OptionFN) ([]model.Equipment, int64, error)
 
 	GetState(stateID int64) (model.State, error)
-	CreateState(equipmentID, measureID int64, title, desc, script string) (model.State, error)
+	CreateState(equipmentID, measureID int64, title, desc string, extra map[string]interface{}) (model.State, error)
 	RemoveState(stateID int64) error
 	GetStateList(options ...helper.OptionFN) ([]model.State, int64, error)
 

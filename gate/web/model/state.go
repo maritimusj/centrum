@@ -4,9 +4,9 @@ package model
 type State interface {
 	DBEntry
 	EnableEntry
-	Profile
-
+	OptionEntry
 	Resource
+	Profile
 
 	Measure() Measure
 	Equipment() Equipment
@@ -19,6 +19,19 @@ type State interface {
 	Desc() string
 	SetDesc(string)
 
-	Script() string
-	SetScript(string)
+	IsAlarmEnabled() bool
+	EnableAlarm()
+	DisableAlarm()
+
+	AlarmDeadBand() float32
+	SetAlarmDeadBand(v float32)
+
+	AlarmDelaySecond() int
+	SetAlarmDelay(seconds int)
+
+	GetAlarmEntries() map[string]float32
+	GetAlarmEntry(name string) (float32, bool)
+	SetAlarmEntry(name string, value float32)
+	EnableAlarmEntry(name string)
+	DisableAlarmEntry(name string)
 }

@@ -3,6 +3,8 @@ package mysqlStore
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/dirty"
 	"github.com/maritimusj/centrum/gate/web/helper"
@@ -10,7 +12,6 @@ import (
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/status"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 type Equipment struct {
@@ -229,7 +230,7 @@ func (e *Equipment) GetStateList(options ...helper.OptionFN) ([]model.State, int
 	return e.store.GetStateList(options...)
 }
 
-func (e *Equipment) CreateState(title, desc string, measure interface{}, script string) (model.State, error) {
+func (e *Equipment) CreateState(title, desc string, measure interface{}, extra map[string]interface{}) (model.State, error) {
 	var measureID int64
 	switch v := measure.(type) {
 	case int64:
@@ -239,7 +240,7 @@ func (e *Equipment) CreateState(title, desc string, measure interface{}, script 
 	default:
 		panic(errors.New("equipment CreateState: unknown measure"))
 	}
-	return e.store.CreateState(e.GetID(), measureID, title, desc, script)
+	return e.store.CreateState(e.GetID(), measureID, title, desc, extra)
 }
 
 func (e *Equipment) Simple() model.Map {

@@ -1,6 +1,8 @@
 package mysqlStore
 
 import (
+	"time"
+
 	"github.com/kataras/iris"
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/dirty"
@@ -8,7 +10,6 @@ import (
 	"github.com/maritimusj/centrum/gate/web/status"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"time"
 )
 
 type Alarm struct {
@@ -55,7 +56,7 @@ func (alarm *Alarm) Confirm(data map[string]interface{}) error {
 	if err := alarm.SetOption("confirm", data); err != nil {
 		return err
 	}
-	alarm.status = status.Confirmated
+	alarm.status = status.Confirmed
 	alarm.dirty.Set("status", func() interface{} {
 		return alarm.status
 	})

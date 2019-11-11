@@ -1993,7 +1993,7 @@ func (s *mysqlStore) loadState(id int64) (model.State, error) {
 		"desc?":        &state.desc,
 		"equipment_id": &state.equipmentID,
 		"measure_id":   &state.measureID,
-		"script":       &state.script,
+		"extra":        &state.extra,
 		"created_at":   &state.createdAt,
 	}, "id=?", id)
 
@@ -2034,15 +2034,23 @@ func (s *mysqlStore) GetState(stateID int64) (model.State, error) {
 	return result.(model.State), nil
 }
 
-func (s *mysqlStore) CreateState(equipmentID, measureID int64, title, desc, script string) (model.State, error) {
+func (s *mysqlStore) CreateState(equipmentID, measureID int64, title, desc string, extra map[string]interface{}) (model.State, error) {
 	result := <-synchronized.Do(TbStates, func() interface{} {
+		if extra == nil {
+			extra = map[string]interface{}{}
+		}
+		extraData, err := json.Marshal(extra)
+		if err != nil {
+			return lang.InternalError(err)
+		}
+
 		data := map[string]interface{}{
 			"enable":       status.Enable,
 			"title":        title,
 			"desc":         desc,
 			"equipment_id": equipmentID,
 			"measure_id":   measureID,
-			"script":       script,
+			"extra":        extraData,
 			"created_at":   time.Now(),
 		}
 
@@ -2110,11 +2118,6 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		where += " AND s.equipment_id=?"
 		params = append(params, option.EquipmentID)
 	}
-
-	//if option.Kind != resource.AllKind {
-	//	where += " AND s.kind=?"
-	//	params = append(params, option.Kind)
-	//}
 
 	if option.Keyword != "" {
 		where += " AND s.title LIKE ?"

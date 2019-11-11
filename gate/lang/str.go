@@ -257,7 +257,7 @@ func load() {
 
 	alarmStatusDesc = map[int]string{
 		status.Unconfirmed: Str(AlarmUnconfirmed),
-		status.Confirmated: Str(AlarmConfirmed),
+		status.Confirmed:   Str(AlarmConfirmed),
 	}
 }
 

@@ -2,13 +2,18 @@ package mysqlStore
 
 import (
 	"errors"
+	"time"
+
+	"github.com/maritimusj/centrum/gate/web/alarm"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/dirty"
 	"github.com/maritimusj/centrum/gate/web/helper"
 	"github.com/maritimusj/centrum/gate/web/model"
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/status"
-	"time"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 type State struct {
@@ -18,7 +23,7 @@ type State struct {
 	desc        string
 	equipmentID int64
 	measureID   int64
-	script      string
+	extra       []byte
 	createdAt   time.Time
 
 	dirty *dirty.Dirty
@@ -63,6 +68,28 @@ func (s *State) GetChildrenResources(options ...helper.OptionFN) ([]model.Resour
 
 func (s *State) GetID() int64 {
 	return s.id
+}
+
+func (s *State) Option() map[string]interface{} {
+	return gjson.ParseBytes(s.extra).Value().(map[string]interface{})
+}
+
+func (s *State) GetOption(path string) gjson.Result {
+	return gjson.GetBytes(s.extra, path)
+}
+
+func (s *State) SetOption(path string, value interface{}) error {
+	data, err := sjson.SetBytes(s.extra, path, value)
+	if err != nil {
+		return err
+	}
+
+	s.extra = data
+	s.dirty.Set("extra", func() interface{} {
+		return s.extra
+	})
+
+	return nil
 }
 
 func (s *State) CreatedAt() time.Time {
@@ -141,19 +168,6 @@ func (s *State) SetDesc(desc string) {
 	}
 }
 
-func (s *State) Script() string {
-	return s.script
-}
-
-func (s *State) SetScript(script string) {
-	if s.script != script {
-		s.script = script
-		s.dirty.Set("script", func() interface{} {
-			return s.script
-		})
-	}
-}
-
 func (s *State) Measure() model.Measure {
 	if s.measureID > 0 {
 		measure, _ := s.store.GetMeasure(s.measureID)
@@ -193,6 +207,72 @@ func (s *State) SetMeasure(measure interface{}) {
 	}
 }
 
+func (s *State) IsAlarmEnabled() bool {
+	return s.GetOption("__alarm.enable").Bool()
+}
+
+func (s *State) EnableAlarm() {
+	_ = s.SetOption("__alarm.enable", true)
+}
+
+func (s *State) DisableAlarm() {
+	_ = s.SetOption("__alarm.enable", false)
+}
+
+func (s *State) AlarmDeadBand() float32 {
+	return float32(s.GetOption("__alarm.deadband").Float())
+}
+
+func (s *State) SetAlarmDeadBand(v float32) {
+	_ = s.SetOption("__alarm.deadband", v)
+}
+
+func (s *State) AlarmDelaySecond() int {
+	return int(s.GetOption("__alarm.delay").Int())
+}
+
+func (s *State) SetAlarmDelay(seconds int) {
+	_ = s.SetOption("__alarm.delay", seconds)
+}
+
+func (s *State) GetAlarmEntries() map[string]float32 {
+	data := map[string]float32{}
+	for _, name := range []string{alarm.HF, alarm.HH, alarm.HI, alarm.LF, alarm.LL, alarm.LO} {
+		if v, ok := s.GetAlarmEntry(name); ok {
+			data[name] = v
+		}
+	}
+	return data
+}
+
+func (s *State) GetAlarmEntry(name string) (float32, bool) {
+	entry := s.GetOption("__alarm." + name)
+	if entry.Exists() {
+		return float32(entry.Get("val").Float()), entry.Get("enable").Bool()
+	}
+	return 0, false
+}
+
+func (s *State) SetAlarmEntry(name string, value float32) {
+	entry := s.GetOption("__alarm." + name)
+	data := map[string]interface{}{}
+	if entry.Exists() {
+		data["enable"] = entry.Get("enable").Bool()
+	} else {
+		data["enable"] = true
+	}
+	data["val"] = value
+	_ = s.SetOption("__alarm."+name, data)
+}
+
+func (s *State) EnableAlarmEntry(name string) {
+	_ = s.SetOption("__alarm."+name+".enable", true)
+}
+
+func (s *State) DisableAlarmEntry(name string) {
+	_ = s.SetOption("__alarm."+name+".enable", false)
+}
+
 func (s *State) Simple() model.Map {
 	if s == nil {
 		return model.Map{}
@@ -223,11 +303,16 @@ func (s *State) Detail() model.Map {
 	}
 
 	detail := model.Map{
-		"id":         s.id,
-		"enable":     s.IsEnabled(),
-		"title":      s.title,
-		"desc":       s.desc,
-		"script":     s.script,
+		"id":     s.id,
+		"enable": s.IsEnabled(),
+		"title":  s.title,
+		"desc":   s.desc,
+		"alarm": model.Map{
+			"enable":   s.IsAlarmEnabled(),
+			"deadband": s.AlarmDeadBand(),
+			"delay":    s.AlarmDelaySecond(),
+			"entries":  s.GetAlarmEntries(),
+		},
 		"created_at": s.createdAt,
 	}
 
