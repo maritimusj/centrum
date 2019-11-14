@@ -25,7 +25,7 @@ func (w *mutexWrapper) Unlock() {
 }
 
 func (w *mutexWrapper) IsIdle() bool {
-	return atomic.LoadInt32(&w.total) < 0
+	return atomic.LoadInt32(&w.total) <= 0
 }
 
 func Close() {
