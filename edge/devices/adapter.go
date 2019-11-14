@@ -59,7 +59,6 @@ func (adapter *Adapter) IsDone() bool {
 
 func (adapter *Adapter) Close() {
 	<-synchronized.Do(adapter, func() interface{} {
-		println("close adapter: ", adapter.conf.UID)
 		if adapter.device != nil {
 			adapter.device.Close()
 			adapter.device = nil

@@ -94,8 +94,8 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 	if v, ok := runner.adapters.Load(conf.UID); ok {
 		adapter := v.(*Adapter)
 		if !adapter.IsAlive() || runner.needRestartAdapter(adapter.conf, conf) {
-			adapter.Close()
 			runner.adapters.Delete(conf.UID)
+			adapter.Close()
 		} else {
 			adapter.conf.Interval = conf.Interval
 			if adapter.conf.LogLevel != conf.LogLevel {
@@ -275,8 +275,8 @@ func (runner *Runner) Remove(uid string) {
 	if v, ok := runner.adapters.Load(uid); ok {
 		adapter := v.(*Adapter)
 
-		adapter.Close()
 		runner.adapters.Delete(uid)
+		adapter.Close()
 	}
 }
 

@@ -3,12 +3,13 @@ package mysqlStore
 import (
 	"database/sql"
 	"errors"
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/dirty"
 	"github.com/maritimusj/centrum/gate/web/helper"
 	"github.com/maritimusj/centrum/gate/web/model"
 	"github.com/maritimusj/centrum/gate/web/resource"
-	"time"
 )
 
 type Group struct {
@@ -123,10 +124,30 @@ func (g *Group) Destroy() error {
 		return err
 	} else if len(res) > 0 {
 		var devices []interface{}
+
 		for _, device := range res {
 			devices = append(devices, device)
 		}
+
 		err = g.RemoveDevice(devices...)
+		if err != nil {
+			return err
+		}
+
+		//如果设备已经从所有分组中移除，则删除设备本身
+		for _, device := range res {
+			groups, err := device.Groups()
+			if err != nil {
+				return err
+			}
+			if len(groups) > 0 {
+				continue
+			}
+			err = device.Destroy()
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	//处理分组下自定义设备
@@ -134,10 +155,32 @@ func (g *Group) Destroy() error {
 		return err
 	} else if len(res) > 0 {
 		var equipments []interface{}
+
 		for _, e := range res {
 			equipments = append(equipments, e)
 		}
+
 		err = g.RemoveDevice(equipments...)
+		if err != nil {
+			return err
+		}
+
+		//如果设备已经从所有分组中移除，则删除设备本身
+		for _, equipment := range res {
+			groups, err := equipment.Groups()
+			if err != nil {
+				return err
+			}
+
+			if len(groups) > 0 {
+				continue
+			}
+
+			err = equipment.Destroy()
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	policies, _, err := g.store.GetPolicyList(g)
