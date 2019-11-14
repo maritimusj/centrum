@@ -1,13 +1,32 @@
 package synchronized
 
 import (
-	"errors"
 	"sync"
+	"sync/atomic"
 )
 
 var (
 	defaultSynchronized = New()
 )
+
+type mutexWrapper struct {
+	mu    sync.Mutex
+	total int32
+}
+
+func (w *mutexWrapper) Lock() {
+	atomic.AddInt32(&w.total, 1)
+	w.mu.Lock()
+}
+
+func (w *mutexWrapper) Unlock() {
+	w.mu.Unlock()
+	atomic.AddInt32(&w.total, -1)
+}
+
+func (w *mutexWrapper) IsIdle() bool {
+	return atomic.LoadInt32(&w.total) < 0
+}
 
 func Close() {
 	defaultSynchronized.Close()
@@ -18,61 +37,48 @@ func Do(obj interface{}, fn func() interface{}) <-chan interface{} {
 }
 
 type data struct {
-	lockerMap map[interface{}]*sync.Mutex
+	lockerMap map[interface{}]*mutexWrapper
 	mu        sync.Mutex
-	done      chan struct{}
 	wg        sync.WaitGroup
 }
 
 func New() *data {
 	return &data{
-		lockerMap: make(map[interface{}]*sync.Mutex),
-		done:      make(chan struct{}),
+		lockerMap: make(map[interface{}]*mutexWrapper),
 	}
 }
 
 func (data *data) Close() {
-	close(data.done)
 	data.wg.Wait()
 }
 
 func (data *data) Do(obj interface{}, fn func() interface{}) <-chan interface{} {
 	data.mu.Lock()
-	defer func() {
-		data.mu.Unlock()
-	}()
+	defer data.mu.Unlock()
 
 	v, ok := data.lockerMap[obj]
 	if !ok {
-		v = &sync.Mutex{}
+		v = &mutexWrapper{}
 		data.lockerMap[obj] = v
 	}
 
 	resultChan := make(chan interface{}, 1)
+	data.wg.Add(1)
+
 	go func() {
-		data.wg.Add(1)
 		v.Lock()
 		defer func() {
 			close(resultChan)
-			data.wg.Done()
-
 			v.Unlock()
-
 			data.mu.Lock()
-			{
+			if v.IsIdle() {
 				delete(data.lockerMap, obj)
 			}
 			data.mu.Unlock()
+			data.wg.Done()
 		}()
 
-		select {
-		case <-data.done:
-			resultChan <- errors.New("synchronized Do() exit")
-			return
-		default:
-			resultChan <- fn()
-			return
-		}
+		resultChan <- fn()
 	}()
 
 	return resultChan
