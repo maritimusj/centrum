@@ -317,7 +317,7 @@ func Export(ctx iris.Context) {
 				_, _ = csvFile.WriteString(device.Title() + ",")
 			}
 
-			_, _ = csvFile.WriteString(alarm.GetOption("fields.name").String() + ",")
+			_, _ = csvFile.WriteString(alarm.GetOption("name").String() + ",")
 			_, _ = csvFile.WriteString(alarm.GetOption("fields.val").String() + ",")
 
 			_, stats := alarm.Status()
