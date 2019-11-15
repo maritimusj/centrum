@@ -247,6 +247,9 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 				p.Delete("/{id:int64}", hero.Handler(alarm.Delete)).Name = resourceDef.AlarmDelete
 
 				p.Get("/{alarm:int64}/comments", hero.Handler(comment.List)).Name = resourceDef.CommentList
+
+				//导出报表
+				p.Post("/export", hero.Handler(alarm.Export))
 			})
 
 			//警报备注

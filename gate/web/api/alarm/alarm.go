@@ -2,6 +2,7 @@ package alarm
 
 import (
 	"fmt"
+	"io/ioutil"
 	"strconv"
 	"time"
 
@@ -225,4 +226,113 @@ func Delete(alarmID int64, ctx iris.Context) hero.Result {
 		}
 		return lang.Ok
 	})
+}
+
+func Export(ctx iris.Context) {
+	res := response.Wrap(func() interface{} {
+		csvFile, err := ioutil.TempFile("", "tempFile")
+		if err != nil {
+			return err
+		}
+
+		//写入UTF-8 BOM，防止中文乱码
+		_, err = csvFile.WriteString("\xEF\xBB\xBF")
+		if err != nil {
+			return err
+		}
+
+		var (
+			s      = app.Store()
+			params = make([]helper.OptionFN, 0)
+			admin  = s.MustGetUserFromContext(ctx)
+		)
+
+		if !app.IsDefaultAdminUser(admin) {
+			params = append(params, helper.DefaultEffect(app.Config.DefaultEffect()))
+			params = append(params, helper.User(admin.GetID()))
+		}
+
+		if ctx.URLParamExists("device") {
+			deviceID, err := strconv.ParseInt(ctx.URLParam("device"), 10, 0)
+			if err != nil {
+				return lang.ErrInvalidRequestData
+			}
+			device, err := s.GetDevice(deviceID)
+			if err != nil {
+				return err
+			}
+			if !app.Allow(admin, device, resource.View) {
+				return lang.ErrNoPermission
+			}
+			params = append(params, helper.Device(deviceID))
+		}
+
+		if ctx.URLParamExists("equipment") {
+			equipmentID, err := strconv.ParseInt(ctx.URLParam("equipment"), 10, 0)
+			if err != nil {
+				return lang.ErrInvalidRequestData
+			}
+			equipment, err := s.GetEquipment(equipmentID)
+			if err != nil {
+				return err
+			}
+			if !app.Allow(admin, equipment, resource.View) {
+				return lang.ErrNoPermission
+			}
+			params = append(params, helper.Equipment(equipmentID))
+		}
+
+		var (
+			start *time.Time
+			end   *time.Time
+		)
+
+		if ctx.URLParamExists("start") {
+			s, err := time.Parse("2006-01-02_15:04:05", ctx.URLParam("start"))
+			if err != nil {
+				return lang.ErrInvalidRequestData
+			}
+			start = &s
+		}
+
+		if ctx.URLParamExists("end") {
+			s, err := time.Parse("2006-01-02_15:04:05", ctx.URLParam("end"))
+			if err != nil {
+				return lang.ErrInvalidRequestData
+			}
+			end = &s
+		}
+
+		alarms, _, err := s.GetAlarmList(start, end, params...)
+		if err != nil {
+			return err
+		}
+
+		for index, alarm := range alarms {
+			_, _ = csvFile.WriteString(strconv.FormatInt(int64(index+1), 10) + ",")
+			device, err := alarm.Device()
+			if err != nil {
+				_, _ = csvFile.WriteString("<err>" + ",")
+			} else {
+				_, _ = csvFile.WriteString(device.Title() + ",")
+			}
+
+			_, _ = csvFile.WriteString(alarm.GetOption("fields.name").String() + ",")
+			_, _ = csvFile.WriteString(alarm.GetOption("fields.val").String() + ",")
+
+			_, stats := alarm.Status()
+			_, _ = csvFile.WriteString(stats + ",")
+
+			_, _ = csvFile.WriteString(alarm.CreatedAt().String() + "\r\n")
+		}
+
+		_ = csvFile.Close()
+		_ = ctx.SendFile(csvFile.Name(), time.Now().Format("2006-01-02_15_04_05")+".csv")
+
+		return nil
+	})
+
+	if _, ok := res.(error); ok {
+		ctx.StatusCode(iris.StatusNotFound)
+	}
 }
