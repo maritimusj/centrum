@@ -249,7 +249,7 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 				p.Get("/{alarm:int64}/comments", hero.Handler(comment.List)).Name = resourceDef.CommentList
 
 				//导出报表
-				p.Post("/export", hero.Handler(alarm.Export))
+				p.Get("/export", hero.Handler(alarm.Export))
 			})
 
 			//警报备注
