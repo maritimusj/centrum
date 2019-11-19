@@ -187,8 +187,6 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 
 		defer r.Release()
 
-		adapter.logger.Trace("GetRealtimeData: ", uid)
-
 		values := make([]map[string]interface{}, 0)
 		for i := 0; i < r.AINum(); i++ {
 			ai, err := adapter.device.GetAI(i)
@@ -294,15 +292,12 @@ func (runner *Runner) InitInfluxDB(conf *json_rpc.Conf) (influx.Client, error) {
 		return nil, err
 	}
 
-	log.Trace("create influx db: ", conf.DB)
-
 	_, err = c.Query(influx.Query{
 		Database: conf.DB,
 		Command:  fmt.Sprintf("CREATE DATABASE \"%s\"", conf.DB),
 	})
 
 	if err != nil {
-		log.Errorln(err)
 		return nil, err
 	}
 	return c, nil
@@ -317,7 +312,7 @@ func (runner *Runner) getMeasureData(client influx.Client, db string, ch <-chan 
 		select {
 		case data := <-ch:
 			if data == nil {
-				return errors.New("got nil data")
+				return errors.New("ch closed")
 			}
 
 			point, err := influx.NewPoint(data.Name, data.Tags, data.Fields, data.Time)
@@ -361,9 +356,6 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 
 	adapter.OnDeviceStatusChanged(lang.AdapterInitializing)
 
-	//fmt.Printf("%# v", pretty.Formatter(adapter.conf))
-	adapter.logger.Trace("start influx http device")
-
 	c, err := runner.InitInfluxDB(adapter.conf)
 	if err != nil {
 		adapter.OnDeviceStatusChanged(lang.InfluxDBError)
@@ -377,7 +369,6 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 	adapter.wg.Add(2)
 	go func() {
 		defer func() {
-			adapter.logger.Warnln("influx routine exit!")
 			adapter.wg.Done()
 		}()
 
@@ -401,14 +392,11 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 		defer func() {
 			close(adapter.measureDataCH)
 			adapter.wg.Done()
-			adapter.logger.Warnln("fetch data routine exit!")
 		}()
 
 	tryConnectToDevice:
 		device := adapter.device
 		for {
-			adapter.logger.Trace("try connect to :", adapter.conf.Address)
-
 			adapter.heartBeat()
 
 			adapter.OnDeviceStatusChanged(lang.Connecting)
@@ -443,8 +431,6 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 			case <-adapter.done:
 				return
 			case <-time.After(adapter.conf.Interval):
-				adapter.logger.Trace("start fetch data from: ", adapter.conf.Address)
-
 				adapter.heartBeat()
 
 				err := runner.gatherData(adapter)
@@ -513,7 +499,6 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 				if av != 0 {
 					adapter.OnMeasureAlarm(data.Clone())
 				}
-				log.Tracef("%s => %#v", ai.GetConfig().TagName, v)
 			}
 			return nil
 		})
@@ -539,7 +524,6 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 				adapter.measureDataCH <- data
 
 				adapter.OnMeasureDiscovered(di.GetConfig().TagName, di.GetConfig().Title)
-				log.Tracef("%s => %#v", di.GetConfig().TagName, v)
 			}
 			return nil
 		})
@@ -565,7 +549,6 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 				adapter.measureDataCH <- data
 
 				adapter.OnMeasureDiscovered(ao.GetConfig().TagName, ao.GetConfig().Title)
-				log.Tracef("%s => %#v", ao.GetConfig().TagName, v)
 			}
 			return nil
 		})
@@ -591,7 +574,6 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 				adapter.measureDataCH <- data
 
 				adapter.OnMeasureDiscovered(do.GetConfig().TagName, do.GetConfig().Title)
-				log.Tracef("%s => %#v", do.GetConfig().TagName, v)
 			}
 			return nil
 		})

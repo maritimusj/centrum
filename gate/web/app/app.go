@@ -140,6 +140,8 @@ func Start(ctx context.Context, logLevel string) error {
 		return err
 	}
 
+	_ = Config.Save()
+
 	if err := InitLog(logLevel); err != nil {
 		return err
 	}

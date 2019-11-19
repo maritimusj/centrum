@@ -1,13 +1,14 @@
 package statistics
 
 import (
+	"time"
+
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/app"
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/response"
-	"time"
 )
 
 func Measure(measureID int64, ctx iris.Context) hero.Result {
@@ -106,5 +107,22 @@ func State(stateID int64, ctx iris.Context) hero.Result {
 		}
 
 		return result
+	})
+}
+
+func Alarm(ctx iris.Context) hero.Result {
+	return response.Wrap(func() interface{} {
+		var form struct {
+			Start     *time.Time `json:"start"`
+			End       *time.Time `json:"end"`
+			Device    *int64     `json:"device"`
+			Equipment *int64     `json:"equipment"`
+		}
+
+		if err := ctx.ReadJSON(&form); err != nil {
+			return lang.ErrInvalidRequestData
+		}
+
+		panic("not finished")
 	})
 }

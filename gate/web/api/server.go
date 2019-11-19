@@ -248,6 +248,9 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 
 				p.Get("/{alarm:int64}/comments", hero.Handler(comment.List)).Name = resourceDef.CommentList
 
+				//历史趋势
+				p.Post("/statistics", hero.Handler(statistics.Alarm))
+
 				//导出报表
 				p.Get("/export", hero.Handler(alarm.Export))
 			})

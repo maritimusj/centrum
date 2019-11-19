@@ -57,3 +57,7 @@ func (client *Client) GetMeasureStats(dbName string, deviceID int64, tagName str
 
 	return nil, lang.Error(lang.ErrNotStatisticsData)
 }
+
+func (client *Client) GetAlarmStats(dbName string, deviceID int64, start, end *time.Time) (*models.Row, error) {
+	return nil, errors.New("not implement")
+}
