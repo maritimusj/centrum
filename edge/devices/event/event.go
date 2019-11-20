@@ -3,14 +3,15 @@ package event
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/asaskevich/EventBus"
 	"github.com/maritimusj/centrum/edge/devices/measure"
 	"github.com/maritimusj/centrum/edge/lang"
 	httpLoggerStore "github.com/maritimusj/centrum/edge/logStore/http"
 	"github.com/maritimusj/centrum/json_rpc"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
-	"net/http"
 )
 
 var (
@@ -40,7 +41,10 @@ func Publish(topic string, args ...interface{}) {
 }
 
 func HttpPost(url string, data interface{}) ([]byte, error) {
-	b, _ := json.Marshal(data)
+	b, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
 
 	log.Trace("[http] post ", url, string(b))
 
@@ -53,6 +57,7 @@ func HttpPost(url string, data interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
