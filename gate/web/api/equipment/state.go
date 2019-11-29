@@ -204,6 +204,7 @@ func UpdateState(stateID int64, ctx iris.Context) hero.Result {
 
 		var form struct {
 			Title     *string `json:"title"`
+			Desc      *string `json:"desc"`
 			MeasureID *int64  `json:"measure_id"`
 			Alarm     *struct {
 				Enable   bool    `json:"enable"`
@@ -226,6 +227,10 @@ func UpdateState(stateID int64, ctx iris.Context) hero.Result {
 
 		if form.Title != nil {
 			state.SetTitle(*form.Title)
+		}
+
+		if form.Desc != nil {
+			state.SetDesc(*form.Desc)
 		}
 
 		if form.MeasureID != nil {
