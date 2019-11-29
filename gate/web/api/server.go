@@ -211,6 +211,7 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 			//自定义设备
 			p.PartyFunc("/equipment", func(p router.Party) {
 				p.Get("/", hero.Handler(equipment.List)).Name = resourceDef.EquipmentList
+				p.Post("/status", hero.Handler(equipment.MultiStatus)).Name = resourceDef.EquipmentList
 				p.Post("/", hero.Handler(equipment.Create)).Name = resourceDef.EquipmentCreate
 				p.Get("/{id:int64}", hero.Handler(equipment.Detail)).Name = resourceDef.EquipmentDetail
 				p.Put("/{id:int64}", hero.Handler(equipment.Update)).Name = resourceDef.EquipmentUpdate
