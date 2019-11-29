@@ -177,6 +177,40 @@ func Create(ctx iris.Context) hero.Result {
 	})
 }
 
+func MultiStatus(ctx iris.Context) hero.Result {
+	return response.Wrap(func() interface{} {
+		var form struct {
+			EquipmentIDs []int64 `json:"equipments"`
+		}
+
+		if err := ctx.ReadJSON(&form); err != nil {
+			return lang.ErrInvalidRequestData
+		}
+
+		var (
+			s      = app.Store()
+			admin  = s.MustGetUserFromContext(ctx)
+			result = make([]iris.Map, 0)
+		)
+
+		for _, id := range form.EquipmentIDs {
+			equipment, err := s.GetEquipment(id)
+			if err != nil {
+				result = append(result, iris.Map{
+					"id":    id,
+					"error": err.Error(),
+				})
+			} else {
+				stats := getEquipmentSimpleStatus(admin, equipment)
+				stats["id"] = id
+				result = append(result, stats)
+			}
+		}
+
+		return result
+	})
+}
+
 func Detail(deviceID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		s := app.Store()

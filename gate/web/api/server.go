@@ -174,7 +174,9 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 			//物理设备
 			p.PartyFunc("/device", func(p router.Party) {
 				p.Get("/", hero.Handler(device.List)).Name = resourceDef.DeviceList
+				p.Post("/status", hero.Handler(device.MultiStatus)).Name = resourceDef.DeviceList
 				p.Post("/", hero.Handler(device.Create)).Name = resourceDef.DeviceCreate
+
 				p.Get("/{id:int64}", hero.Handler(device.Detail)).Name = resourceDef.DeviceDetail
 				p.Put("/{id:int64}", hero.Handler(device.Update)).Name = resourceDef.DeviceUpdate
 				p.Delete("/{id:int64}", hero.Handler(device.Delete)).Name = resourceDef.DeviceDelete

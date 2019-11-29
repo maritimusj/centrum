@@ -2,6 +2,8 @@ package device
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/maritimusj/centrum/gate/event"
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/app"
@@ -10,7 +12,6 @@ import (
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/response"
 	"github.com/maritimusj/centrum/gate/web/store"
-	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/kataras/iris"
@@ -202,6 +203,50 @@ func Create(ctx iris.Context) hero.Result {
 	}
 
 	return response.Wrap(fn())
+}
+
+func MultiStatus(ctx iris.Context) hero.Result {
+	return response.Wrap(func() interface{} {
+		var form struct {
+			DeviceIDs []int64 `json:"devices"`
+		}
+
+		if err := ctx.ReadJSON(&form); err != nil {
+			return lang.ErrInvalidRequestData
+		}
+
+		var (
+			s      = app.Store()
+			admin  = s.MustGetUserFromContext(ctx)
+			result = make([]iris.Map, 0)
+		)
+
+		for _, id := range form.DeviceIDs {
+			device, err := s.GetDevice(id)
+			if err != nil {
+				result = append(result, iris.Map{
+					"id":    id,
+					"error": err.Error(),
+				})
+			} else {
+				if !app.Allow(admin, device, resource.View) {
+					result = append(result, iris.Map{
+						"id":    id,
+						"error": lang.Error(lang.ErrNoPermission).Error(),
+					})
+				} else {
+					index, title := global.GetDeviceStatus(device)
+					result = append(result, iris.Map{
+						"id":    id,
+						"index": index,
+						"title": title,
+					})
+				}
+			}
+		}
+
+		return result
+	})
 }
 
 func Detail(deviceID int64, ctx iris.Context) hero.Result {

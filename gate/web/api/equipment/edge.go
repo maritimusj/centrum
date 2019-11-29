@@ -50,7 +50,7 @@ func rangeEquipmentStates(user model.User, equipment model.Equipment, fn func(de
 	return nil
 }
 
-func getEquipmentSimpleStatus(user model.User, equipment model.Equipment) interface{} {
+func getEquipmentSimpleStatus(user model.User, equipment model.Equipment) map[string]interface{} {
 	res := map[string]interface{}{
 		"index": edgeLang.Connected,
 		"title": edgeLang.Str(edgeLang.Connected),
