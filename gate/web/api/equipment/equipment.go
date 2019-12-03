@@ -68,6 +68,18 @@ func List(ctx iris.Context) hero.Result {
 
 		for _, equipment := range equipments {
 			brief := equipment.Brief()
+
+			groups, err := equipment.Groups()
+			if err != nil {
+				brief["groups"] = make([]interface{}, 0)
+			} else {
+				groupTitles := make([]string, 0)
+				for _, group := range groups {
+					groupTitles = append(groupTitles, group.Title())
+				}
+				brief["groups"] = groupTitles
+			}
+
 			brief["perm"] = iris.Map{
 				"view": true,
 				"ctrl": app.Allow(admin, equipment, resource.Ctrl),
