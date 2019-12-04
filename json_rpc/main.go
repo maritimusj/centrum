@@ -65,7 +65,7 @@ func (e *Edge) StartInverseServer(conf *InverseConf) error {
 }
 
 //Reset 重置设备配置和数据
-func (e *Edge) Reset(r *http.Request, uid *string, result *Result) (err error) {
+func (e *Edge) Reset(r *http.Request, uid *string, _ *Result) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			switch v := e.(type) {
@@ -180,6 +180,7 @@ func (e *Edge) GetValue(r *http.Request, ch *CH, result *Result) (err error) {
 	if err != nil {
 		return err
 	}
+
 	result.Data = v
 	return nil
 }
@@ -203,6 +204,7 @@ func (e *Edge) GetRealtimeData(r *http.Request, uid *string, result *Result) (er
 	if err != nil {
 		return err
 	}
+
 	result.Data = data
 	return nil
 }

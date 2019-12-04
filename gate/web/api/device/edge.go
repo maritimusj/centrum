@@ -1,6 +1,8 @@
 package device
 
 import (
+	"net"
+
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
@@ -10,7 +12,6 @@ import (
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/response"
 	"github.com/maritimusj/centrum/global"
-	"net"
 )
 
 func Reset(deviceID int64, ctx iris.Context) hero.Result {
@@ -70,7 +71,7 @@ func Data(deviceID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		data, err := edge.GetData(device)
+		data, err := edge.GetRealTimeData(device)
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok {
 				return lang.Error(lang.ErrNetworkFail, netErr.Error())
@@ -105,7 +106,7 @@ func Data(deviceID int64, ctx iris.Context) hero.Result {
 			}
 		}
 
-		return data
+		return result
 	})
 }
 

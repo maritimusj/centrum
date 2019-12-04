@@ -3,11 +3,12 @@ package realtime
 import (
 	"bytes"
 	"encoding/binary"
+	"sync"
+	"time"
+
 	"github.com/maritimusj/centrum/edge/devices/CHNum"
 	"github.com/maritimusj/centrum/edge/devices/modbus"
 	"github.com/maritimusj/centrum/edge/devices/util"
-	"sync"
-	"time"
 )
 
 const (
@@ -28,7 +29,9 @@ type Data struct {
 	data  bytes.Buffer
 	ready bytes.Buffer
 
-	pool         *sync.Pool
+	pool *sync.Pool
+
+	rate         int
 	lastReadTime time.Time
 }
 
@@ -53,6 +56,7 @@ func (r *Data) Release() {
 func (r *Data) Clone() *Data {
 	rt := New(r.chNum)
 	rt.lastReadTime = r.lastReadTime
+	rt.rate = r.rate
 	rt.data.Write(r.data.Bytes())
 	rt.ready.Write(r.ready.Bytes())
 	return rt
@@ -60,6 +64,10 @@ func (r *Data) Clone() *Data {
 
 func (r *Data) expired() bool {
 	return time.Now().Sub(r.lastReadTime) > 1*time.Second
+}
+
+func (r *Data) Rate() int {
+	return r.rate
 }
 
 func (r *Data) AINum() int {
@@ -173,9 +181,14 @@ func (r *Data) FetchData(conn modbus.Client) error {
 	r.data.Truncate(0)
 	r.ready.Truncate(0)
 
-	var address uint16 = realtimeDataStartAddress
-	var quantity uint16
-	var amount = total
+	var (
+		address  uint16 = realtimeDataStartAddress
+		quantity uint16
+		amount   = total
+
+		begin      = time.Now()
+		totalBytes = 0
+	)
 
 	for amount > 0 {
 		if amount > 124 {
@@ -183,12 +196,14 @@ func (r *Data) FetchData(conn modbus.Client) error {
 		} else {
 			quantity = uint16(amount)
 		}
+
 		data, err := conn.ReadInputRegisters(address, quantity)
 		if err != nil {
 			return err
 		}
 
 		r.data.Write(data)
+		totalBytes += len(data)
 
 		amount -= int(quantity)
 		address += quantity
@@ -214,10 +229,16 @@ func (r *Data) FetchData(conn modbus.Client) error {
 			r.ready.Write([]byte{reading})
 		}
 
+		totalBytes += len(state)
 		amount -= int(quantity)
 		address += quantity
 	}
 
+	used := int(time.Now().Sub(begin) / time.Millisecond)
+	if used == 0 {
+		used = 1
+	}
+	r.rate = totalBytes / used
 	r.lastReadTime = time.Now()
 	return nil
 }

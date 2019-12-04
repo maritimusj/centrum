@@ -45,7 +45,9 @@ func (adapter *Adapter) IsAlive() bool {
 	default:
 	}
 
-	return time.Now().Sub(adapter.lastActiveTime) < adapter.conf.Interval*2
+	//log.Debugln("IsAlive:", time.Now().Sub(adapter.lastActiveTime).String())
+
+	return time.Now().Sub(adapter.lastActiveTime) < adapter.conf.Interval+30*time.Second
 }
 
 func (adapter *Adapter) IsDone() bool {
@@ -58,6 +60,9 @@ func (adapter *Adapter) IsDone() bool {
 }
 
 func (adapter *Adapter) Close() {
+	defer func() {
+		recover()
+	}()
 	<-synchronized.Do(adapter, func() interface{} {
 		if adapter.device != nil {
 			adapter.device.Close()
@@ -72,6 +77,10 @@ func (adapter *Adapter) Close() {
 
 func (adapter *Adapter) OnDeviceStatusChanged(index lang.StrIndex) {
 	event.Publish(event.DeviceStatusChanged, adapter.conf, index)
+}
+
+func (adapter *Adapter) OnDevicePerfChanged(perf map[string]interface{}) {
+	event.Publish(event.DevicePerfChanged, adapter.conf, perf)
 }
 
 func (adapter *Adapter) OnMeasureDiscovered(tagName, title string) {

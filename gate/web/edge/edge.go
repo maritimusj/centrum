@@ -2,9 +2,10 @@ package edge
 
 import (
 	"bytes"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/rpc/json"
 	. "github.com/maritimusj/centrum/json_rpc"

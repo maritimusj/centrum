@@ -20,6 +20,7 @@ var (
 
 const (
 	DeviceStatusChanged = "device:status::changed"
+	DevicePerfChanged   = "device:perf::changed"
 	MeasureDiscovered   = "measure::discovered"
 	MeasureAlarm        = "measure::alarm"
 )
@@ -27,6 +28,7 @@ const (
 func init() {
 	eventsMap := map[string]interface{}{
 		DeviceStatusChanged: OnDeviceStatusChanged,
+		DevicePerfChanged:   OnDevicePerfChanged,
 		MeasureDiscovered:   OnMeasureDiscovered,
 		MeasureAlarm:        OnMeasureAlarm,
 	}
@@ -84,6 +86,23 @@ func OnDeviceStatusChanged(conf *json_rpc.Conf, status lang.StrIndex) {
 		}
 
 		log.Traceln("[OnDeviceStatusChanged]", conf.CallbackURL, string(data))
+	}
+}
+
+func OnDevicePerfChanged(conf *json_rpc.Conf, perf map[string]interface{}) {
+	if conf.CallbackURL != "" {
+		data, err := HttpPost(conf.CallbackURL, map[string]interface{}{
+			"perf": map[string]interface{}{
+				"uid":  conf.UID,
+				"perf": perf,
+			},
+		})
+		if err != nil {
+			log.Errorf("[OnDevicePerfChanged] %s", err)
+			return
+		}
+
+		log.Traceln("[OnDevicePerfChanged]", conf.CallbackURL, string(data))
 	}
 }
 

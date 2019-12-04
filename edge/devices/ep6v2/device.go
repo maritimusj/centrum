@@ -3,6 +3,11 @@ package ep6v2
 import (
 	"context"
 	"errors"
+	"io"
+	"net"
+	"strconv"
+	"strings"
+
 	"github.com/asaskevich/govalidator"
 	"github.com/maritimusj/centrum/edge/devices/CHNum"
 	"github.com/maritimusj/centrum/edge/devices/InverseServer"
@@ -13,10 +18,6 @@ import (
 	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/centrum/synchronized"
 	rawModbus "github.com/maritimusj/modbus"
-	"io"
-	"net"
-	"strconv"
-	"strings"
 )
 
 type Connector interface {
@@ -324,10 +325,12 @@ func (device *Device) SetCHValue(tag string, value interface{}) error {
 
 func (device *Device) GetCHValue(tag string) (value map[string]interface{}, err error) {
 	if device == nil {
-		return nil, lang.Error(lang.ErrDeviceNotExists)
+		err = lang.Error(lang.ErrDeviceNotExists)
+		return
 	}
 	if !device.IsConnected() {
-		return nil, lang.Error(lang.ErrDeviceNotConnected)
+		err = lang.Error(lang.ErrDeviceNotConnected)
+		return
 	}
 
 	seg := strings.SplitN(tag, "-", 2)
@@ -351,16 +354,19 @@ func (device *Device) GetCHValue(tag string) (value map[string]interface{}, err 
 		if err != nil {
 			return
 		}
+
 		var v float32
 		v, err = ai.GetValue()
 		if err != nil {
 			return
 		}
+
 		var av AlarmValue
 		av, err = ai.GetAlarmState()
 		if err != nil {
 			return
 		}
+
 		return map[string]interface{}{
 			"title": ai.GetConfig().Title,
 			"tag":   ai.GetConfig().TagName,
@@ -374,11 +380,13 @@ func (device *Device) GetCHValue(tag string) (value map[string]interface{}, err 
 		if err != nil {
 			return
 		}
+
 		var v float32
 		v, err = ao.GetValue()
 		if err != nil {
 			return
 		}
+
 		return map[string]interface{}{
 			"title": ao.GetConfig().Title,
 			"tag":   ao.GetConfig().TagName,
@@ -391,11 +399,13 @@ func (device *Device) GetCHValue(tag string) (value map[string]interface{}, err 
 		if err != nil {
 			return
 		}
+
 		var v bool
 		v, err = di.GetValue()
 		if err != nil {
 			return
 		}
+
 		return map[string]interface{}{
 			"title": di.GetConfig().Title,
 			"tag":   di.GetConfig().TagName,
@@ -407,6 +417,7 @@ func (device *Device) GetCHValue(tag string) (value map[string]interface{}, err 
 		if err != nil {
 			return
 		}
+
 		var v bool
 		v, err = do.GetValue()
 		if err != nil {

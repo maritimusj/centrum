@@ -85,6 +85,7 @@ func (runner *Runner) needRestartAdapter(conf *json_rpc.Conf, newConf *json_rpc.
 }
 
 func (runner *Runner) Active(conf *json_rpc.Conf) error {
+	log.Traceln("active:", conf.UID, conf.Address)
 	select {
 	case <-runner.ctx.Done():
 		return runner.ctx.Err()
@@ -94,6 +95,7 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 	if v, ok := runner.adapters.Load(conf.UID); ok {
 		adapter := v.(*Adapter)
 		if !adapter.IsAlive() || runner.needRestartAdapter(adapter.conf, conf) {
+			log.Warningln("restart adapter, isAlive:", adapter.IsAlive(), "conf changed:", runner.needRestartAdapter(adapter.conf, conf))
 			runner.adapters.Delete(conf.UID)
 			adapter.Close()
 		} else {
@@ -205,8 +207,8 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 				}
 
 				values = append(values, entry)
-				adapter.OnMeasureDiscovered(ai.GetConfig().TagName, ai.GetConfig().Title)
 			}
+			adapter.OnMeasureDiscovered(ai.GetConfig().TagName, ai.GetConfig().Title)
 		}
 
 		for i := 0; i < r.AONum(); i++ {
@@ -221,8 +223,8 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 					"unit":  ao.GetConfig().Uint,
 					"value": v,
 				})
-				adapter.OnMeasureDiscovered(ao.GetConfig().TagName, ao.GetConfig().Title)
 			}
+			adapter.OnMeasureDiscovered(ao.GetConfig().TagName, ao.GetConfig().Title)
 		}
 
 		for i := 0; i < r.DINum(); i++ {
@@ -236,8 +238,8 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 					"title": di.GetConfig().Title,
 					"value": v,
 				})
-				adapter.OnMeasureDiscovered(di.GetConfig().TagName, di.GetConfig().Title)
 			}
+			adapter.OnMeasureDiscovered(di.GetConfig().TagName, di.GetConfig().Title)
 		}
 
 		for i := 0; i < r.DONum(); i++ {
@@ -252,8 +254,8 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 					"value": v,
 					"ctrl":  do.GetConfig().IsManual,
 				})
-				adapter.OnMeasureDiscovered(do.GetConfig().TagName, do.GetConfig().Title)
 			}
+			adapter.OnMeasureDiscovered(do.GetConfig().TagName, do.GetConfig().Title)
 		}
 
 		return values, nil
@@ -439,7 +441,7 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 						continue
 					}
 
-					adapter.logger.Error(err)
+					adapter.logger.Errorln(err)
 					device.Close()
 
 					go adapter.OnDeviceStatusChanged(lang.Disconnected)
@@ -460,6 +462,10 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 	}
 
 	defer data.Release()
+
+	adapter.OnDevicePerfChanged(map[string]interface{}{
+		"rate": data.Rate(),
+	})
 
 	getData := func(fn func() error) error {
 		select {
@@ -494,12 +500,12 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 				data.AddField("val", v)
 
 				adapter.measureDataCH <- data
-
-				adapter.OnMeasureDiscovered(ai.GetConfig().TagName, ai.GetConfig().Title)
 				if av != 0 {
 					adapter.OnMeasureAlarm(data.Clone())
 				}
 			}
+
+			adapter.OnMeasureDiscovered(ai.GetConfig().TagName, ai.GetConfig().Title)
 			return nil
 		})
 		if err != nil {
@@ -522,9 +528,8 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 				data.AddTag("title", di.GetConfig().Title)
 				data.AddField("val", v)
 				adapter.measureDataCH <- data
-
-				adapter.OnMeasureDiscovered(di.GetConfig().TagName, di.GetConfig().Title)
 			}
+			adapter.OnMeasureDiscovered(di.GetConfig().TagName, di.GetConfig().Title)
 			return nil
 		})
 		if err != nil {
@@ -547,9 +552,8 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 				data.AddTag("title", ao.GetConfig().Title)
 				data.AddField("val", v)
 				adapter.measureDataCH <- data
-
-				adapter.OnMeasureDiscovered(ao.GetConfig().TagName, ao.GetConfig().Title)
 			}
+			adapter.OnMeasureDiscovered(ao.GetConfig().TagName, ao.GetConfig().Title)
 			return nil
 		})
 		if err != nil {
@@ -572,9 +576,8 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 				data.AddTag("title", do.GetConfig().Title)
 				data.AddField("val", v)
 				adapter.measureDataCH <- data
-
-				adapter.OnMeasureDiscovered(do.GetConfig().TagName, do.GetConfig().Title)
 			}
+			adapter.OnMeasureDiscovered(do.GetConfig().TagName, do.GetConfig().Title)
 			return nil
 		})
 		if err != nil {
