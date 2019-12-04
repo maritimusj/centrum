@@ -91,11 +91,9 @@ func OnDeviceStatusChanged(conf *json_rpc.Conf, status lang.StrIndex) {
 
 func OnDevicePerfChanged(conf *json_rpc.Conf, perf map[string]interface{}) {
 	if conf.CallbackURL != "" {
+		perf["uid"] = conf.UID
 		data, err := HttpPost(conf.CallbackURL, map[string]interface{}{
-			"perf": map[string]interface{}{
-				"uid":  conf.UID,
-				"perf": perf,
-			},
+			"perf": perf,
 		})
 		if err != nil {
 			log.Errorf("[OnDevicePerfChanged] %s", err)

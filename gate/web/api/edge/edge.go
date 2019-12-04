@@ -136,7 +136,9 @@ func Feedback(deviceID int64, ctx iris.Context) {
 	}
 
 	if form.Perf != nil {
-
+		global.UpdateDevicePerf(device, iris.Map{
+			"rate": (*form.Perf).Rate,
+		})
 	}
 
 	if form.Log != nil {

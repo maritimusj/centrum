@@ -247,11 +247,13 @@ func MultiStatus(ctx iris.Context) hero.Result {
 					})
 				} else {
 					index, title := global.GetDeviceStatus(device)
-					result = append(result, iris.Map{
+					status := iris.Map{
 						"id":    id,
 						"index": index,
 						"title": title,
-					})
+					}
+					status["perf"] = global.GetDevicePerf(device)
+					result = append(result, status)
 				}
 			}
 		}
