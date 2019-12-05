@@ -19,4 +19,6 @@ type Measure interface {
 
 	TagName() string
 	Kind() resource.MeasureKind
+
+	Name() string //for cache
 }

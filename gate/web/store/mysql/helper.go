@@ -2,16 +2,18 @@ package mysqlStore
 
 import (
 	"database/sql"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/model"
 )
 
 func (s *mysqlStore) getConfigID(cfg interface{}) (int64, error) {
+	if c, err := s.cache.LoadConfig(cfg); err == nil {
+		return c.GetID(), nil
+	}
+
 	switch v := cfg.(type) {
 	case int64:
-		if _, err := s.cache.LoadConfig(v); err == nil {
-			return v, nil
-		}
 		if exists, err := IsDataExists(s.db, TbConfig, "id=?", v); err != nil {
 			if err != sql.ErrNoRows {
 				return 0, lang.InternalError(err)
@@ -45,11 +47,12 @@ func (s *mysqlStore) getConfigIDByName(name string) (int64, error) {
 }
 
 func (s *mysqlStore) getOrganizationID(org interface{}) (int64, error) {
+	if o, err := s.cache.LoadOrganization(org); err == nil {
+		return o.GetID(), nil
+	}
+
 	switch v := org.(type) {
 	case int64:
-		if _, err := s.cache.LoadOrganization(v); err == nil {
-			return v, nil
-		}
 		if exists, err := IsDataExists(s.db, TbOrganization, "id=?", v); err != nil {
 			if err != sql.ErrNoRows {
 				return 0, lang.InternalError(err)
@@ -83,11 +86,12 @@ func (s *mysqlStore) getOrganizationIDByName(name string) (int64, error) {
 }
 
 func (s *mysqlStore) getRoleID(role interface{}) (int64, error) {
+	if r, err := s.cache.LoadRole(role); err == nil {
+		return r.GetID(), nil
+	}
+
 	switch v := role.(type) {
 	case int64:
-		if _, err := s.cache.LoadRole(v); err == nil {
-			return v, nil
-		}
 		if exists, err := IsDataExists(s.db, TbRoles, "id=?", v); err != nil {
 			if err != sql.ErrNoRows {
 				return 0, lang.InternalError(err)
@@ -121,6 +125,10 @@ func (s *mysqlStore) getRoleIDByName(name string) (int64, error) {
 }
 
 func (s *mysqlStore) getUserID(user interface{}) (int64, error) {
+	if u, err := s.cache.LoadUser(user); err == nil {
+		return u.GetID(), nil
+	}
+
 	checkExists := func(v interface{}) error {
 		if exists, err := IsDataExists(s.db, TbUsers, "id=?", v); err != nil {
 			return lang.InternalError(err)
@@ -131,9 +139,6 @@ func (s *mysqlStore) getUserID(user interface{}) (int64, error) {
 	}
 	switch v := user.(type) {
 	case int64:
-		if _, err := s.cache.LoadUser(v); err == nil {
-			return v, nil
-		}
 		if err := checkExists(v); err != nil {
 			return 0, err
 		}
@@ -170,9 +175,17 @@ func (s *mysqlStore) getUserIDByName(name string) (int64, error) {
 func (s *mysqlStore) getMeasureID(deviceID int64, tag interface{}) (int64, error) {
 	switch v := tag.(type) {
 	case int64:
-		if _, err := s.cache.LoadUser(v); err == nil {
-			return v, nil
+		if t, err := s.cache.LoadMeasure(v); err == nil {
+			return t.GetID(), nil
 		}
+	case string:
+		if t, err := s.cache.LoadMeasure(FormatMeasureName(deviceID, v)); err == nil {
+			return t.GetID(), nil
+		}
+	}
+
+	switch v := tag.(type) {
+	case int64:
 		if exists, err := IsDataExists(s.db, TbMeasures, "id=?", v); err != nil {
 			if err != sql.ErrNoRows {
 				return 0, lang.InternalError(err)

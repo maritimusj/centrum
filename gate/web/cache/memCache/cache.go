@@ -1,12 +1,12 @@
 package memCache
 
 import (
-	"errors"
+	"strconv"
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/model"
 	goCache "github.com/patrickmn/go-cache"
-	"strconv"
-	"time"
 )
 
 const (
@@ -29,19 +29,15 @@ type cache struct {
 	client *goCache.Cache
 }
 
-type ID interface {
-	GetID() int64
-}
-
 func New() *cache {
 	return &cache{client: goCache.New(6*time.Minute, 10*time.Minute)}
 }
 
-func getKey(obj interface{}) string {
+func getKeys(obj interface{}) []string {
 	var pref string
 	switch v := obj.(type) {
 	case string:
-		return v
+		return []string{v}
 	case model.Organization:
 		pref = PrefixOrg
 	case model.User:
@@ -68,13 +64,27 @@ func getKey(obj interface{}) string {
 		pref = prefixComment
 	}
 
+	keys := make([]string, 0)
 	type getID interface {
 		GetID() int64
 	}
-	if v, ok := obj.(getID); ok {
-		return pref + strconv.FormatInt(v.GetID(), 10)
+
+	type getName interface {
+		Name() string
 	}
-	panic(errors.New("cache save: unknown obj"))
+
+	if v, ok := obj.(getID); ok {
+		keys = append(keys, pref+strconv.FormatInt(v.GetID(), 10))
+	}
+
+	if v, ok := obj.(getName); ok {
+		name := v.Name()
+		if name != "" {
+			keys = append(keys, pref+name)
+		}
+	}
+
+	return keys
 }
 
 func (c *cache) Flush() {
@@ -88,16 +98,36 @@ func (c *cache) Foreach(fn func(key string, obj interface{})) {
 }
 
 func (c *cache) Save(obj interface{}) error {
-	c.client.SetDefault(getKey(obj), obj)
+	for _, key := range getKeys(obj) {
+		c.client.SetDefault(key, obj)
+	}
+
 	return nil
 }
 
 func (c *cache) Remove(obj interface{}) {
-	c.client.Delete(getKey(obj))
+	for _, key := range getKeys(obj) {
+		if o, ok := c.client.Get(key); ok {
+			for _, key := range getKeys(o) {
+				c.client.Delete(key)
+			}
+			c.client.Delete(key)
+		}
+	}
 }
 
-func (c *cache) LoadConfig(id int64) (model.Config, error) {
-	if v, ok := c.client.Get(PrefixConfig + strconv.FormatInt(id, 10)); ok {
+func (c *cache) getUID(v interface{}) string {
+	switch vv := v.(type) {
+	case int64:
+		return strconv.FormatInt(vv, 10)
+	case string:
+		return vv
+	}
+	panic("cache: unknown uid")
+}
+
+func (c *cache) LoadConfig(config interface{}) (model.Config, error) {
+	if v, ok := c.client.Get(PrefixConfig + c.getUID(config)); ok {
 		if u, ok := v.(model.Config); ok {
 			return u, nil
 		}
@@ -105,8 +135,8 @@ func (c *cache) LoadConfig(id int64) (model.Config, error) {
 	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadOrganization(id int64) (model.Organization, error) {
-	if v, ok := c.client.Get(PrefixOrg + strconv.FormatInt(id, 10)); ok {
+func (c *cache) LoadOrganization(o interface{}) (model.Organization, error) {
+	if v, ok := c.client.Get(PrefixOrg + c.getUID(o)); ok {
 		if u, ok := v.(model.Organization); ok {
 			return u, nil
 		}
@@ -114,8 +144,8 @@ func (c *cache) LoadOrganization(id int64) (model.Organization, error) {
 	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadUser(id int64) (model.User, error) {
-	if v, ok := c.client.Get(PrefixUser + strconv.FormatInt(id, 10)); ok {
+func (c *cache) LoadUser(u interface{}) (model.User, error) {
+	if v, ok := c.client.Get(PrefixUser + c.getUID(u)); ok {
 		if u, ok := v.(model.User); ok {
 			return u, nil
 		}
@@ -123,8 +153,8 @@ func (c *cache) LoadUser(id int64) (model.User, error) {
 	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadRole(id int64) (model.Role, error) {
-	if v, ok := c.client.Get(PrefixRole + strconv.FormatInt(id, 10)); ok {
+func (c *cache) LoadRole(r interface{}) (model.Role, error) {
+	if v, ok := c.client.Get(PrefixRole + c.getUID(r)); ok {
 		if u, ok := v.(model.Role); ok {
 			return u, nil
 		}
@@ -132,8 +162,8 @@ func (c *cache) LoadRole(id int64) (model.Role, error) {
 	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadPolicy(id int64) (model.Policy, error) {
-	if v, ok := c.client.Get(prefixPolicy + strconv.FormatInt(id, 10)); ok {
+func (c *cache) LoadPolicy(p interface{}) (model.Policy, error) {
+	if v, ok := c.client.Get(prefixPolicy + c.getUID(p)); ok {
 		if u, ok := v.(model.Policy); ok {
 			return u, nil
 		}
@@ -141,8 +171,8 @@ func (c *cache) LoadPolicy(id int64) (model.Policy, error) {
 	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadGroup(id int64) (model.Group, error) {
-	if v, ok := c.client.Get(prefixGroup + strconv.FormatInt(id, 10)); ok {
+func (c *cache) LoadGroup(g interface{}) (model.Group, error) {
+	if v, ok := c.client.Get(prefixGroup + c.getUID(g)); ok {
 		if u, ok := v.(model.Group); ok {
 			return u, nil
 		}
@@ -150,8 +180,8 @@ func (c *cache) LoadGroup(id int64) (model.Group, error) {
 	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadDevice(id int64) (model.Device, error) {
-	if v, ok := c.client.Get(prefixDevice + strconv.FormatInt(id, 10)); ok {
+func (c *cache) LoadDevice(device interface{}) (model.Device, error) {
+	if v, ok := c.client.Get(prefixDevice + c.getUID(device)); ok {
 		if u, ok := v.(model.Device); ok {
 			return u, nil
 		}
@@ -159,8 +189,8 @@ func (c *cache) LoadDevice(id int64) (model.Device, error) {
 	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadMeasure(id int64) (model.Measure, error) {
-	if v, ok := c.client.Get(prefixMeasure + strconv.FormatInt(id, 10)); ok {
+func (c *cache) LoadMeasure(m interface{}) (model.Measure, error) {
+	if v, ok := c.client.Get(prefixMeasure + c.getUID(m)); ok {
 		if u, ok := v.(model.Measure); ok {
 			return u, nil
 		}
@@ -168,8 +198,8 @@ func (c *cache) LoadMeasure(id int64) (model.Measure, error) {
 	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadEquipment(id int64) (model.Equipment, error) {
-	if v, ok := c.client.Get(prefixEquipment + strconv.FormatInt(id, 10)); ok {
+func (c *cache) LoadEquipment(e interface{}) (model.Equipment, error) {
+	if v, ok := c.client.Get(prefixEquipment + c.getUID(e)); ok {
 		if u, ok := v.(model.Equipment); ok {
 			return u, nil
 		}
@@ -177,8 +207,8 @@ func (c *cache) LoadEquipment(id int64) (model.Equipment, error) {
 	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadState(id int64) (model.State, error) {
-	if v, ok := c.client.Get(prefixState + strconv.FormatInt(id, 10)); ok {
+func (c *cache) LoadState(state interface{}) (model.State, error) {
+	if v, ok := c.client.Get(prefixState + c.getUID(state)); ok {
 		if u, ok := v.(model.State); ok {
 			return u, nil
 		}
@@ -186,8 +216,8 @@ func (c *cache) LoadState(id int64) (model.State, error) {
 	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadApiResource(id int64) (model.ApiResource, error) {
-	if v, ok := c.client.Get(prefixApiResource + strconv.FormatInt(id, 10)); ok {
+func (c *cache) LoadApiResource(api interface{}) (model.ApiResource, error) {
+	if v, ok := c.client.Get(prefixApiResource + c.getUID(api)); ok {
 		if u, ok := v.(model.ApiResource); ok {
 			return u, nil
 		}
@@ -195,16 +225,16 @@ func (c *cache) LoadApiResource(id int64) (model.ApiResource, error) {
 	return nil, lang.Error(lang.ErrCacheNotFound)
 }
 
-func (c *cache) LoadAlarm(id int64) (model.Alarm, error) {
-	if v, ok := c.client.Get(prefixAlarm + strconv.FormatInt(id, 10)); ok {
+func (c *cache) LoadAlarm(alarm interface{}) (model.Alarm, error) {
+	if v, ok := c.client.Get(prefixAlarm + c.getUID(alarm)); ok {
 		if u, ok := v.(model.Alarm); ok {
 			return u, nil
 		}
 	}
 	return nil, lang.Error(lang.ErrCacheNotFound)
 }
-func (c *cache) LoadComment(id int64) (model.Comment, error) {
-	if v, ok := c.client.Get(prefixComment + strconv.FormatInt(id, 10)); ok {
+func (c *cache) LoadComment(comment interface{}) (model.Comment, error) {
+	if v, ok := c.client.Get(prefixComment + c.getUID(comment)); ok {
 		if u, ok := v.(model.Comment); ok {
 			return u, nil
 		}

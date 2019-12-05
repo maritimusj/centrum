@@ -1,13 +1,15 @@
 package mysqlStore
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/dirty"
 	"github.com/maritimusj/centrum/gate/web/helper"
 	"github.com/maritimusj/centrum/gate/web/model"
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/status"
-	"time"
 )
 
 type Measure struct {
@@ -22,6 +24,10 @@ type Measure struct {
 
 	dirty *dirty.Dirty
 	store *mysqlStore
+}
+
+func FormatMeasureName(deviceID int64, tagName string) string {
+	return fmt.Sprintf("device:%d-%s", deviceID, tagName)
 }
 
 func NewMeasure(s *mysqlStore, id int64) *Measure {
@@ -58,6 +64,10 @@ func (m *Measure) ResourceDesc() string {
 
 func (m *Measure) GetChildrenResources(options ...helper.OptionFN) ([]model.Resource, int64, error) {
 	return []model.Resource{}, 0, nil
+}
+
+func (m *Measure) Name() string {
+	return FormatMeasureName(m.deviceID, m.TagName())
 }
 
 func (m *Measure) GetID() int64 {
