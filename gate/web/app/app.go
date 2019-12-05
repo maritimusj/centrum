@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"math/rand"
 	"os"
 	"time"
 
@@ -247,6 +248,7 @@ func BootAllDevices() {
 			device.Logger().Error(err)
 			global.UpdateDeviceStatus(device, int(edgeLang.EdgeUnknownState), edgeLang.Str(edgeLang.EdgeUnknownState))
 		}
+		time.Sleep(time.Duration(rand.Int63n(1000)) * time.Millisecond)
 	}
 
 	time.AfterFunc(15*time.Second, BootAllDevices)

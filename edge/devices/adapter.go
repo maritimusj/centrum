@@ -1,7 +1,6 @@
 package devices
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -60,10 +59,11 @@ func (adapter *Adapter) IsDone() bool {
 }
 
 func (adapter *Adapter) Close() {
-	defer func() {
-		recover()
-	}()
 	<-synchronized.Do(adapter, func() interface{} {
+		defer func() {
+			recover()
+		}()
+
 		if adapter.device != nil {
 			adapter.device.Close()
 			adapter.device = nil
@@ -84,7 +84,7 @@ func (adapter *Adapter) OnDevicePerfChanged(perf map[string]interface{}) {
 }
 
 func (adapter *Adapter) OnMeasureDiscovered(tagName, title string) {
-	path := fmt.Sprintf("tag.%s.%s", adapter.conf.UID, tagName)
+	path := "tag." + adapter.conf.UID + "." + tagName
 	if v, ok := global.Params.Get(path); !ok || v.(string) != title {
 		_ = global.Params.Set(path, title)
 		event.Publish(event.MeasureDiscovered, adapter.conf, tagName, title)

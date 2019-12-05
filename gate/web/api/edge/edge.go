@@ -108,7 +108,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 		tag, _ := form.Alarm.Tags["tag"]
 		measure, err := app.Store().GetMeasureFromTagName(device.GetID(), tag)
 		if err != nil {
-			log.Debugln("[Feedback 8]", err)
+			log.Debugln("[Feedback 8] [", tag, "]", err)
 			return
 		}
 

@@ -2,6 +2,7 @@ package event
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -18,6 +19,15 @@ var (
 	Event = EventBus.New()
 )
 
+var (
+	__httpRequestCH = make(chan *HttpRequest, 1000)
+)
+
+type HttpRequest struct {
+	url  string
+	data []byte
+}
+
 const (
 	DeviceStatusChanged = "device:status::changed"
 	DevicePerfChanged   = "device:perf::changed"
@@ -25,7 +35,7 @@ const (
 	MeasureAlarm        = "measure::alarm"
 )
 
-func init() {
+func Init(ctx context.Context) {
 	eventsMap := map[string]interface{}{
 		DeviceStatusChanged: OnDeviceStatusChanged,
 		DevicePerfChanged:   OnDevicePerfChanged,
@@ -36,21 +46,47 @@ func init() {
 	for e, fn := range eventsMap {
 		_ = Event.SubscribeAsync(e, fn, false)
 	}
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case request := <-__httpRequestCH:
+				if request != nil {
+					_, err := doHttpPost(request.url, request.data)
+					if err != nil {
+						log.Traceln("doHttpRequest:", err)
+					}
+				}
+			}
+		}
+	}()
 }
 
 func Publish(topic string, args ...interface{}) {
 	Event.Publish(topic, args...)
 }
 
-func HttpPost(url string, data interface{}) ([]byte, error) {
-	b, err := json.Marshal(data)
+func HttpPost(url string, data interface{}) {
+	x, err := json.Marshal(data)
 	if err != nil {
-		return nil, err
+		log.Traceln("[httpPost]", err)
+		return
 	}
 
-	log.Trace("[http] post ", url, string(b))
+	__httpRequestCH <- &HttpRequest{
+		url:  url,
+		data: x,
+	}
+}
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader(b))
+func doHttpPost(url string, data []byte) ([]byte, error) {
+	defer func() {
+		recover()
+	}()
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
 		return nil, err
 	}
@@ -68,57 +104,40 @@ func HttpPost(url string, data interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return r, nil
 }
 
 func OnDeviceStatusChanged(conf *json_rpc.Conf, status lang.StrIndex) {
 	if conf.CallbackURL != "" {
-		data, err := HttpPost(conf.CallbackURL, map[string]interface{}{
+		HttpPost(conf.CallbackURL, map[string]interface{}{
 			"status": map[string]interface{}{
 				"uid":   conf.UID,
 				"index": status,
 				"title": lang.Str(status),
 			},
 		})
-		if err != nil {
-			log.Errorf("[OnDeviceStatusChanged] %s", err)
-			return
-		}
-
-		log.Traceln("[OnDeviceStatusChanged]", conf.CallbackURL, string(data))
 	}
 }
 
 func OnDevicePerfChanged(conf *json_rpc.Conf, perf map[string]interface{}) {
 	if conf.CallbackURL != "" {
 		perf["uid"] = conf.UID
-		data, err := HttpPost(conf.CallbackURL, map[string]interface{}{
+		HttpPost(conf.CallbackURL, map[string]interface{}{
 			"perf": perf,
 		})
-		if err != nil {
-			log.Errorf("[OnDevicePerfChanged] %s", err)
-			return
-		}
-
-		log.Traceln("[OnDevicePerfChanged]", conf.CallbackURL, string(data))
 	}
 }
 
 func OnMeasureDiscovered(conf *json_rpc.Conf, tagName, title string) {
 	if conf.CallbackURL != "" {
-		data, err := HttpPost(conf.CallbackURL, map[string]interface{}{
+		HttpPost(conf.CallbackURL, map[string]interface{}{
 			"measure": map[string]interface{}{
 				"uid":   conf.UID,
 				"tag":   tagName,
 				"title": title,
 			},
 		})
-		if err != nil {
-			log.Errorf("[OnMeasureDiscovered] %s", err)
-			return
-		}
-
-		log.Traceln("[OnMeasureDiscovered]", conf.CallbackURL, string(data))
 	}
 }
 
@@ -126,14 +145,8 @@ func OnMeasureAlarm(conf *json_rpc.Conf, measureData *measure.Data) {
 	defer measureData.Release()
 
 	if conf.CallbackURL != "" {
-		data, err := HttpPost(conf.CallbackURL, map[string]interface{}{
+		HttpPost(conf.CallbackURL, map[string]interface{}{
 			"alarm": measureData,
 		})
-		if err != nil {
-			log.Errorf("[OnMeasureAlarm] %s", err)
-			return
-		}
-
-		log.Traceln("[OnMeasureAlarm]", conf.CallbackURL, string(data))
 	}
 }
