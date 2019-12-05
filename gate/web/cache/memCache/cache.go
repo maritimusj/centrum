@@ -120,6 +120,8 @@ func (c *cache) getUID(v interface{}) string {
 	switch vv := v.(type) {
 	case int64:
 		return strconv.FormatInt(vv, 10)
+	case float64:
+		return strconv.FormatInt(int64(vv), 10)
 	case string:
 		return vv
 	}

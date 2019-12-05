@@ -1,6 +1,8 @@
 package mysqlStore
 
 import (
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/dirty"
 	"github.com/maritimusj/centrum/gate/web/helper"
@@ -8,7 +10,6 @@ import (
 	"github.com/maritimusj/centrum/gate/web/status"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"time"
 )
 
 type Organization struct {
@@ -176,7 +177,7 @@ func (o *Organization) Brief() model.Map {
 		"name":       o.name,
 		"title":      o.title,
 		"enable":     o.IsEnabled(),
-		"created_at": o.createdAt,
+		"created_at": o.createdAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -189,6 +190,6 @@ func (o *Organization) Detail() model.Map {
 		"name":       o.name,
 		"title":      o.title,
 		"enable":     o.IsEnabled(),
-		"created_at": o.createdAt,
+		"created_at": o.createdAt.Format("2006-01-02 15:04:05"),
 	}
 }

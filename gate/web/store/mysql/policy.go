@@ -1,11 +1,12 @@
 package mysqlStore
 
 import (
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/dirty"
 	"github.com/maritimusj/centrum/gate/web/model"
 	"github.com/maritimusj/centrum/gate/web/resource"
-	"time"
 )
 
 type Policy struct {
@@ -105,7 +106,7 @@ func (p *Policy) Brief() model.Map {
 		},
 		"action":     p.action,
 		"effect":     p.effect,
-		"created_at": p.createdAt,
+		"created_at": p.createdAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -121,6 +122,6 @@ func (p *Policy) Detail() model.Map {
 		},
 		"action":     p.action,
 		"effect":     p.effect,
-		"created_at": p.createdAt,
+		"created_at": p.createdAt.Format("2006-01-02 15:04:05"),
 	}
 }

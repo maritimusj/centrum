@@ -1,13 +1,14 @@
 package mysqlStore
 
 import (
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/dirty"
 	"github.com/maritimusj/centrum/gate/web/helper"
 	"github.com/maritimusj/centrum/gate/web/model"
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/status"
-	"time"
 )
 
 type Role struct {
@@ -238,7 +239,7 @@ func (r *Role) Brief() model.Map {
 		"name":       r.name,
 		"title":      r.title,
 		"desc":       r.desc,
-		"created_at": r.createdAt,
+		"created_at": r.createdAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -252,6 +253,6 @@ func (r *Role) Detail() model.Map {
 		"name":       r.name,
 		"title":      r.title,
 		"desc":       r.desc,
-		"created_at": r.createdAt,
+		"created_at": r.createdAt.Format("2006-01-02 15:04:05"),
 	}
 }

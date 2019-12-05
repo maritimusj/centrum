@@ -406,7 +406,7 @@ func (g *Group) Brief() model.Map {
 		"id":         g.id,
 		"title":      g.title,
 		"desc":       g.desc,
-		"created_at": g.createdAt,
+		"created_at": g.createdAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -418,7 +418,7 @@ func (g *Group) Detail() model.Map {
 		"id":         g.id,
 		"title":      g.title,
 		"desc":       g.desc,
-		"created_at": g.createdAt,
+		"created_at": g.createdAt.Format("2006-01-02 15:04:05"),
 	}
 	parent := g.Parent()
 	if parent != nil {

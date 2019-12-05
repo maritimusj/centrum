@@ -293,7 +293,7 @@ func (s *State) Brief() model.Map {
 		"enable":     s.IsEnabled(),
 		"title":      s.title,
 		"desc":       s.desc,
-		"created_at": s.createdAt,
+		"created_at": s.createdAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -313,7 +313,7 @@ func (s *State) Detail() model.Map {
 			"delay":    s.AlarmDelaySecond(),
 			"entries":  s.GetAlarmEntries(),
 		},
-		"created_at": s.createdAt,
+		"created_at": s.createdAt.Format("2006-01-02 15:04:05"),
 	}
 
 	measure := s.Measure()

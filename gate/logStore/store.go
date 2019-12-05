@@ -24,7 +24,12 @@ type Entry struct {
 }
 
 func (entry *Entry) Marshal() ([]byte, error) {
-	return json.Marshal(entry)
+	return json.Marshal(map[string]interface{}{
+		"level":      entry.Level,
+		"message":    entry.Message,
+		"fields":     entry.Fields,
+		"created_at": entry.CreatedAt.Format("2006-01-02 15:04:05"),
+	})
 }
 
 type Store interface {

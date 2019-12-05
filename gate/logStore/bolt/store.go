@@ -4,9 +4,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/maritimusj/centrum/gate/logStore"
 	"sync"
 	"time"
+
+	"github.com/maritimusj/centrum/gate/logStore"
 
 	bolt "github.com/etcd-io/bbolt"
 	"github.com/sirupsen/logrus"

@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/dirty"
 	"github.com/maritimusj/centrum/gate/web/helper"
@@ -13,7 +15,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"time"
 )
 
 type Device struct {
@@ -332,7 +333,7 @@ func (d *Device) Brief() model.Map {
 		"enable":         d.IsEnabled(),
 		"title":          d.title,
 		"params.connStr": d.GetOption("params.connStr").Str,
-		"created_at":     d.createdAt,
+		"created_at":     d.createdAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -347,7 +348,7 @@ func (d *Device) Detail() model.Map {
 		"title":           d.title,
 		"params.connStr":  d.GetOption("params.connStr").String(),
 		"params.interval": d.GetOption("params.interval").Int(),
-		"created_at":      d.createdAt,
+		"created_at":      d.createdAt.Format("2006-01-02 15:04:05"),
 	}
 
 	groups, _ := d.Groups()

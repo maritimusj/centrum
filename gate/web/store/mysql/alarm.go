@@ -135,7 +135,7 @@ func (alarm *Alarm) Simple() model.Map {
 			"alarm": alarm.GetOption("tags.alarm").String(),
 			"val":   alarm.GetOption("fields.val").String(),
 		},
-		"updated_at": alarm.updatedAt,
+		"updated_at": alarm.updatedAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -149,8 +149,8 @@ func (alarm *Alarm) Brief() model.Map {
 		"device":      device.Brief(),
 		"measure":     measure.Brief(),
 		"raw":         alarm.Option(),
-		"created_at":  alarm.createdAt,
-		"updated_at":  alarm.updatedAt,
+		"created_at":  alarm.createdAt.Format("2006-01-02 15:04:05"),
+		"updated_at":  alarm.updatedAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -164,7 +164,7 @@ func (alarm *Alarm) Detail() model.Map {
 		"device":      device.Brief(),
 		"measure":     measure.Brief(),
 		"raw":         alarm.Option(),
-		"created_at":  alarm.createdAt,
-		"updated_at":  alarm.updatedAt,
+		"created_at":  alarm.createdAt.Format("2006-01-02 15:04:05"),
+		"updated_at":  alarm.updatedAt.Format("2006-01-02 15:04:05"),
 	}
 }

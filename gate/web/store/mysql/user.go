@@ -3,6 +3,8 @@ package mysqlStore
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/dirty"
 	"github.com/maritimusj/centrum/gate/web/helper"
@@ -11,7 +13,6 @@ import (
 	"github.com/maritimusj/centrum/gate/web/status"
 	"github.com/maritimusj/centrum/util"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 type User struct {
@@ -391,7 +392,7 @@ func (u *User) Brief() model.Map {
 		"title":      u.title,
 		"mobile":     u.mobile,
 		"email":      u.email,
-		"created_at": u.createdAt,
+		"created_at": u.createdAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -406,7 +407,7 @@ func (u *User) Detail() model.Map {
 		"title":      u.title,
 		"mobile":     u.mobile,
 		"email":      u.email,
-		"created_at": u.createdAt,
+		"created_at": u.createdAt.Format("2006-01-02 15:04:05"),
 	}
 	rolesData := make(map[string]model.Map, 0)
 	roles, _ := u.GetRoles()

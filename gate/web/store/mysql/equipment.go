@@ -263,7 +263,7 @@ func (e *Equipment) Brief() model.Map {
 		"enable":     e.IsEnabled(),
 		"title":      e.title,
 		"desc":       e.desc,
-		"created_at": e.createdAt,
+		"created_at": e.createdAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -276,7 +276,7 @@ func (e *Equipment) Detail() model.Map {
 		"enable":     e.IsEnabled(),
 		"title":      e.title,
 		"desc":       e.desc,
-		"created_at": e.createdAt,
+		"created_at": e.createdAt.Format("2006-01-02 15:04:05"),
 	}
 
 	groups, _ := e.Groups()

@@ -1,13 +1,14 @@
 package mysqlStore
 
 import (
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/dirty"
 	"github.com/maritimusj/centrum/gate/web/helper"
 	"github.com/maritimusj/centrum/gate/web/model"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"time"
 )
 
 type Comment struct {
@@ -164,7 +165,7 @@ func (c *Comment) Simple() model.Map {
 		"parent":     c.parentID,
 		"user":       c.userID,
 		"comment":    c.Option(),
-		"created_at": c.createdAt,
+		"created_at": c.createdAt.Format("2006-01-02 15:04:05"),
 	}
 }
 
@@ -178,7 +179,7 @@ func (c *Comment) Brief() model.Map {
 		"alarm":      c.refID,
 		"parent":     c.parentID,
 		"comment":    c.Option(),
-		"created_at": c.createdAt,
+		"created_at": c.createdAt.Format("2006-01-02 15:04:05"),
 	}
 	if user != nil {
 		brief["user"] = user.Simple()
@@ -196,7 +197,7 @@ func (c *Comment) Detail() model.Map {
 		"alarm":      c.refID,
 		"parent":     c.parentID,
 		"comment":    c.Option(),
-		"created_at": c.createdAt,
+		"created_at": c.createdAt.Format("2006-01-02 15:04:05"),
 	}
 	if user != nil {
 		detail["user"] = user.Simple()
