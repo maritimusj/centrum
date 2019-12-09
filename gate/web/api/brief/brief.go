@@ -8,6 +8,7 @@ import (
 	"github.com/maritimusj/centrum/gate/web/helper"
 	"github.com/maritimusj/centrum/gate/web/response"
 	"github.com/maritimusj/centrum/global"
+	"github.com/maritimusj/centrum/version"
 )
 
 func Simple() hero.Result {
@@ -51,6 +52,16 @@ func Simple() hero.Result {
 			"total": total,
 		}
 
+		result["version"] = iris.Map{
+			"edge": iris.Map{
+				"ver":   version.EdgeVersion,
+				"build": version.EdgeBuildDate,
+			},
+			"gate": iris.Map{
+				"ver":   version.GateVersion,
+				"build": version.GeteBuildDate,
+			},
+		}
 		return result
 	})
 }
