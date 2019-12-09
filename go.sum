@@ -100,6 +100,14 @@ github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORN
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
+github.com/maritimusj/durafmt v0.0.0-20191209020958-617613f5dec1 h1:LGF1xEb+uNfZsABl23gdLY1ts+mU8PDxwOUn2ONajfQ=
+github.com/maritimusj/durafmt v0.0.0-20191209020958-617613f5dec1/go.mod h1:wvmU7Z0di6jaRsw0hNLmE5DuPtoDa4UJLBjSAMX7ahU=
+github.com/maritimusj/durafmt v0.0.0-20191209022226-367c4fe17688 h1:Ds/02JvdCAeu60c2QL8t2wvPUtAzcKIXJl2I5+wywTc=
+github.com/maritimusj/durafmt v0.0.0-20191209022226-367c4fe17688/go.mod h1:wvmU7Z0di6jaRsw0hNLmE5DuPtoDa4UJLBjSAMX7ahU=
+github.com/maritimusj/durafmt v0.0.0-20191209025454-f76c4bd3195a h1:aTLniuVYrR9RflFXWbGmyQQckBbzSennxg1fG+QyXUM=
+github.com/maritimusj/durafmt v0.0.0-20191209025454-f76c4bd3195a/go.mod h1:wvmU7Z0di6jaRsw0hNLmE5DuPtoDa4UJLBjSAMX7ahU=
+github.com/maritimusj/durafmt v0.0.0-20191209032412-f1943f9a86cc h1:cuRWCg80Yo7Oqlrbu4KZuc7ieVWaMFS1PCkura6tIF4=
+github.com/maritimusj/durafmt v0.0.0-20191209032412-f1943f9a86cc/go.mod h1:wvmU7Z0di6jaRsw0hNLmE5DuPtoDa4UJLBjSAMX7ahU=
 github.com/maritimusj/modbus v0.1.1 h1:PjOwMBVFdIwO52Nr9Y8JkxIYCTJDQKYmPu1rkYBEvHw=
 github.com/maritimusj/modbus v0.1.1/go.mod h1:ZTaGd7EFK4qG59dZKBnw5NcRDi9vQc4Ohr8cvNJOeIU=
 github.com/mattn/go-colorable v0.1.4 h1:snbPLB8fVfU9iwbbo30TPtbLRzwWu6aJS6Xh4eaaviA=
@@ -148,8 +156,6 @@ github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXf
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
-github.com/tidwall/gjson v1.3.2 h1:+7p3qQFaH3fOMXAJSrdZwGKcOO/lYdGS0HqGhPqDdTI=
-github.com/tidwall/gjson v1.3.2/go.mod h1:P256ACg0Mn+j1RXIDXoss50DeIABTYK1PULOJHhxOls=
 github.com/tidwall/gjson v1.3.5 h1:2oW9FBNu8qt9jy5URgrzsVx/T/KSn3qn/smJQ0crlDQ=
 github.com/tidwall/gjson v1.3.5/go.mod h1:P256ACg0Mn+j1RXIDXoss50DeIABTYK1PULOJHhxOls=
 github.com/tidwall/match v1.0.1 h1:PnKP62LPNxHKTwvHHZZzdOAOCtsJTjo6dZLCwpKm5xc=
@@ -193,8 +199,6 @@ golang.org/x/sys v0.0.0-20190222072716-a9d3bda3a223/go.mod h1:STP8DvDyc/dI5b8T5h
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190422165155-953cdadca894 h1:Cz4ceDQGXuKRnVBDTS23GTn/pU5OE2C0WrNTOYK1Uuc=
 golang.org/x/sys v0.0.0-20190422165155-953cdadca894/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
-golang.org/x/sys v0.0.0-20191008105621-543471e840be h1:QAcqgptGM8IQBC9K/RC4o+O9YmqEm0diQn9QmZw/0mU=
-golang.org/x/sys v0.0.0-20191008105621-543471e840be/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20191118133127-cf1e2d577169 h1:LPLFLulk2vyM7yI3CwNW64O6e8AxBmr9opfv14yI7HI=
 golang.org/x/sys v0.0.0-20191118133127-cf1e2d577169/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=

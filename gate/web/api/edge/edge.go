@@ -69,7 +69,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 
 	if form.Status != nil {
 		if form.Status.Index == int(edgeLang.Disconnected) {
-			org, _ := global.GetDeviceStatus(device)
+			org, _, _ := global.GetDeviceStatus(device)
 			if org == int(edgeLang.Connected) {
 				//断线警报？
 			}
@@ -137,7 +137,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 
 	if form.Perf != nil {
 		global.UpdateDevicePerf(device, iris.Map{
-			"rate": (*form.Perf).Rate,
+			"rate": strconv.FormatInt(int64((*form.Perf).Rate), 10) + "kb/s",
 		})
 	}
 

@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/maritimusj/durafmt"
+
 	"github.com/iris-contrib/middleware/cors"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/core/router"
@@ -75,6 +77,15 @@ func (server *server) Wait() {
 
 func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 	server.app.Logger().SetLevel(cfg.LogLevel())
+
+	durafmt.SetAlias("years", "年")
+	durafmt.SetAlias("weeks", "星期")
+	durafmt.SetAlias("days", "天")
+	durafmt.SetAlias("hours", "小时")
+	durafmt.SetAlias("minutes", "分钟")
+	durafmt.SetAlias("seconds", "秒")
+	durafmt.SetAlias("milliseconds", "毫秒")
+	durafmt.SetAlias("microseconds", "微秒")
 
 	crs := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"}, // allows everything, use that to change the hosts.

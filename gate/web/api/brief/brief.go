@@ -10,7 +10,7 @@ import (
 	"github.com/maritimusj/centrum/global"
 )
 
-func Simple(ctx iris.Context) hero.Result {
+func Simple() hero.Result {
 	return response.Wrap(func() interface{} {
 		devices, total, err := app.Store().GetDeviceList()
 		if err != nil {
@@ -19,7 +19,7 @@ func Simple(ctx iris.Context) hero.Result {
 
 		var statsMap = make(map[int]int)
 		for _, device := range devices {
-			stats, _ := global.GetDeviceStatus(device)
+			stats, _, _ := global.GetDeviceStatus(device)
 			if v, ok := statsMap[stats]; ok {
 				statsMap[stats] = v + 1
 			} else {

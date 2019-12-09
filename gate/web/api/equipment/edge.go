@@ -2,6 +2,10 @@ package equipment
 
 import (
 	"errors"
+	"strings"
+	"time"
+
+	"github.com/maritimusj/durafmt"
 
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
@@ -63,7 +67,7 @@ func getEquipmentSimpleStatus(user model.User, equipment model.Equipment) map[st
 			res["index"] = edgeLang.MalFunctioned
 			return lang.Error(lang.ErrMeasureNotFound)
 		}
-		index, title := global.GetDeviceStatus(device)
+		index, title, _ := global.GetDeviceStatus(device)
 		if index != int(edgeLang.Connected) {
 			res["index"] = index
 			res["title"] = title
@@ -100,13 +104,18 @@ func Status(equipmentID int64, ctx iris.Context) hero.Result {
 			if device != nil {
 				baseInfo, err := edge.GetStatus(device)
 				if err != nil {
-					index, title := global.GetDeviceStatus(device)
+					index, title, from := global.GetDeviceStatus(device)
 					if index != 0 {
+						status := map[string]interface{}{
+							"index": index,
+							"title": title,
+						}
+						if index == int(edgeLang.Connected) {
+							status["from"] = from.Format("2006-01-02 15:04:05")
+							status["duration"] = strings.ReplaceAll(durafmt.Parse(time.Now().Sub(from)).LimitFirstN(2).String(), " ", "")
+						}
 						dataMap["edge"] = map[string]interface{}{
-							"status": map[string]interface{}{
-								"index": index,
-								"title": title,
-							},
+							"status": status,
 						}
 					} else {
 						dataMap["error"] = err.Error()

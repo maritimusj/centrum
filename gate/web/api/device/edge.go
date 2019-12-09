@@ -43,7 +43,7 @@ func Status(deviceID int64, ctx iris.Context) hero.Result {
 		}
 
 		if ctx.URLParamExists("simple") {
-			index, title := global.GetDeviceStatus(device)
+			index, title, _ := global.GetDeviceStatus(device)
 			return iris.Map{
 				"index": index,
 				"title": title,

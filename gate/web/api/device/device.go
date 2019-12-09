@@ -3,6 +3,11 @@ package device
 import (
 	"fmt"
 	"strings"
+	"time"
+
+	"github.com/maritimusj/durafmt"
+
+	edgeLang "github.com/maritimusj/centrum/edge/lang"
 
 	"github.com/maritimusj/centrum/gate/event"
 	"github.com/maritimusj/centrum/gate/lang"
@@ -90,12 +95,17 @@ func List(ctx iris.Context) hero.Result {
 				"ctrl": app.Allow(admin, device, resource.Ctrl),
 			}
 
-			index, title := global.GetDeviceStatus(device)
+			index, title, from := global.GetDeviceStatus(device)
+			status := iris.Map{
+				"index": index,
+				"title": title,
+			}
+			if index == int(edgeLang.Connected) {
+				status["from"] = from.Format("2006-01-02 15:04:05")
+				status["duration"] = strings.ReplaceAll(durafmt.Parse(time.Now().Sub(from)).LimitFirstN(2).String(), " ", "")
+			}
 			brief["edge"] = iris.Map{
-				"status": iris.Map{
-					"index": index,
-					"title": title,
-				},
+				"status": status,
 			}
 
 			var params = []helper.OptionFN{helper.Device(device.GetID()), helper.Limit(1)}
@@ -246,11 +256,15 @@ func MultiStatus(ctx iris.Context) hero.Result {
 						"error": lang.Error(lang.ErrNoPermission).Error(),
 					})
 				} else {
-					index, title := global.GetDeviceStatus(device)
+					index, title, from := global.GetDeviceStatus(device)
 					status := iris.Map{
 						"id":    id,
 						"index": index,
 						"title": title,
+					}
+					if index == int(edgeLang.Connected) {
+						status["from"] = from.Format("2006-01-02 15:04:05")
+						status["duration"] = strings.ReplaceAll(durafmt.Parse(time.Now().Sub(from)).LimitFirstN(2).String(), " ", "")
 					}
 					status["perf"] = global.GetDevicePerf(device)
 					result = append(result, status)
