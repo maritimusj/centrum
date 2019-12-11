@@ -1249,14 +1249,17 @@ func (s *mysqlStore) CreateGroup(org interface{}, title string, desc string, par
 		if err != nil {
 			return err
 		}
+
 		group, err := s.loadGroup(groupID)
 		if err != nil {
 			return err
 		}
+
 		err = s.cache.Save(group)
 		if err != nil {
 			return err
 		}
+
 		return group
 	})
 	if err, ok := result.(error); ok {

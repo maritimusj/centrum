@@ -396,6 +396,15 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 			adapter.wg.Done()
 		}()
 
+		var delay = adapter.conf.Interval
+		if delay < 3*time.Second {
+			delay = 3 * time.Second
+		}
+
+		if delay > 30*time.Second {
+			delay = 30 * time.Second
+		}
+
 	tryConnectToDevice:
 		device := adapter.device
 		for {
@@ -414,7 +423,7 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 				select {
 				case <-adapter.done:
 					return
-				case <-time.After(adapter.conf.Interval):
+				case <-time.After(delay):
 					continue
 				}
 			} else {
