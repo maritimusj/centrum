@@ -197,13 +197,16 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 			}
 
 			if v, ok := r.GetAIValue(i, ai.GetConfig().Point); ok {
-				av := ai.CheckAlarm(v)
+				av, x := ai.CheckAlarm(v)
 				entry := map[string]interface{}{
 					"tag":   ai.GetConfig().TagName,
 					"title": ai.GetConfig().Title,
 					"unit":  ai.GetConfig().Uint,
 					"alarm": ep6v2.AlarmDesc(av),
 					"value": v,
+				}
+				if av != ep6v2.AlarmNormal {
+					entry["normal_val"] = x
 				}
 
 				values = append(values, entry)
@@ -397,12 +400,12 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 		}()
 
 		var delay = adapter.conf.Interval
-		if delay < 3*time.Second {
-			delay = 3 * time.Second
+		if delay < 6*time.Second {
+			delay = 6 * time.Second
 		}
 
-		if delay > 30*time.Second {
-			delay = 30 * time.Second
+		if delay > 60*time.Second {
+			delay = 60 * time.Second
 		}
 
 	tryConnectToDevice:
@@ -498,7 +501,7 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 			}
 			v, ok := data.GetAIValue(i, ai.GetConfig().Point)
 			if ok {
-				av := ai.CheckAlarm(v)
+				av, x := ai.CheckAlarm(v)
 
 				data := measure.New(ai.GetConfig().TagName)
 				data.AddTag("uid", adapter.conf.UID)
@@ -507,6 +510,10 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 				data.AddTag("title", ai.GetConfig().Title)
 				data.AddTag("alarm", ep6v2.AlarmDesc(av))
 				data.AddField("val", v)
+
+				if av != ep6v2.AlarmNormal {
+					data.AddField("normal_val", x)
+				}
 
 				adapter.measureDataCH <- data
 				if av != 0 {

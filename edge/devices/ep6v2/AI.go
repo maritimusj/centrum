@@ -3,10 +3,11 @@ package ep6v2
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/maritimusj/centrum/edge/devices/modbus"
-	"github.com/maritimusj/centrum/edge/devices/util"
 	"math"
 	"time"
+
+	"github.com/maritimusj/centrum/edge/devices/modbus"
+	"github.com/maritimusj/centrum/edge/devices/util"
 )
 
 const (
@@ -213,36 +214,36 @@ func (ai *AI) getAlarmConfig() (*AIAlarmConfig, error) {
 	return ai.alarmConfig, nil
 }
 
-func (ai *AI) CheckAlarm(val float32) AlarmValue {
+func (ai *AI) CheckAlarm(val float32) (AlarmValue, float32) {
 	cfg, err := ai.getAlarmConfig()
 	if err != nil {
-		return AlarmError
+		return AlarmError, 0
 	}
 
 	if val > cfg.HF.Value && cfg.HF.Style == Alarm {
-		return AlarmHF
+		return AlarmHF, cfg.HF.Value
 	}
 
 	if val >= cfg.HiHi.Value-cfg.DeadBand && cfg.HiHi.Style == Alarm {
-		return AlarmHH
+		return AlarmHH, cfg.HiHi.Value
 	}
 
 	if val >= cfg.HI.Value-cfg.DeadBand && cfg.HI.Style == Alarm {
-		return AlarmHI
+		return AlarmHI, cfg.HI.Value
 	}
 
 	if val < cfg.LO.Value+cfg.DeadBand && cfg.LO.Style == Alarm {
-		return AlarmLO
+		return AlarmLO, cfg.LO.Value
 	}
 
 	if val < cfg.LoLo.Value+cfg.DeadBand && cfg.LoLo.Style == Alarm {
-		return AlarmLL
+		return AlarmLL, cfg.LoLo.Value
 	}
 
 	if val < cfg.LF.Value {
-		return AlarmLF
+		return AlarmLF, cfg.LF.Value
 	}
-	return AlarmNormal
+	return AlarmNormal, 0
 }
 
 func (c *AIConfig) fetchData(conn modbus.Client, index int) error {
