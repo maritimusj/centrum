@@ -198,6 +198,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 
 			if v, ok := r.GetAIValue(i, ai.GetConfig().Point); ok {
 				av, x := ai.CheckAlarm(v)
+
 				entry := map[string]interface{}{
 					"tag":   ai.GetConfig().TagName,
 					"title": ai.GetConfig().Title,
@@ -205,8 +206,9 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 					"alarm": ep6v2.AlarmDesc(av),
 					"value": v,
 				}
+
 				if av != ep6v2.AlarmNormal {
-					entry["normal_val"] = x
+					entry["valve"] = x
 				}
 
 				values = append(values, entry)
@@ -512,7 +514,7 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 				data.AddField("val", v)
 
 				if av != ep6v2.AlarmNormal {
-					data.AddField("normal_val", x)
+					data.AddField("valve", x)
 				}
 
 				adapter.measureDataCH <- data
