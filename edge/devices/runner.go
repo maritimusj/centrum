@@ -208,7 +208,7 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 				}
 
 				if av != ep6v2.AlarmNormal {
-					entry["valve"] = x
+					entry["threshold"] = x
 				}
 
 				values = append(values, entry)
@@ -514,7 +514,7 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 				data.AddField("val", v)
 
 				if av != ep6v2.AlarmNormal {
-					data.AddField("valve", x)
+					data.AddField("threshold", x)
 				}
 
 				adapter.measureDataCH <- data
