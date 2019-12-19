@@ -49,22 +49,26 @@ func Export(ctx iris.Context) {
 			for _, measureID := range form.MeasureIDs {
 				measure, err := s.GetMeasure(measureID)
 				if err != nil {
-					return err
+					//return err
+					continue
 				}
 
 				if !app.Allow(admin, measure, resource.View) {
-					return lang.Error(lang.ErrNoPermission)
+					//return lang.Error(lang.ErrNoPermission)
+					continue
 				}
 
 				device := measure.Device()
 				if device == nil {
-					return lang.Error(lang.ErrDeviceNotFound)
+					//return lang.Error(lang.ErrDeviceNotFound)
+					continue
 				}
 
 				if fn != nil {
 					err = fn(device, measure)
 					if err != nil {
-						return err
+						//return err
+						continue
 					}
 				}
 			}
@@ -75,22 +79,26 @@ func Export(ctx iris.Context) {
 			for _, stateID := range form.StatesIDs {
 				state, err := s.GetState(stateID)
 				if err != nil {
-					return err
+					//return err
+					continue
 				}
 
 				if !app.Allow(admin, state, resource.View) {
-					return lang.Error(lang.ErrNoPermission)
+					//return lang.Error(lang.ErrNoPermission)
+					continue
 				}
 
 				equipment := state.Equipment()
 				if equipment == nil {
-					return lang.Error(lang.ErrEquipmentNotFound)
+					//return lang.Error(lang.ErrEquipmentNotFound)
+					continue
 				}
 
 				if fn != nil {
 					err = fn(equipment, state)
 					if err != nil {
-						return err
+						//return err
+						continue
 					}
 				}
 			}
