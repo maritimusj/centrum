@@ -514,6 +514,7 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 				data.AddField("val", v)
 
 				if av != ep6v2.AlarmNormal {
+					data.AddTag("unit", ai.GetConfig().Uint)
 					data.AddField("threshold", x)
 				}
 
