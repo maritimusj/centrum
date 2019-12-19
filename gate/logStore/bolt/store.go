@@ -230,7 +230,7 @@ func (store *store) write(db *bolt.DB, entry *logStore.Entry) error {
 	}
 
 	if src == "" {
-		src = logStore.SystemLog
+		src = logStore.DebugLog
 	}
 
 	return db.Batch(func(tx *bolt.Tx) error {

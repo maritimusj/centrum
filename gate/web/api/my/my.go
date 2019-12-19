@@ -1,15 +1,18 @@
 package my
 
 import (
+	"strconv"
+
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/logStore"
 	"github.com/maritimusj/centrum/gate/web/app"
 	"github.com/maritimusj/centrum/gate/web/model"
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/response"
 	"github.com/maritimusj/centrum/gate/web/store"
-	"strconv"
+	log "github.com/sirupsen/logrus"
 )
 
 func Detail(ctx iris.Context) hero.Result {
@@ -58,6 +61,8 @@ func Update(ctx iris.Context) hero.Result {
 			if err != nil {
 				return err
 			}
+
+			log.WithField("src", logStore.SystemLog).Infoln(lang.Str(lang.UserProfileUpdateOk, my.Name()))
 			return lang.Ok
 		})
 	})

@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/maritimusj/centrum/gate/logStore"
+
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/maritimusj/centrum/gate/lang"
@@ -48,6 +50,7 @@ func main() {
 				log.Fatal(err)
 			} else {
 				fmt.Printf(lang.Str(lang.FlushDBOk))
+				log.WithField("src", logStore.SystemLog).Warningln(lang.Str(lang.FlushDBOk))
 				os.Exit(0)
 			}
 		}
@@ -58,7 +61,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Warnln(lang.Str(lang.DefaultUserPasswordResetOk))
+		log.WithField("src", logStore.SystemLog).Warnln(lang.Str(lang.DefaultUserPasswordResetOk))
 	}
 
 	//API服务

@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"sync"
 	"time"
 
@@ -76,7 +77,8 @@ func (server *server) Wait() {
 }
 
 func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
-	server.app.Logger().SetLevel(cfg.LogLevel())
+	//server.app.Logger().SetLevel(cfg.LogLevel())
+	server.app.Logger().SetOutput(ioutil.Discard)
 
 	durafmt.SetAlias("years", "年")
 	durafmt.SetAlias("weeks", "星期")

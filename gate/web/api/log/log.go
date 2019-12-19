@@ -2,6 +2,7 @@ package log
 
 import (
 	"encoding/json"
+
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
@@ -115,6 +116,6 @@ func DeleteLog(ctx iris.Context, orgID int64, src string) interface{} {
 		return err
 	}
 
-	log.Info(lang.Str(lang.LogDeletedByUser, admin.Name()))
+	log.WithField("src", logStore.SystemLog).Info(lang.Str(lang.LogDeletedByUser, admin.Name()))
 	return lang.Ok
 }

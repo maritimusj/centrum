@@ -1,11 +1,13 @@
 package app
 
 import (
+	"strconv"
+
 	"github.com/maritimusj/centrum/gate/event"
 	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/logStore"
 	"github.com/maritimusj/centrum/gate/web/edge"
 	log "github.com/sirupsen/logrus"
-	"strconv"
 )
 
 func initEvent() error {
@@ -50,7 +52,7 @@ func eventUserCreated(userID int64, newUserID int64) {
 		return
 	}
 
-	log.Info(lang.Str(lang.AdminCreateUserOk, adminUser.Name(), user.Title()))
+	log.WithField("src", logStore.SystemLog).Info(lang.Str(lang.AdminCreateUserOk, adminUser.Name(), user.Title()))
 	adminUser.Logger().Info(lang.Str(lang.AdminCreateUserOk, adminUser.Name(), user.Title()))
 	user.Logger().Info(lang.Str(lang.AdminCreateUserOk, adminUser.Name(), user.Title()))
 }
@@ -67,7 +69,7 @@ func eventUserUpdated(userID int64, newUserID int64) {
 		return
 	}
 
-	log.Info(lang.Str(lang.AdminUpdateUserOk, adminUser.Name(), user.Title()))
+	log.WithField("src", logStore.SystemLog).Info(lang.Str(lang.AdminUpdateUserOk, adminUser.Name(), user.Title()))
 	adminUser.Logger().Info(lang.Str(lang.AdminUpdateUserOk, adminUser.Name(), user.Title()))
 	user.Logger().Info(lang.Str(lang.AdminUpdateUserOk, adminUser.Name(), user.Title()))
 }
@@ -79,7 +81,7 @@ func eventUserDeleted(userID int64, name string) {
 		return
 	}
 
-	log.Warn(lang.Str(lang.AdminDeleteUserOk, adminUser.Name(), name))
+	log.WithField("src", logStore.SystemLog).Warn(lang.Str(lang.AdminDeleteUserOk, adminUser.Name(), name))
 	adminUser.Logger().Warn(lang.Str(lang.AdminDeleteUserOk, adminUser.Name(), name))
 }
 
@@ -100,7 +102,7 @@ func eventDeviceCreated(userID int64, deviceID int64) {
 		log.Error("eventDeviceCreated: active device: ", err)
 	}
 
-	log.Info(lang.Str(lang.UserCreateDeviceOk, user.Name(), device.Title()))
+	log.WithField("src", logStore.SystemLog).Info(lang.Str(lang.UserCreateDeviceOk, user.Name(), device.Title()))
 	user.Logger().Info(lang.Str(lang.UserCreateDeviceOk, user.Name(), device.Title()))
 	device.Logger().Info(lang.Str(lang.UserCreateDeviceOk, user.Name(), device.Title()))
 }
@@ -122,7 +124,7 @@ func eventDeviceUpdated(userID int64, deviceID int64) {
 		log.Error("eventDeviceUpdated: active device: ", err)
 	}
 
-	log.Info(lang.Str(lang.UserUpdateDeviceOk, user.Name(), device.Title()))
+	log.WithField("src", logStore.SystemLog).Info(lang.Str(lang.UserUpdateDeviceOk, user.Name(), device.Title()))
 	user.Logger().Info(lang.Str(lang.UserUpdateDeviceOk, user.Name(), device.Title()))
 	device.Logger().Info(lang.Str(lang.UserUpdateDeviceOk, user.Name(), device.Title()))
 }
@@ -136,7 +138,7 @@ func eventDeviceDeleted(userID int64, id int64, uid string, title string) {
 
 	edge.Remove(strconv.FormatInt(id, 10))
 
-	log.Warn(lang.Str(lang.UserDeleteDeviceOk, user.Name(), title))
+	log.WithField("src", logStore.SystemLog).Warn(lang.Str(lang.UserDeleteDeviceOk, user.Name(), title))
 	user.Logger().Warn(lang.Str(lang.UserDeleteDeviceOk, user.Name(), title))
 }
 
@@ -152,7 +154,7 @@ func eventEquipmentCreated(userID int64, equipmentID int64) {
 		return
 	}
 
-	log.Info(lang.Str(lang.UserCreateEquipmentOk, user.Name(), equipment.Title()))
+	log.WithField("src", logStore.SystemLog).Info(lang.Str(lang.UserCreateEquipmentOk, user.Name(), equipment.Title()))
 	user.Logger().Info(lang.Str(lang.UserCreateEquipmentOk, user.Name(), equipment.Title()))
 	equipment.Logger().Info(lang.Str(lang.UserCreateEquipmentOk, user.Name(), equipment.Title()))
 }
@@ -169,7 +171,7 @@ func eventEquipmentUpdated(userID int64, equipmentID int64) {
 		return
 	}
 
-	log.Info(lang.Str(lang.UserUpdateEquipmentOk, user.Name(), equipment.Title()))
+	log.WithField("src", logStore.SystemLog).Info(lang.Str(lang.UserUpdateEquipmentOk, user.Name(), equipment.Title()))
 	user.Logger().Info(lang.Str(lang.UserUpdateEquipmentOk, user.Name(), equipment.Title()))
 	equipment.Logger().Info(lang.Str(lang.UserUpdateEquipmentOk, user.Name(), equipment.Title()))
 }
@@ -181,6 +183,6 @@ func eventEquipmentDeleted(userID int64, title string) {
 		return
 	}
 
-	log.Warn(lang.Str(lang.UserDeleteEquipmentOk, user.Name(), title))
+	log.WithField("src", logStore.SystemLog).Warn(lang.Str(lang.UserDeleteEquipmentOk, user.Name(), title))
 	user.Logger().Warn(lang.Str(lang.UserDeleteEquipmentOk, user.Name(), title))
 }

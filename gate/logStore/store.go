@@ -9,6 +9,7 @@ import (
 
 const (
 	SystemLog = "system"
+	DebugLog  = "debug"
 )
 
 type Data struct {

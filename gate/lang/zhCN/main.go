@@ -242,6 +242,11 @@ var (
 		lang.UserCreateEquipmentOk: "管理员 %s 创建自定义设备 %s 成功！",
 		lang.UserUpdateEquipmentOk: "管理员 %s 更新自定义设备 %s 成功！",
 		lang.UserDeleteEquipmentOk: "管理员 %s 删除自定义设备 %s 成功！",
+
+		lang.UserLoginOk:                       "用户 %s 从 %s 登录成功！",
+		lang.UserLoginFailedCauseDisabled:      "用户 %s 从 %s 登录失败：已禁用！",
+		lang.UserLoginFailedCausePasswordWrong: "用户 %s 从 %s 登录失败：密码错误！",
+		lang.UserProfileUpdateOk:               "用户 %s 更新资料成功！",
 	}
 
 	errStrMap = map[lang.ErrorCode]string{

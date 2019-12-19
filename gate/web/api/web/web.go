@@ -1,13 +1,16 @@
 package web
 
 import (
+	"time"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
+	"github.com/maritimusj/centrum/gate/logStore"
 	"github.com/maritimusj/centrum/gate/web/app"
 	"github.com/maritimusj/centrum/gate/web/response"
-	"time"
+	log "github.com/sirupsen/logrus"
 
 	jwtMiddleware "github.com/iris-contrib/middleware/jwt"
 )
@@ -54,9 +57,11 @@ func Login(ctx iris.Context) hero.Result {
 			return err
 		}
 		if !user.IsEnabled() {
+			log.WithField("src", logStore.SystemLog).Infoln(lang.Str(lang.UserLoginFailedCauseDisabled, user.Name(), ctx.RemoteAddr()))
 			return lang.ErrUserDisabled
 		}
 		if !user.CheckPassword(form.Password) {
+			log.WithField("src", logStore.SystemLog).Infoln(lang.Str(lang.UserLoginFailedCausePasswordWrong, user.Name(), ctx.RemoteAddr()))
 			return lang.ErrPasswordWrong
 		}
 
@@ -70,6 +75,9 @@ func Login(ctx iris.Context) hero.Result {
 		if err != nil {
 			return lang.InternalError(err)
 		}
+
+		log.WithField("src", logStore.SystemLog).Infoln(lang.Str(lang.UserLoginOk, user.Name(), ctx.RemoteAddr()))
+
 		return iris.Map{
 			"token": token,
 		}

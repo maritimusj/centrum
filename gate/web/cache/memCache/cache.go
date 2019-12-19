@@ -1,6 +1,7 @@
 package memCache
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -124,8 +125,12 @@ func (c *cache) getUID(v interface{}) string {
 		return strconv.FormatInt(int64(vv), 10)
 	case string:
 		return vv
+	case model.DBEntry:
+		return strconv.FormatInt(vv.GetID(), 10)
+	case model.LogEntry:
+		return vv.UID()
 	}
-	panic("cache: unknown uid")
+	panic(fmt.Errorf("cache: unknown uid: %#v", v))
 }
 
 func (c *cache) LoadConfig(config interface{}) (model.Config, error) {

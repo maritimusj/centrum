@@ -195,6 +195,7 @@ func Confirm(alarmID int64, ctx iris.Context) hero.Result {
 		if err != nil {
 			return err
 		}
+
 		return lang.Ok
 	})
 }

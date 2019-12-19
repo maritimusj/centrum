@@ -237,6 +237,11 @@ const (
 
 	SysBriefTitle
 	SysBriefDesc
+
+	UserLoginOk
+	UserLoginFailedCauseDisabled
+	UserLoginFailedCausePasswordWrong
+	UserProfileUpdateOk
 )
 
 var (

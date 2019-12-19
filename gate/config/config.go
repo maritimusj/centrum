@@ -1,12 +1,13 @@
 package config
 
 import (
+	"sync"
+	"time"
+
 	"github.com/maritimusj/centrum/gate/web/model"
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/store"
 	"github.com/maritimusj/centrum/util"
-	"sync"
-	"time"
 )
 
 const (
@@ -31,7 +32,7 @@ const (
 	DefaultUserName        = "admin"
 	DefaultPageSize        = 20
 	DefaultTokenExpiration = 3600 // second
-	DefaultLogLevel        = "error"
+	DefaultLogLevel        = "info"
 	DefaultLogFileName     = "./log.data"
 )
 

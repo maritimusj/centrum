@@ -2,10 +2,7 @@ package edge
 
 import (
 	"bytes"
-	"io/ioutil"
 	"net/http"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/rpc/json"
 	. "github.com/maritimusj/centrum/json_rpc"
@@ -30,16 +27,20 @@ func Invoke(cmd string, request interface{}) (*Result, error) {
 		_ = resp.Body.Close()
 	}()
 
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Errorf("[invoke] %s", err)
-		return nil, err
-	}
-
-	log.Info("[invoke] ", string(data))
+	//data, err := ioutil.ReadAll(resp.Body)
+	//if err != nil {
+	//	log.Errorf("[invoke] %s", err)
+	//	return nil, err
+	//}
+	//
+	//log.Traceln("[invoke] ", string(data))
+	//
+	//var reply Result
+	//err = json.DecodeClientResponse(bytes.NewReader(data), &reply)
 
 	var reply Result
-	err = json.DecodeClientResponse(bytes.NewReader(data), &reply)
+	err = json.DecodeClientResponse(resp.Body, &reply)
+
 	if err != nil {
 		return nil, err
 	}
