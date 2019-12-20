@@ -55,6 +55,7 @@ func ExportDownload(uid string, ctx iris.Context) {
 		if stats.IsOk && stats.Error == nil {
 			_ = ctx.SendFile(stats.LocalFileName, stats.ExportFileName)
 			_ = os.Remove(stats.LocalFileName)
+			exportFiles.Delete(uid)
 			return
 		}
 	}
@@ -266,6 +267,8 @@ func Export(ctx iris.Context) hero.Result {
 			}
 
 			_ = csvFile.Close()
+
+			stats.Msg = lang.Str(lang.ArrangingData)
 			stats.IsOk = true
 		}()
 

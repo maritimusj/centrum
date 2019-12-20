@@ -247,6 +247,7 @@ const (
 	ExportingData
 	ArrangingData
 	WritingData
+	ExportReady
 )
 
 var (

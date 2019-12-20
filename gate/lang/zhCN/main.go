@@ -251,6 +251,7 @@ var (
 		lang.ExportingData:                     "正在导出数据 %s => %s...",
 		lang.ArrangingData:                     "正在整理数据...",
 		lang.WritingData:                       "正在写入数据 %d%%...",
+		lang.ExportReady:                       "导出完成！",
 	}
 
 	errStrMap = map[lang.ErrorCode]string{
