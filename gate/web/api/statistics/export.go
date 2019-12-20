@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -24,6 +25,9 @@ func Export(ctx iris.Context) {
 		ctx.StatusCode(iris.StatusInternalServerError)
 		return
 	}
+	defer func() {
+		_ = os.Remove(csvFile.Name())
+	}()
 
 	//写入UTF-8 BOM，防止中文乱码
 	_, _ = csvFile.WriteString("\xEF\xBB\xBF")

@@ -51,7 +51,7 @@ func Measure(measureID int64, ctx iris.Context) hero.Result {
 
 		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, form.Interval*time.Second)
 		if err != nil {
-			return lang.InternalError(err)
+			return iris.Map{}
 		}
 
 		return result

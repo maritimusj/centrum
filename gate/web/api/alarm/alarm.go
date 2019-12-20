@@ -3,7 +3,9 @@ package alarm
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/kataras/iris"
@@ -236,6 +238,10 @@ func Export(ctx iris.Context) {
 			return err
 		}
 
+		defer func() {
+			_ = os.Remove(csvFile.Name())
+		}()
+
 		//写入UTF-8 BOM，防止中文乱码
 		_, err = csvFile.WriteString("\xEF\xBB\xBF")
 		if err != nil {
@@ -309,22 +315,30 @@ func Export(ctx iris.Context) {
 			return err
 		}
 
+		seg := make([]string, 10)
+		_, _ = csvFile.WriteString("#,device,point,val,threshold,alarm,created,updated,user,confirm\r\n")
 		for index, alarm := range alarms {
-			_, _ = csvFile.WriteString(strconv.FormatInt(int64(index+1), 10) + ",")
+			seg = append(seg, strconv.FormatInt(int64(index+1), 10))
+
 			device, err := alarm.Device()
 			if err != nil {
-				_, _ = csvFile.WriteString("<err>" + ",")
+				seg = append(seg, "<unknown>")
 			} else {
-				_, _ = csvFile.WriteString(device.Title() + ",")
+				seg = append(seg, device.Title())
 			}
 
-			_, _ = csvFile.WriteString(alarm.GetOption("name").String() + ",")
-			_, _ = csvFile.WriteString(alarm.GetOption("fields.val").String() + ",")
+			seg = append(seg, alarm.GetOption("name").String(),
+				alarm.GetOption("fields.val").String(),
+				alarm.GetOption("fields.threshold").String(),
+				alarm.GetOption("tags.alarm").String())
 
-			_, stats := alarm.Status()
-			_, _ = csvFile.WriteString(stats + ",")
+			seg = append(seg, alarm.CreatedAt().Format("2006-01-02_15_04_05"),
+				alarm.UpdatedAt().Format("2006-01-02_15_04_05"),
+				alarm.GetOption("confirm.admin.name").String(),
+				alarm.GetOption("confirm.time").String(), alarm.CreatedAt().Format("2006-01-02_15_04_05"))
 
-			_, _ = csvFile.WriteString(alarm.CreatedAt().String() + "\r\n")
+			_, _ = csvFile.WriteString(strings.Join(seg, ",") + "\r\n")
+			seg = seg[0:0]
 		}
 
 		_ = csvFile.Close()

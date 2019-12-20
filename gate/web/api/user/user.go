@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+
 	"github.com/asaskevich/govalidator"
 	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/kataras/iris"
@@ -141,7 +142,7 @@ func Create(ctx iris.Context) hero.Result {
 				return err
 			}
 
-			data := event.Data{
+			data := &event.Data{
 				"userID":  user.GetID(),
 				"adminID": admin.GetID(),
 				"result":  user.Simple(),
