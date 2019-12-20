@@ -247,6 +247,10 @@ var (
 		lang.UserLoginFailedCauseDisabled:      "用户 %s 从 %s 登录失败：已禁用！",
 		lang.UserLoginFailedCausePasswordWrong: "用户 %s 从 %s 登录失败：密码错误！",
 		lang.UserProfileUpdateOk:               "用户 %s 更新资料成功！",
+		lang.ExportInitialized:                 "正在准备导出...",
+		lang.ExportingData:                     "正在导出数据 %s => %s...",
+		lang.ArrangingData:                     "正在整理数据...",
+		lang.WritingData:                       "正在写入数据 %d%%...",
 	}
 
 	errStrMap = map[lang.ErrorCode]string{
@@ -296,5 +300,6 @@ var (
 		lang.ErrAlarmNotFound:                   "没有找到这个警报数据！",
 		lang.ErrCommentNotFound:                 "没有找到这个备注！",
 		lang.ErrNotStatisticsData:               "没有任何数据！",
+		lang.ErrExportNotExists:                 "导出任务不存在！",
 	}
 )

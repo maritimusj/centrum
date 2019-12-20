@@ -3,8 +3,9 @@ package lang
 import (
 	"errors"
 	"fmt"
-	"github.com/maritimusj/centrum/synchronized"
 	"runtime"
+
+	"github.com/maritimusj/centrum/synchronized"
 )
 
 var (
@@ -64,6 +65,7 @@ const (
 	ErrCommentNotFound
 
 	ErrNotStatisticsData
+	ErrExportNotExists
 )
 
 func ErrorStr(code ErrorCode, params ...interface{}) string {

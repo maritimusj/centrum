@@ -210,6 +210,8 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 				p.Get("/{id:int64}/{tagName:string}", hero.Handler(device.GetCHValue)).Name = resourceDef.DeviceCHValue
 
 				//导出报表
+				p.Get("/export/{uid:string}/stats", hero.Handler(statistics.ExportStats))
+				p.Get("/export/{uid:string}/download", hero.Handler(statistics.ExportDownload))
 				p.Post("/export", hero.Handler(statistics.Export))
 			})
 			//物理点位

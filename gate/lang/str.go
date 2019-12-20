@@ -242,6 +242,11 @@ const (
 	UserLoginFailedCauseDisabled
 	UserLoginFailedCausePasswordWrong
 	UserProfileUpdateOk
+
+	ExportInitialized
+	ExportingData
+	ArrangingData
+	WritingData
 )
 
 var (
