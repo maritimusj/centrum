@@ -254,8 +254,8 @@ func Export(ctx iris.Context) hero.Result {
 
 			total := len(timeValues)
 			if total > 0 {
-				for _, index := range timeValues {
-					stats.Msg = lang.Str(lang.WritingData, int((float32(index)+1/float32(total))*100))
+				for i, index := range timeValues {
+					stats.Msg = lang.Str(lang.WritingData, int((float32(i+1)/float32(total))*100))
 					values := measureValues[index]
 					ts := time.Unix(int64(index), 0)
 					_, err = csvFile.WriteString(ts.Format("2006-01-02 15:04:05") + "," + strings.Join(values, ",") + "\r\n")
