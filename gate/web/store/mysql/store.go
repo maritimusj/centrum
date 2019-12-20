@@ -2355,6 +2355,11 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 		params = append(params, option.DeviceID)
 	}
 
+	if option.EquipmentID > 0 {
+		where += fmt.Sprintf(" AND a.measure_id IN (SELECT measure_id FROM %s WHERE equipment_id=?)", TbStates)
+		params = append(params, option.EquipmentID)
+	}
+
 	if option.MeasureID > 0 {
 		where += " AND a.measure_id=?"
 		params = append(params, option.MeasureID)
