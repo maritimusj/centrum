@@ -268,7 +268,7 @@ func Export(ctx iris.Context) hero.Result {
 
 			_ = csvFile.Close()
 
-			stats.Msg = lang.Str(lang.ArrangingData)
+			stats.Msg = lang.Str(lang.ExportReady)
 			stats.IsOk = true
 		}()
 
