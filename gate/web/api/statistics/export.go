@@ -1,11 +1,12 @@
 package statistics
 
 import (
+	"encoding/csv"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -83,6 +84,9 @@ func Export(ctx iris.Context) hero.Result {
 			return lang.InternalError(err)
 		}
 
+		//写入UTF-8 BOM，防止中文乱码
+		_, _ = csvFile.Write([]byte{0xEF, 0xBB, 0xBF})
+
 		uid := util.RandStr(16, util.RandNum)
 		stats := &exportStats{
 			Msg:            lang.Str(lang.ExportInitialized),
@@ -93,8 +97,6 @@ func Export(ctx iris.Context) hero.Result {
 		exportFiles.Store(uid, stats)
 
 		go func() {
-			//写入UTF-8 BOM，防止中文乱码
-			_, _ = csvFile.WriteString("\xEF\xBB\xBF")
 
 			var (
 				s     = app.Store()
@@ -102,152 +104,185 @@ func Export(ctx iris.Context) hero.Result {
 			)
 
 			rangeMeasuresFN := func(fn func(device model.Device, measure model.Measure) error) error {
-				for _, measureID := range form.MeasureIDs {
-					measure, err := s.GetMeasure(measureID)
-					if err != nil {
-						//return err
-						continue
-					}
+				if fn != nil {
+					var (
+						device  model.Device
+						measure model.Measure
+					)
 
-					if !app.Allow(admin, measure, resource.View) {
-						//return lang.Error(lang.ErrNoPermission)
-						continue
-					}
+					for _, measureID := range form.MeasureIDs {
+						device = nil
+						measure = nil
 
-					device := measure.Device()
-					if device == nil {
-						//return lang.Error(lang.ErrDeviceNotFound)
-						continue
-					}
+						measure, _ = s.GetMeasure(measureID)
+						if measure != nil {
+							if app.Allow(admin, measure, resource.View) {
+								device = measure.Device()
+							}
+						}
 
-					if fn != nil {
 						err = fn(device, measure)
 						if err != nil {
-							//return err
-							continue
+							return err
 						}
 					}
 				}
+
 				return nil
 			}
 
 			rangeStatesFN := func(fn func(equipment model.Equipment, state model.State) error) error {
+				var (
+					state     model.State
+					equipment model.Equipment
+				)
+
 				for _, stateID := range form.StatesIDs {
-					state, err := s.GetState(stateID)
-					if err != nil {
-						//return err
-						continue
-					}
+					equipment = nil
+					state = nil
 
-					if !app.Allow(admin, state, resource.View) {
-						//return lang.Error(lang.ErrNoPermission)
-						continue
-					}
-
-					equipment := state.Equipment()
-					if equipment == nil {
-						//return lang.Error(lang.ErrEquipmentNotFound)
-						continue
-					}
-
-					if fn != nil {
-						err = fn(equipment, state)
-						if err != nil {
-							//return err
-							continue
+					state, _ = s.GetState(stateID)
+					if state != nil {
+						if app.Allow(admin, state, resource.View) {
+							equipment = state.Equipment()
 						}
+					}
+
+					err = fn(equipment, state)
+					if err != nil {
+						return err
 					}
 				}
 				return nil
 			}
 
 			var (
-				measureValues = make(map[int][]string)
+				measureValues = make(map[int]map[string]string)
 				timeValues    = make([]int, 0)
 			)
 
-			getMeasureDataFN := func(device model.Device, measure model.Measure) error {
-				stats.Msg = lang.Str(lang.ExportingData, device.Title(), measure.Title())
+			getMeasureDataFN := func(device model.Device, measure model.Measure, title string) error {
+				if device != nil && measure != nil {
+					stats.Msg = lang.Str(lang.ExportingData, device.Title(), measure.Title())
 
-				org, err := device.Organization()
-				if err != nil {
-					return err
-				}
-
-				rows, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &form.Start, form.End, form.Interval)
-				if err != nil {
-					return err
-				}
-
-				for _, data := range rows.Values {
-					sec, _ := data[0].(json.Number).Int64()
-					index := int(sec)
-					var val string
-					switch v := data[1].(type) {
-					case json.Number:
-						val = v.String()
-					case bool:
-						val = util.If(v, "1", "0").(string)
-					default:
-						val = "<unknown>"
+					org, err := device.Organization()
+					if err != nil {
+						return err
 					}
-					if _, ok := measureValues[index]; !ok {
-						measureValues[index] = []string{val}
-						timeValues = append(timeValues, index)
-					} else {
-						measureValues[index] = append(measureValues[index], val)
+
+					rows, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &form.Start, form.End, form.Interval)
+					if err != nil {
+						return err
+					}
+
+					for _, data := range rows.Values {
+						sec, _ := data[0].(json.Number).Int64()
+						index := int(sec)
+						var val string
+						switch v := data[1].(type) {
+						case json.Number:
+							val = v.String()
+						case bool:
+							val = util.If(v, "1", "0").(string)
+						default:
+							val = "<unknown>"
+						}
+						if _, ok := measureValues[index]; !ok {
+							measureValues[index] = map[string]string{}
+							measureValues[index][title] = val
+							timeValues = append(timeValues, index)
+						} else {
+							measureValues[index][title] = val
+						}
 					}
 				}
+
 				return nil
 			}
 
-			header := []string{""}
-			stats.Error = rangeMeasuresFN(func(device model.Device, measure model.Measure) error {
-				header = append(header, fmt.Sprintf("%s_%s", device.Title(), measure.Title()))
-				return nil
-			})
-			if err != nil {
-				stats.IsOk = true
-				return
-			}
-
-			stats.Error = rangeStatesFN(func(equipment model.Equipment, state model.State) error {
-				header = append(header, fmt.Sprintf("%s_%s", equipment.Title(), state.Title()))
-				return nil
-			})
-
-			if err != nil {
-				stats.IsOk = true
-				return
-			}
-
-			_, err = csvFile.WriteString(strings.Join(header, ",") + "\r\n")
-			if err != nil {
-				stats.Error = lang.InternalError(err)
-				stats.IsOk = true
-				return
-			}
-
-			stats.Error = rangeMeasuresFN(func(device model.Device, measure model.Measure) error {
-				return getMeasureDataFN(device, measure)
-			})
-			if err != nil {
-				stats.IsOk = true
-				return
-			}
-
-			err = rangeStatesFN(func(equipment model.Equipment, state model.State) error {
-				measure := state.Measure()
-				if measure == nil {
-					return lang.Error(lang.ErrMeasureNotFound)
-				}
-
-				device := measure.Device()
+			var headers []string
+			getDeviceHeaderTitle := func(device model.Device, measure model.Measure) string {
+				var (
+					deviceTitle  string
+					measureTitle string
+					idStr        string
+				)
 				if device == nil {
-					return lang.Error(lang.ErrDeviceNotFound)
+					deviceTitle = "unknown"
+					idStr = "0:"
+				} else {
+					deviceTitle = device.Title()
+					idStr = strconv.FormatInt(device.GetID(), 10) + ":"
+				}
+				if measure == nil {
+					measureTitle = "unknown"
+					idStr += "0"
+				} else {
+					measureTitle = measure.Title()
+					idStr += strconv.FormatInt(measure.GetID(), 10)
 				}
 
-				return getMeasureDataFN(device, measure)
+				return deviceTitle + "[" + measureTitle + "]" + "#!" + idStr
+			}
+
+			getEquipmentHeaderTitle := func(equipment model.Equipment, state model.State) string {
+				var (
+					equipmentTitle string
+					stateTitle     string
+					idStr          string
+				)
+				if equipment == nil {
+					equipmentTitle = "unknown"
+					idStr = "0:"
+				} else {
+					equipmentTitle = equipment.Title()
+					idStr = strconv.FormatInt(equipment.GetID(), 10) + ":"
+				}
+				if state == nil {
+					stateTitle = "unknown"
+					idStr = "0:"
+				} else {
+					stateTitle = state.Title()
+					idStr += strconv.FormatInt(state.GetID(), 10)
+				}
+				return equipmentTitle + "(" + stateTitle + ")" + "#!" + idStr
+			}
+
+			_ = rangeMeasuresFN(func(device model.Device, measure model.Measure) error {
+				headers = append(headers, getDeviceHeaderTitle(device, measure))
+				return nil
+			})
+
+			_ = rangeStatesFN(func(equipment model.Equipment, state model.State) error {
+				headers = append(headers, getEquipmentHeaderTitle(equipment, state))
+				return nil
+			})
+
+			csvWriter := csv.NewWriter(csvFile)
+
+			formattedHeaders := []string{"#"}
+			for _, header := range headers {
+				arr := strings.SplitN(header, "#!", 2)
+				formattedHeaders = append(formattedHeaders, arr[0])
+			}
+
+			_ = csvWriter.Write(formattedHeaders)
+
+			_ = rangeMeasuresFN(func(device model.Device, measure model.Measure) error {
+				return getMeasureDataFN(device, measure, getDeviceHeaderTitle(device, measure))
+			})
+
+			_ = rangeStatesFN(func(equipment model.Equipment, state model.State) error {
+				measure := state.Measure()
+				if measure != nil {
+					device := measure.Device()
+					if device != nil {
+						return getMeasureDataFN(device, measure, getEquipmentHeaderTitle(equipment, state))
+					}
+				}
+
+				//忽略错误
+				return nil
 			})
 
 			stats.Msg = lang.Str(lang.ArrangingData)
@@ -257,15 +292,26 @@ func Export(ctx iris.Context) hero.Result {
 			if total > 0 {
 				for i, index := range timeValues {
 					stats.Msg = lang.Str(lang.WritingData, int((float32(i+1)/float32(total))*100))
-					values := measureValues[index]
+					valuesMap := measureValues[index]
 					ts := time.Unix(int64(index), 0)
-					_, err = csvFile.WriteString(ts.Format("2006-01-02 15:04:05") + "," + strings.Join(values, ",") + "\r\n")
+					valueSlice := []string{ts.Format("2006-01-02 15:04:05")}
+
+					for _, header := range headers {
+						if v, ok := valuesMap[header]; ok {
+							valueSlice = append(valueSlice, v)
+						} else {
+							valueSlice = append(valueSlice, "")
+						}
+					}
+
+					err = csvWriter.Write(valueSlice)
 					if err != nil {
 						continue
 					}
 				}
 			}
 
+			csvWriter.Flush()
 			_ = csvFile.Close()
 
 			stats.Msg = lang.Str(lang.ExportReady)
