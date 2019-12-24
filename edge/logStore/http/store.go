@@ -5,17 +5,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/maritimusj/centrum/edge/logStore"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"sync"
+
+	"github.com/maritimusj/centrum/edge/logStore"
+	"github.com/sirupsen/logrus"
 )
 
 type Logger struct {
-	uid   string
-	cache chan []byte
-	done  chan struct{}
-	wg    sync.WaitGroup
+	uid       string
+	cache     chan []byte
+	done      chan struct{}
+	wg        sync.WaitGroup
+	logLevels []logrus.Level
 }
 
 var (
@@ -49,7 +51,20 @@ func (logger *Logger) write(url string, data []byte) error {
 	return nil
 }
 
-func (logger *Logger) Open(ctx context.Context, url string) error {
+func (logger *Logger) Open(ctx context.Context, url string, level logrus.Level) error {
+	for _, lv := range []logrus.Level{
+		logrus.PanicLevel,
+		logrus.FatalLevel,
+		logrus.ErrorLevel,
+		logrus.WarnLevel,
+		logrus.InfoLevel,
+		logrus.DebugLevel,
+		logrus.TraceLevel,
+	} {
+		if lv <= level {
+			logger.logLevels = append(logger.logLevels, lv)
+		}
+	}
 	logger.wg.Add(1)
 	go func() {
 		defer func() {
@@ -81,15 +96,7 @@ func (logger *Logger) Close() {
 }
 
 func (logger *Logger) Levels() []logrus.Level {
-	return []logrus.Level{
-		logrus.PanicLevel,
-		logrus.FatalLevel,
-		logrus.ErrorLevel,
-		logrus.WarnLevel,
-		logrus.InfoLevel,
-		logrus.DebugLevel,
-		logrus.TraceLevel,
-	}
+	return logger.logLevels
 }
 
 func (logger *Logger) Fire(entry *logrus.Entry) error {

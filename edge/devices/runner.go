@@ -132,7 +132,7 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 		logger.SetLevel(level)
 		logger.AddHook(loggerHook)
 
-		err = loggerHook.Open(runner.ctx, conf.CallbackURL)
+		err = loggerHook.Open(runner.ctx, conf.CallbackURL, level)
 		if err != nil {
 			return err
 		}
@@ -339,7 +339,7 @@ func (runner *Runner) getMeasureData(client influx.Client, db string, ch <-chan 
 				if err != nil {
 					return err
 				} else {
-					return nil
+					return err
 				}
 			}
 		}
@@ -389,7 +389,7 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 				err := runner.getMeasureData(c, adapter.conf.DB, adapter.measureDataCH)
 				if err != nil {
 					adapter.logger.Error(err)
-					return
+					//return
 				}
 			}
 		}
