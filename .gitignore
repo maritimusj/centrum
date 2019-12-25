@@ -1,7 +1,6 @@
 *.exe
 .idea/
 vtest/
-centrum
 /log.data
 edge/edge.exe~
 public/
