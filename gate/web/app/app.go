@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/spf13/viper"
+
 	"github.com/asaskevich/EventBus"
 	"github.com/maritimusj/centrum/gate/config"
 	"github.com/maritimusj/centrum/gate/lang"
@@ -141,7 +143,16 @@ func Start(ctx context.Context, logLevel string) error {
 		return err
 	}
 
-	_ = Config.Save()
+	if viper.IsSet("gate") {
+		_ = Config.BaseConfig.SetOption(config.ApiAddrPath, viper.GetString("gate.addr"))
+		_ = Config.BaseConfig.SetOption(config.ApiPortPath, viper.GetString("gate.port"))
+	}
+
+	if viper.IsSet("influxdb") {
+		_ = Config.BaseConfig.SetOption(config.InfluxDBUrl, viper.GetString("influxdb.url"))
+		_ = Config.BaseConfig.SetOption(config.InfluxDBUserName, viper.GetString("influxdb.username"))
+		_ = Config.BaseConfig.SetOption(config.InfluxDBPassword, viper.GetString("influxdb.password"))
+	}
 
 	if err := InitLog(logLevel); err != nil {
 		return err
@@ -242,8 +253,8 @@ func BootAllDevices() {
 	}
 
 	for _, device := range devices {
-		if err := edge.ActiveDevice(device); err != nil {
-			log.Error("[BootAllDevices] ", err)
+		if err := edge.ActiveDevice(device, Config); err != nil {
+			log.Error("[BootAllDevices] ActiveDevice: ", err)
 
 			device.Logger().Error(err)
 			global.UpdateDeviceStatus(device, int(edgeLang.EdgeUnknownState), edgeLang.Str(edgeLang.EdgeUnknownState))

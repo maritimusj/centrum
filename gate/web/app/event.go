@@ -97,7 +97,7 @@ func eventDeviceCreated(userID int64, deviceID int64) {
 		return
 	}
 
-	err = edge.ActiveDevice(device)
+	err = edge.ActiveDevice(device, Config)
 	if err != nil {
 		log.Error("eventDeviceCreated: active device: ", err)
 	}
@@ -119,7 +119,7 @@ func eventDeviceUpdated(userID int64, deviceID int64) {
 		return
 	}
 
-	err = edge.ActiveDevice(device)
+	err = edge.ActiveDevice(device, Config)
 	if err != nil {
 		log.Error("eventDeviceUpdated: active device: ", err)
 	}

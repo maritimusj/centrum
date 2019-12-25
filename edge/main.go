@@ -14,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/rpc"
@@ -21,17 +22,33 @@ import (
 	"github.com/maritimusj/centrum/edge/devices"
 	"github.com/maritimusj/centrum/json_rpc"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/spf13/viper"
 )
 
 func main() {
-	addr := flag.String("addr", "", "service addr")
-	port := flag.Int("port", 1234, "service port")
-	inversePort := flag.Int("i", 10502, "inverse server port")
-	level := flag.String("l", "error", "log level")
 
+	config := flag.String("config", "edge.yaml", "config file name")
 	flag.Parse()
 
-	l, err := log.ParseLevel(*level)
+	viper.SetConfigFile(*config)
+	viper.AddConfigPath(".")
+	viper.SetConfigType("yaml")
+	viper.SetDefault("edge.addr", "")
+	viper.SetDefault("edge.port", 1234)
+
+	//默认开启inverse server
+	viper.SetDefault("inverse.enable", true)
+	viper.SetDefault("inverse.addr", "")
+	viper.SetDefault("inverse.port", 10502)
+
+	viper.SetDefault("error.level", "error")
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	l, err := log.ParseLevel(viper.GetString("error.level"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,10 +58,17 @@ func main() {
 	//初始化event管理
 	event.Init(context.Background())
 
-	//初始化inverse Server
-	err = InverseServer.Start(context.Background(), *addr, *inversePort)
-	if err != nil {
-		log.Fatal(err)
+	var (
+		inverseEnable = viper.GetBool("inverse.enable")
+		inverseAddr   = viper.GetString("inverse.addr")
+		inversePort   = viper.GetInt("inverse.port")
+	)
+	if inverseEnable {
+		//初始化inverse Server
+		err = InverseServer.Start(context.Background(), inverseAddr, inversePort)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	//初始化rpc服务
@@ -64,17 +88,35 @@ func main() {
 	r.Handle("/rpc", server)
 
 	go func() {
-		log.Println("edge service listen on port ", *port)
-		if err := http.ListenAndServe(fmt.Sprintf("%s:%d", *addr, *port), r); err != nil {
+		var (
+			addr = viper.GetString("edge.addr")
+			port = viper.GetInt("edge.port")
+		)
+
+		log.Println("edge service listen on port: ", port)
+		if err := http.ListenAndServe(fmt.Sprintf("%s:%d", addr, port), r); err != nil {
 			log.Fatalf("error serving: %s", err)
 		}
 	}()
 
-	const pidFile = "./edge.pid"
-	pid := fmt.Sprintf("%d", os.Getpid())
-	err = ioutil.WriteFile(pidFile, []byte(pid), os.ModePerm)
-	if err != nil {
-		log.Fatal(err)
+	pidFile := viper.GetString("pid.file")
+	if pidFile != "" {
+		pid := fmt.Sprintf("%d", os.Getpid())
+		err = ioutil.WriteFile(pidFile, []byte(pid), os.ModePerm)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	var (
+		pprofEnable = viper.GetBool("pprof.enable")
+		addr        = viper.GetString("pprof.addr")
+		port        = viper.GetInt("pprof.port")
+	)
+	if pprofEnable {
+		go func() {
+			_ = http.ListenAndServe(fmt.Sprintf("%s:%d", addr, port), nil)
+		}()
 	}
 
 	quit := make(chan os.Signal)
@@ -85,6 +127,9 @@ func main() {
 
 	_ = os.Remove(pidFile)
 
-	InverseServer.Close()
+	if inverseEnable {
+		InverseServer.Close()
+	}
+
 	runner.Close()
 }

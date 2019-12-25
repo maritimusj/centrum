@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/maritimusj/centrum/edge/logStore"
+
 	_ "github.com/influxdata/influxdb1-client"
 	"github.com/maritimusj/centrum/edge/devices/ep6v2"
 	"github.com/maritimusj/centrum/edge/devices/event"
@@ -21,7 +23,8 @@ type Adapter struct {
 
 	measureDataCH chan *measure.Data
 
-	logger *log.Logger
+	logger      *log.Logger
+	loggerStore logStore.Store
 
 	lastActiveTime time.Time
 
@@ -71,6 +74,11 @@ func (adapter *Adapter) Close() {
 
 		close(adapter.done)
 		adapter.wg.Wait()
+
+		if adapter.loggerStore != nil {
+			adapter.loggerStore.Close()
+		}
+
 		return nil
 	})
 }

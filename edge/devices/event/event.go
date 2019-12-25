@@ -35,6 +35,9 @@ const (
 	MeasureAlarm        = "measure::alarm"
 )
 
+func isHttpTooBusy() bool {
+	return len(__httpRequestCH) > 600
+}
 func Init(ctx context.Context) {
 	eventsMap := map[string]interface{}{
 		DeviceStatusChanged: OnDeviceStatusChanged,
@@ -109,7 +112,7 @@ func doHttpPost(url string, data []byte) ([]byte, error) {
 }
 
 func OnDeviceStatusChanged(conf *json_rpc.Conf, status lang.StrIndex) {
-	if conf.CallbackURL != "" {
+	if conf.CallbackURL != "" && !isHttpTooBusy() {
 		HttpPost(conf.CallbackURL, map[string]interface{}{
 			"status": map[string]interface{}{
 				"uid":   conf.UID,
@@ -121,7 +124,7 @@ func OnDeviceStatusChanged(conf *json_rpc.Conf, status lang.StrIndex) {
 }
 
 func OnDevicePerfChanged(conf *json_rpc.Conf, perf map[string]interface{}) {
-	if conf.CallbackURL != "" {
+	if conf.CallbackURL != "" && !isHttpTooBusy() {
 		perf["uid"] = conf.UID
 		HttpPost(conf.CallbackURL, map[string]interface{}{
 			"perf": perf,
@@ -130,7 +133,7 @@ func OnDevicePerfChanged(conf *json_rpc.Conf, perf map[string]interface{}) {
 }
 
 func OnMeasureDiscovered(conf *json_rpc.Conf, tagName, title string) {
-	if conf.CallbackURL != "" {
+	if conf.CallbackURL != "" && !isHttpTooBusy() {
 		HttpPost(conf.CallbackURL, map[string]interface{}{
 			"measure": map[string]interface{}{
 				"uid":   conf.UID,

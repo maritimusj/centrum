@@ -1,0 +1,22 @@
+{
+  "name": "centrum",
+  "title": "chuanyan centrum service",
+  "desc": "chuanyan centrum service",
+  "entries": [
+
+    {
+      "dir": "D:\\prj\\go\\centrum\\gate",
+      "exec": "D:\\prj\\go\\centrum\\gate\\gate.exe"
+    },
+    {
+      "dir": "D:\\prj\\go\\centrum\\edge",
+      "exec": "D:\\prj\\go\\centrum\\edge\\edge.exe",
+      "args": ["-config", "1.yaml"]
+    },
+    {
+      "dir": "D:\\prj\\go\\centrum\\edge",
+      "exec": "D:\\prj\\go\\centrum\\edge\\edge.exe",
+      "args": ["-config", "2.yaml"]
+    }
+  ]
+}

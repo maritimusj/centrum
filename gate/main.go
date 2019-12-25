@@ -8,6 +8,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/maritimusj/centrum/gate/web/edge"
+
+	"github.com/spf13/viper"
+
 	"github.com/maritimusj/centrum/gate/logStore"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -23,11 +27,34 @@ import (
 
 func main() {
 	//命令行参数
+	config := flag.String("config", "gate.yaml", "config file name")
 	logLevel := flag.String("l", "", "log level, [trace,debug,info,warn,error,fatal]")
 	resetDefaultUserPassword := flag.Bool("reset", false, "reset default user password")
 	flushDB := flag.Bool("flush", false, "erase all data in database")
 
 	flag.Parse()
+
+	viper.SetConfigFile(*config)
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+
+	viper.SetDefault("influxdb.url", "http://localhost:8086")
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var edges []string
+	if viper.IsSet("edges") {
+		edges = viper.GetStringSlice("edges")
+	} else {
+		edges = []string{"http://localhost:1234/rpc"}
+	}
+
+	for _, url := range edges {
+		edge.Add(url)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

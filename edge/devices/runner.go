@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/maritimusj/centrum/edge/logStore"
+
 	"github.com/maritimusj/centrum/edge/devices/InverseServer"
 	"github.com/maritimusj/centrum/edge/devices/ep6v2"
 	"github.com/maritimusj/centrum/edge/devices/measure"
@@ -77,7 +79,7 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 
 func (runner *Runner) needRestartAdapter(conf *json_rpc.Conf, newConf *json_rpc.Conf) bool {
 	return conf.Address != newConf.Address ||
-		conf.InfluxDBAddress != newConf.InfluxDBAddress ||
+		conf.InfluxDBUrl != newConf.InfluxDBUrl ||
 		conf.InfluxDBUserName != newConf.InfluxDBUserName ||
 		conf.InfluxDBPassword != newConf.InfluxDBPassword ||
 		conf.DB != newConf.DB ||
@@ -86,6 +88,7 @@ func (runner *Runner) needRestartAdapter(conf *json_rpc.Conf, newConf *json_rpc.
 
 func (runner *Runner) Active(conf *json_rpc.Conf) error {
 	log.Traceln("active:", conf.UID, conf.Address)
+
 	select {
 	case <-runner.ctx.Done():
 		return runner.ctx.Err()
@@ -115,7 +118,11 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 		}
 	}
 
-	logger := log.New()
+	var (
+		logger     = log.New()
+		loggerHook logStore.Store
+	)
+
 	if conf.CallbackURL != "" {
 		if conf.LogLevel == "" {
 			conf.LogLevel = "error"
@@ -126,7 +133,7 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 			return err
 		}
 
-		loggerHook := httpLogStore.New()
+		loggerHook = httpLogStore.New()
 		loggerHook.SetUID(conf.UID)
 
 		logger.SetLevel(level)
@@ -142,8 +149,9 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 		device:         ep6v2.New(),
 		conf:           conf,
 		logger:         logger,
+		loggerStore:    loggerHook,
 		lastActiveTime: time.Now(),
-		measureDataCH:  make(chan *measure.Data, 100),
+		measureDataCH:  make(chan *measure.Data, 60),
 		done:           make(chan struct{}),
 	}
 
@@ -287,7 +295,7 @@ func (runner *Runner) Remove(uid string) {
 
 func (runner *Runner) InitInfluxDB(conf *json_rpc.Conf) (influx.Client, error) {
 	c, err := influx.NewHTTPClient(influx.HTTPConfig{
-		Addr:     conf.InfluxDBAddress,
+		Addr:     conf.InfluxDBUrl,
 		Username: conf.InfluxDBUserName,
 		Password: conf.InfluxDBPassword,
 	})

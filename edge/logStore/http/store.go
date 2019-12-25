@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"sync"
 
@@ -31,7 +30,7 @@ func DefaultHttpClient() *http.Client {
 func New() logStore.Store {
 	return &Logger{
 		done:  make(chan struct{}),
-		cache: make(chan []byte, 100),
+		cache: make(chan []byte, 1000),
 	}
 }
 
@@ -39,16 +38,15 @@ func (logger *Logger) SetUID(uid string) {
 	logger.uid = uid
 }
 
-func (logger *Logger) write(url string, data []byte) error {
+func (logger *Logger) write(url string, data []byte) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
-		return err
+		return
 	}
 	_, err = defaultHttpClient.Do(req)
 	if err != nil {
-		return err
+		return
 	}
-	return nil
 }
 
 func (logger *Logger) Open(ctx context.Context, url string, level logrus.Level) error {
@@ -78,10 +76,7 @@ func (logger *Logger) Open(ctx context.Context, url string, level logrus.Level) 
 				return
 			case data := <-logger.cache:
 				if data != nil {
-					err := logger.write(url, data)
-					if err != nil {
-						fmt.Println(err)
-					}
+					logger.write(url, data)
 				}
 			}
 		}

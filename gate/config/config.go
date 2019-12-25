@@ -23,6 +23,10 @@ const (
 	DefaultTokenExpirationPath = "default.token.expiration"
 	LogLevelPath               = "log.level"
 	LogFileNamePath            = "log.filename"
+
+	InfluxDBUrl      = "influxdb.url"
+	InfluxDBUserName = "influxdb.username"
+	InfluxDBPassword = "influxdb.password"
 )
 
 const (
@@ -161,4 +165,12 @@ func (c *Config) LogFileName() string {
 		return filename.Str
 	}
 	return DefaultLogFileName
+}
+
+func (c *Config) InfluxDBConfig() map[string]string {
+	return map[string]string{
+		"url":      c.BaseConfig.GetOption(InfluxDBUrl).String(),
+		"username": c.BaseConfig.GetOption(InfluxDBUserName).String(),
+		"password": c.BaseConfig.GetOption(InfluxDBPassword).String(),
+	}
 }
