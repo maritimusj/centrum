@@ -21,6 +21,10 @@ func UpdateDeviceStatus(device model.Device, index int, title string) {
 	} else {
 		data["from"] = from
 	}
+
+	if index != int(edgeLang.Connected) {
+		UpdateDevicePerf(device, map[string]interface{}{})
+	}
 	_ = Stats.Set(path, data)
 }
 
