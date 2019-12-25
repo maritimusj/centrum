@@ -31,7 +31,7 @@ type Conf struct {
 	Address          string
 	Interval         time.Duration
 	DB               string
-	InfluxDBAddress  string
+	InfluxDBUrl      string
 	InfluxDBUserName string
 	InfluxDBPassword string
 	CallbackURL      string

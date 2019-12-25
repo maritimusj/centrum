@@ -5,25 +5,28 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/maritimusj/centrum/gate/config"
+
 	"github.com/maritimusj/centrum/gate/web/model"
 	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/centrum/json_rpc"
 )
 
-func ActiveDevice(device model.Device) error {
+func ActiveDevice(device model.Device, config *config.Config) error {
 	org, err := device.Organization()
 	if err != nil {
 		return err
 	}
 
+	influxDBConfig := config.InfluxDBConfig()
 	conf := &json_rpc.Conf{
 		UID:              strconv.FormatInt(device.GetID(), 10),
 		Address:          device.GetOption("params.connStr").Str,
 		Interval:         time.Second * time.Duration(device.GetOption("params.interval").Int()),
 		DB:               org.Title(),
-		InfluxDBAddress:  "http://localhost:8086",
-		InfluxDBUserName: "",
-		InfluxDBPassword: "",
+		InfluxDBUrl:      influxDBConfig["url"],
+		InfluxDBUserName: influxDBConfig["username"],
+		InfluxDBPassword: influxDBConfig["password"],
 		CallbackURL:      fmt.Sprintf("%s/%d", global.Params.MustGet("callbackURL"), device.GetID()),
 		LogLevel:         "error",
 	}
