@@ -67,6 +67,7 @@ const (
 	ErrNotStatisticsData
 	ErrExportNotExists
 
+	ErrRegFirst
 	ErrInvalidRegCode
 )
 

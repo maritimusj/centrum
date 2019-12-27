@@ -116,6 +116,10 @@ func GetReg() hero.Result {
 
 func Login(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
+		if !IsRegistered(app.Config.RegOwner(), app.Config.RegCode()) {
+			return lang.ErrRegFirst
+		}
+
 		var form struct {
 			Username string `json:"username" valid:"required"`
 			Password string `json:"password" valid:"required"`
