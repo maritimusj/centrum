@@ -81,8 +81,6 @@ func UpdateBase(ctx iris.Context) hero.Result {
 
 		if form.Sys != nil {
 			_ = app.Config.BaseConfig.SetOption(config.SysTitlePath, form.Sys.Title)
-			_ = app.Config.BaseConfig.SetOption(config.SysRegCodePath, form.Sys.RegCode)
-			_ = app.Config.BaseConfig.SetOption(config.SysRegOwnerPath, form.Sys.RegOwner)
 		}
 
 		if form.Api != nil {
