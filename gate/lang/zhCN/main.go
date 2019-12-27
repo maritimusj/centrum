@@ -304,5 +304,6 @@ var (
 		lang.ErrExportNotExists:                 "导出任务不存在！",
 		lang.ErrRegFirst:                        "请先注册软件！",
 		lang.ErrInvalidRegCode:                  "无效的注册码！",
+		lang.ErrDeviceDisconnected:              "设备断开连接！",
 	}
 )

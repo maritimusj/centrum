@@ -69,6 +69,8 @@ const (
 
 	ErrRegFirst
 	ErrInvalidRegCode
+
+	ErrDeviceDisconnected
 )
 
 func ErrorStr(code ErrorCode, params ...interface{}) string {
