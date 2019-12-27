@@ -153,7 +153,9 @@ func Login(ctx iris.Context) hero.Result {
 			return lang.InternalError(err)
 		}
 
-		log.WithField("src", logStore.SystemLog).Infoln(lang.Str(lang.UserLoginOk, user.Name(), ctx.RemoteAddr()))
+		if !ctx.URLParamExists("refresh") {
+			log.WithField("src", logStore.SystemLog).Infoln(lang.Str(lang.UserLoginOk, user.Name(), ctx.RemoteAddr()))
+		}
 
 		return iris.Map{
 			"token": token,
