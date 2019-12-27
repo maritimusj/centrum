@@ -27,7 +27,7 @@ import (
 )
 
 func main() {
-
+	logLevel := flag.String("l", "", "log error level")
 	config := flag.String("config", "edge.yaml", "config file name")
 	flag.Parse()
 
@@ -43,12 +43,18 @@ func main() {
 	viper.SetDefault("inverse.port", 10502)
 
 	viper.SetDefault("error.level", "error")
+
+	var l log.Level
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
+	} else {
+		if *logLevel == "" {
+			*logLevel = viper.GetString("error.level")
+		}
 	}
 
-	l, err := log.ParseLevel(viper.GetString("error.level"))
+	l, err = log.ParseLevel(*logLevel)
 	if err != nil {
 		log.Fatal(err)
 	}
