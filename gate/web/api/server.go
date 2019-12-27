@@ -101,6 +101,11 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 
 	//v1
 	v1 := server.app.Party("/v1", crs).AllowMethods(iris.MethodOptions)
+	v1.PartyFunc("/reg", func(p router.Party) {
+		p.Get("/", hero.Handler(web.GetReg))
+		p.Post("/", hero.Handler(web.Reg))
+	})
+
 	v1.PartyFunc("/web", func(p router.Party) {
 		p.Post("/login", hero.Handler(web.Login))
 

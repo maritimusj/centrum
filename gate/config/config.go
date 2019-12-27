@@ -13,6 +13,9 @@ import (
 const (
 	baseConfigPath = "__base"
 
+	SysRegCodePath             = "sys.reg.code"
+	SysRegOwnerPath            = "sys.reg.owner"
+	SysTitlePath               = "sys.title"
 	ApiAddrPath                = "api.addr"
 	ApiPortPath                = "api.port"
 	InversePortPath            = "inverse.port"
@@ -72,6 +75,30 @@ func (c *Config) Save() error {
 		return c.BaseConfig.Save()
 	}
 	return nil
+}
+
+func (c *Config) RegCode() string {
+	code := c.BaseConfig.GetOption(SysRegCodePath)
+	if code.Exists() {
+		return code.Str
+	}
+	return ""
+}
+
+func (c *Config) RegOwner() string {
+	owner := c.BaseConfig.GetOption(SysRegOwnerPath)
+	if owner.Exists() {
+		return owner.Str
+	}
+	return ""
+}
+
+func (c *Config) SysTitle() string {
+	title := c.BaseConfig.GetOption(SysTitlePath)
+	if title.Exists() {
+		return title.Str
+	}
+	return ""
 }
 
 func (c *Config) APIAddr() string {

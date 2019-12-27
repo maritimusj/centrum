@@ -66,6 +66,8 @@ const (
 
 	ErrNotStatisticsData
 	ErrExportNotExists
+
+	ErrInvalidRegCode
 )
 
 func ErrorStr(code ErrorCode, params ...interface{}) string {

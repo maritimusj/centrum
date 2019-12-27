@@ -1,7 +1,13 @@
 package web
 
 import (
+	"crypto/hmac"
+	"crypto/sha1"
+	"fmt"
+	"strings"
 	"time"
+
+	"github.com/maritimusj/centrum/gate/config"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
@@ -28,6 +34,7 @@ func RequireToken(p iris.Party) {
 
 	p.Use(jwtHandler.Serve)
 	p.Use(hero.Handler(CheckUser))
+	p.Use(hero.Handler(CheckReg))
 }
 
 func CheckUser(ctx iris.Context) {
@@ -41,11 +48,77 @@ func CheckUser(ctx iris.Context) {
 	}
 }
 
+/*
+	注册码的形式为 0000-0000-0000
+	以-分隔，共3段
+	第一段为hmac的key
+	计算方式：
+	用上面的key，使用hmac-sha1算法取owner的hash值，比较hash值前4位是否与第二段相同，后4位是否与第三段相同
+*/
+
+func IsRegistered(owner, code string) bool {
+	if code != "" {
+		codes := strings.Split(code, "-")
+		if len(codes) == 3 {
+			hash := hmac.New(sha1.New, []byte(codes[0]))
+			x := fmt.Sprintf("%x", hash.Sum([]byte(owner)))
+			return x[:4] == codes[1] && x[(len(x)-4):] == codes[2]
+		}
+	}
+
+	return false
+}
+
+func CheckReg(ctx iris.Context) {
+	if IsRegistered(app.Config.RegOwner(), app.Config.RegCode()) {
+		ctx.Next()
+	} else {
+		ctx.StatusCode(iris.StatusUnauthorized)
+	}
+}
+
+func Reg(ctx iris.Context) hero.Result {
+	return response.Wrap(func() interface{} {
+		var form struct {
+			Owner string `json:"owner"`
+			Code  string `json:"code"`
+		}
+
+		if err := ctx.ReadJSON(&form); err != nil {
+			return lang.ErrInvalidRequestData
+		}
+
+		owner := strings.ToLower(strings.TrimSpace(form.Owner))
+		code := strings.ToLower(strings.TrimSpace(form.Code))
+
+		if !IsRegistered(owner, code) {
+			return lang.ErrInvalidRegCode
+		}
+		_ = app.Config.BaseConfig.SetOption(config.SysRegOwnerPath, owner)
+		_ = app.Config.BaseConfig.SetOption(config.SysRegCodePath, code)
+
+		if err := app.Config.BaseConfig.Save(); err != nil {
+			return err
+		}
+
+		return lang.Ok
+	})
+}
+
+func GetReg() hero.Result {
+	return response.Wrap(func() interface{} {
+		return iris.Map{
+			"registered": IsRegistered(app.Config.RegOwner(), app.Config.RegCode()),
+			"owner":      app.Config.RegOwner(),
+		}
+	})
+}
+
 func Login(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
-			Username string `form:"username" valid:"required"`
-			Password string `form:"password" valid:"required"`
+			Username string `json:"username" valid:"required"`
+			Password string `json:"password" valid:"required"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {

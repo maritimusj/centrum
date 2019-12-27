@@ -9,6 +9,12 @@ import (
 	"github.com/maritimusj/centrum/gate/web/response"
 )
 
+type SysConfig struct {
+	Title    string `json:"title"`
+	RegOwner string `json:"reg_owner"`
+	RegCode  string `json:"reg_code"`
+}
+
 type APIConfig struct {
 	Addr string `json:"addr"`
 	Port int    `json:"port"`
@@ -32,6 +38,7 @@ type LogConfig struct {
 }
 
 type Form struct {
+	Sys     *SysConfig     `json:"sys"`
 	Api     *APIConfig     `json:"api"`
 	Def     *DefaultConfig `json:"default"`
 	Log     *LogConfig     `json:"log"`
@@ -41,6 +48,11 @@ type Form struct {
 func Base() hero.Result {
 	return response.Wrap(func() interface{} {
 		return &Form{
+			Sys: &SysConfig{
+				Title:    app.Config.SysTitle(),
+				RegOwner: app.Config.RegOwner(),
+				RegCode:  app.Config.RegCode(),
+			},
 			Api: &APIConfig{
 				Addr: app.Config.APIAddr(),
 				Port: app.Config.APIPort(),
@@ -65,6 +77,12 @@ func UpdateBase(ctx iris.Context) hero.Result {
 		var form Form
 		if err := ctx.ReadJSON(&form); err != nil {
 			return lang.ErrInvalidRequestData
+		}
+
+		if form.Sys != nil {
+			_ = app.Config.BaseConfig.SetOption(config.SysTitlePath, form.Sys.Title)
+			_ = app.Config.BaseConfig.SetOption(config.SysRegCodePath, form.Sys.RegCode)
+			_ = app.Config.BaseConfig.SetOption(config.SysRegOwnerPath, form.Sys.RegOwner)
 		}
 
 		if form.Api != nil {
