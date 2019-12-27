@@ -3,8 +3,11 @@ package edge
 import (
 	"bytes"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/rpc/json"
 	. "github.com/maritimusj/centrum/json_rpc"
@@ -38,13 +41,12 @@ func Add(url string) {
 }
 
 func Invoke(url, cmd string, request interface{}) (*Result, error) {
-
 	message, err := json.EncodeClientRequest(cmd, request)
 	if err != nil {
 		return nil, err
 	}
 
-	println("invoke: ", url, string(message))
+	log.Traceln("invoke: ", url, string(message))
 
 	resp, err := http.Post(url, "application/json", bytes.NewReader(message))
 	if err != nil {
@@ -55,22 +57,27 @@ func Invoke(url, cmd string, request interface{}) (*Result, error) {
 		_ = resp.Body.Close()
 	}()
 
-	//data, err := ioutil.ReadAll(resp.Body)
-	//if err != nil {
-	//	log.Errorf("[invoke] %s, result: %s", err, string(data))
-	//	return nil, err
-	//}
-
-	//log.Traceln("[invoke] ", string(data))
-	//
-	//var reply Result
-	//err = json.DecodeClientResponse(bytes.NewReader(data), &reply)
-
 	var reply Result
-	err = json.DecodeClientResponse(resp.Body, &reply)
 
-	if err != nil {
-		return nil, err
+	if log.IsLevelEnabled(log.TraceLevel) {
+		data, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Errorf("[invoke] %s, result: %s", err, string(data))
+			return nil, err
+		}
+
+		log.Traceln("[invoke] ", string(data))
+
+		err = json.DecodeClientResponse(bytes.NewReader(data), &reply)
+		if err != nil {
+			return nil, err
+		}
+
+	} else {
+		err = json.DecodeClientResponse(resp.Body, &reply)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &reply, nil
