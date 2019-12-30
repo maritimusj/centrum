@@ -48,10 +48,10 @@ func main() {
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Error(err)
-	} else {
-		if *logLevel == "" {
-			*logLevel = viper.GetString("error.level")
-		}
+	}
+
+	if *logLevel == "" {
+		*logLevel = viper.GetString("error.level")
 	}
 
 	l, err = log.ParseLevel(*logLevel)

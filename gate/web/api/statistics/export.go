@@ -3,6 +3,7 @@ package statistics
 import (
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -64,7 +65,14 @@ func ExportDownload(uid string, ctx iris.Context) {
 	ctx.StatusCode(iris.StatusNotFound)
 }
 
+type Int64Slice []int64
+
+func (p Int64Slice) Len() int           { return len(p) }
+func (p Int64Slice) Less(i, j int) bool { return p[i] < p[j] }
+func (p Int64Slice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+
 func Export(ctx iris.Context) hero.Result {
+
 	return response.Wrap(func() interface{} {
 		var form struct {
 			MeasureIDs []int64    `json:"measures"`
@@ -123,7 +131,8 @@ func Export(ctx iris.Context) hero.Result {
 
 						err = fn(device, measure)
 						if err != nil {
-							return err
+							//忽略错误
+							//return err
 						}
 					}
 				}
@@ -157,8 +166,8 @@ func Export(ctx iris.Context) hero.Result {
 			}
 
 			var (
-				measureValues = make(map[int]map[string]string)
-				timeValues    = make([]int, 0)
+				measureValues = make(map[int64]map[string]string)
+				timeValues    = make(Int64Slice, 0)
 			)
 
 			getMeasureDataFN := func(device model.Device, measure model.Measure, title string) error {
@@ -177,22 +186,24 @@ func Export(ctx iris.Context) hero.Result {
 
 					for _, data := range rows.Values {
 						sec, _ := data[0].(json.Number).Int64()
-						index := int(sec)
+						timestamp := sec
 						var val string
 						switch v := data[1].(type) {
 						case json.Number:
 							val = v.String()
 						case bool:
 							val = util.If(v, "1", "0").(string)
+						case nil:
+							val = ""
 						default:
-							val = "<unknown>"
+							val = fmt.Sprintf("%#v", data[1])
 						}
-						if _, ok := measureValues[index]; !ok {
-							measureValues[index] = map[string]string{}
-							measureValues[index][title] = val
-							timeValues = append(timeValues, index)
+						if _, ok := measureValues[timestamp]; !ok {
+							measureValues[timestamp] = map[string]string{}
+							measureValues[timestamp][title] = val
+							timeValues = append(timeValues, timestamp)
 						} else {
-							measureValues[index][title] = val
+							measureValues[timestamp][title] = val
 						}
 					}
 				}
@@ -286,14 +297,15 @@ func Export(ctx iris.Context) hero.Result {
 			})
 
 			stats.Msg = lang.Str(lang.ArrangingData)
-			sort.Ints(timeValues)
+			sort.Sort(timeValues)
 
 			total := len(timeValues)
 			if total > 0 {
 				for i, index := range timeValues {
 					stats.Msg = lang.Str(lang.WritingData, int((float32(i+1)/float32(total))*100))
+
 					valuesMap := measureValues[index]
-					ts := time.Unix(int64(index), 0)
+					ts := time.Unix(index, 0)
 					valueSlice := []string{ts.Format("2006-01-02 15:04:05")}
 
 					for _, header := range headers {

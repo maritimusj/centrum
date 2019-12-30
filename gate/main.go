@@ -26,6 +26,12 @@ import (
 )
 
 func main() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.WithField("src", logStore.SystemLog).Errorln(err)
+		}
+	}()
+
 	//命令行参数
 	config := flag.String("config", "gate.yaml", "config file name")
 	logLevel := flag.String("l", "", "log level, [trace,debug,info,warn,error,fatal]")
