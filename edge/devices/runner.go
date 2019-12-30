@@ -24,6 +24,8 @@ import (
 type Runner struct {
 	ctx      context.Context
 	adapters sync.Map
+
+	RestartMainFN func()
 }
 
 func New() *Runner {
@@ -84,6 +86,12 @@ func (runner *Runner) needRestartAdapter(conf *json_rpc.Conf, newConf *json_rpc.
 		conf.InfluxDBPassword != newConf.InfluxDBPassword ||
 		conf.DB != newConf.DB ||
 		conf.CallbackURL != newConf.CallbackURL
+}
+
+func (runner *Runner) Restart() {
+	if runner.RestartMainFN != nil {
+		runner.RestartMainFN()
+	}
 }
 
 func (runner *Runner) Active(conf *json_rpc.Conf) error {

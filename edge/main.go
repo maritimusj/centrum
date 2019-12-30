@@ -126,6 +126,10 @@ func main() {
 	}
 
 	quit := make(chan os.Signal)
+	runner.RestartMainFN = func() {
+		quit <- syscall.SIGINT
+	}
+
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 

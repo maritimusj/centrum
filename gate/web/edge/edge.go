@@ -40,6 +40,10 @@ func Add(url string) {
 	})
 }
 
+func Restart(url string) {
+	_, _ = Invoke(url, "Edge.Restart", nil)
+}
+
 func Invoke(url, cmd string, request interface{}) (*Result, error) {
 	message, err := json.EncodeClientRequest(cmd, request)
 	if err != nil {
