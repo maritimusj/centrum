@@ -225,6 +225,7 @@ var (
 		lang.FlushDBOk:                  "数据库已重置！",
 		lang.DefaultUserPasswordResetOk: "默认用户密码已重置！",
 		lang.LogDeletedByUser:           "管理 %s 清空日志！",
+		lang.DeviceLogDeletedByUser:     "管理员 %s 清空设备 %s 日志！",
 
 		lang.CreateOrgOk:   "创建组织 %s(%s) 成功！",
 		lang.CreateOrgFail: "创建组织 %s(%s) 失败：%s",

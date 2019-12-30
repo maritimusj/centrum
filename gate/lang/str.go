@@ -214,6 +214,7 @@ const (
 	DefaultUserPasswordResetOk
 	FlushDBOk
 	LogDeletedByUser
+	DeviceLogDeletedByUser
 
 	CreateOrgOk
 	CreateOrgFail
