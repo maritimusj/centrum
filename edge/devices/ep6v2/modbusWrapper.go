@@ -1,8 +1,9 @@
 package ep6v2
 
 import (
-	"github.com/maritimusj/modbus"
 	"sync"
+
+	"github.com/maritimusj/modbus"
 )
 
 type modbusWrapper struct {

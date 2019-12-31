@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+
 	"github.com/maritimusj/centrum/edge/devices/modbus"
 	"github.com/maritimusj/centrum/edge/devices/util"
 )
@@ -53,7 +54,14 @@ func (ao *AO) GetConfig() *AOConfig {
 	return ao.config
 }
 
-func (c *AOConfig) fetchData(conn modbus.Client, index int) error {
+func (c *AOConfig) fetchData(conn modbus.Client, index int) (retErr error) {
+	defer func() {
+		if err := recover(); err != nil {
+			retErr = fmt.Errorf("unexpect error: %#v", err)
+			return
+		}
+	}()
+
 	start := AOCHStartAddress + uint16(index)*CHBlockSize
 	data, err := conn.ReadHoldingRegisters(start, 16)
 	if err != nil {

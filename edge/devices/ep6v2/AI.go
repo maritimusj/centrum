@@ -96,7 +96,14 @@ type AIAlarmConfig struct {
 	Delay int
 }
 
-func (alarm *AIAlarmConfig) fetchData(conn modbus.Client, index int) error {
+func (alarm *AIAlarmConfig) fetchData(conn modbus.Client, index int) (retErr error) {
+	defer func() {
+		if err := recover(); err != nil {
+			retErr = fmt.Errorf("unexpect error: %#v", err)
+			return
+		}
+	}()
+
 	var address, quantity uint16 = uint16(index+1)*CHBlockSize + 47, 11
 	data, err := conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
@@ -246,7 +253,14 @@ func (ai *AI) CheckAlarm(val float32) (AlarmValue, float32) {
 	return AlarmNormal, 0
 }
 
-func (c *AIConfig) fetchData(conn modbus.Client, index int) error {
+func (c *AIConfig) fetchData(conn modbus.Client, index int) (retErr error) {
+	defer func() {
+		if err := recover(); err != nil {
+			retErr = fmt.Errorf("unexpect error: %#v", err)
+			return
+		}
+	}()
+
 	var address, quantity uint16 = uint16(index+1) * CHBlockSize, 34
 	data, err := conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {

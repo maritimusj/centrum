@@ -2,8 +2,10 @@ package CHNum
 
 import (
 	"encoding/binary"
-	"github.com/maritimusj/centrum/edge/devices/modbus"
+	"fmt"
 	"sync"
+
+	"github.com/maritimusj/centrum/edge/devices/modbus"
 )
 
 var (
@@ -52,7 +54,14 @@ func (ch *Data) Clone() *Data {
 	return data
 }
 
-func (ch *Data) FetchData(conn modbus.Client) error {
+func (ch *Data) FetchData(conn modbus.Client) (retErr error) {
+	defer func() {
+		if err := recover(); err != nil {
+			retErr = fmt.Errorf("unexpect error: %#v", err)
+			return
+		}
+	}()
+
 	data, err := conn.ReadHoldingRegisters(16, 5)
 	if err != nil {
 		return err

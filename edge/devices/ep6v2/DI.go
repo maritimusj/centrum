@@ -3,9 +3,10 @@ package ep6v2
 import (
 	"encoding/binary"
 	"fmt"
+	"time"
+
 	"github.com/maritimusj/centrum/edge/devices/modbus"
 	"github.com/maritimusj/centrum/edge/devices/util"
-	"time"
 )
 
 const (
@@ -60,7 +61,14 @@ func (di *DI) GetConfig() *DIConfig {
 	return di.config
 }
 
-func (c *DIConfig) fetchData(conn modbus.Client, index int) error {
+func (c *DIConfig) fetchData(conn modbus.Client, index int) (retErr error) {
+	defer func() {
+		if err := recover(); err != nil {
+			retErr = fmt.Errorf("unexpect error: %#v", err)
+			return
+		}
+	}()
+
 	var address, quantity uint16 = DICHStartAddress + uint16(index)*CHBlockSize, 16
 	data, err := conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {

@@ -2,9 +2,10 @@ package ep6v2
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/maritimusj/centrum/edge/devices/modbus"
 	"github.com/maritimusj/centrum/edge/devices/util"
-	"time"
 )
 
 const (
@@ -82,7 +83,14 @@ func (do *DO) GetConfig() *DOConfig {
 	return do.config
 }
 
-func (c *DOConfig) fetchData(conn modbus.Client, index int) error {
+func (c *DOConfig) fetchData(conn modbus.Client, index int) (retErr error) {
+	defer func() {
+		if err := recover(); err != nil {
+			retErr = fmt.Errorf("unexpect error: %#v", err)
+			return
+		}
+	}()
+
 	start := DOCHStartAddress + uint16(index)*CHBlockSize
 	data, err := conn.ReadHoldingRegisters(start, 15)
 	if err != nil {

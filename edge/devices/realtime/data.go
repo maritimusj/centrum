@@ -3,6 +3,7 @@ package realtime
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"sync"
 	"time"
 
@@ -164,7 +165,14 @@ func (r *Data) getBool(index int) (bool, bool) {
 	return false, false
 }
 
-func (r *Data) FetchData(conn modbus.Client) error {
+func (r *Data) FetchData(conn modbus.Client) (retErr error) {
+	defer func() {
+		if err := recover(); err != nil {
+			retErr = fmt.Errorf("unexpect error: %#v", err)
+			return
+		}
+	}()
+
 	if !r.expired() {
 		return nil
 	}

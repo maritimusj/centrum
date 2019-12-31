@@ -3,6 +3,7 @@ package ep6v2
 import (
 	"encoding/binary"
 	"fmt"
+
 	"github.com/maritimusj/centrum/edge/devices/modbus"
 )
 
@@ -25,7 +26,14 @@ type Addr struct {
 	Mac     MAC
 }
 
-func (addr *Addr) fetchData(conn modbus.Client) error {
+func (addr *Addr) fetchData(conn modbus.Client) (retErr error) {
+	defer func() {
+		if err := recover(); err != nil {
+			retErr = fmt.Errorf("unexpect error: %#v", err)
+			return
+		}
+	}()
+
 	data, err := conn.ReadHoldingRegisters(0x0020, 18)
 	if err != nil {
 		return err

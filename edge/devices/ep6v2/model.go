@@ -3,8 +3,9 @@ package ep6v2
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/maritimusj/centrum/edge/devices/modbus"
 	"unicode/utf16"
+
+	"github.com/maritimusj/centrum/edge/devices/modbus"
 )
 
 type Model struct {
@@ -13,7 +14,14 @@ type Model struct {
 	Title   string
 }
 
-func (model *Model) fetchData(conn modbus.Client) error {
+func (model *Model) fetchData(conn modbus.Client) (retErr error) {
+	defer func() {
+		if err := recover(); err != nil {
+			retErr = fmt.Errorf("unexpect error: %#v", err)
+			return
+		}
+	}()
+
 	data, err := conn.ReadHoldingRegisters(0, 4)
 	if err != nil {
 		return err
