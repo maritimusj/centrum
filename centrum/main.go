@@ -1,16 +1,15 @@
 package main
 
 import (
-	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/spf13/viper"
 
 	log "github.com/sirupsen/logrus"
 
@@ -19,23 +18,23 @@ import (
 
 // Config is the runner app config structure.
 type Entry struct {
-	Dir  string   `json:"dir"`
-	Exec string   `json:"exec"`
-	Args []string `json:"args"`
-	Env  []string `json:"env"`
+	Dir  string
+	Exec string
+	Args []string
+	Env  []string
 
-	Stderr string `json:"stderr"`
-	Stdout string `json:"stdout"`
+	Stderr string
+	Stdout string
 
 	fullExec string
 	cmd      *exec.Cmd
 }
 
 type Config struct {
-	Name        string   `json:"name"`
-	DisplayName string   `json:"title"`
-	Description string   `json:"desc"`
-	Entries     []*Entry `json:"entries"`
+	Name    string
+	Title   string
+	Desc    string
+	Entries []*Entry
 }
 
 var logger service.Logger
@@ -91,8 +90,6 @@ func (p *program) exec(entry *Entry) {
 		entry.cmd.Stdout = f
 	}
 
-	println(entry.cmd.Path)
-
 	err := entry.cmd.Run()
 	if err != nil {
 		_ = logger.Warningf("Error running: %v", err)
@@ -100,7 +97,7 @@ func (p *program) exec(entry *Entry) {
 }
 
 func (p *program) run() {
-	_ = logger.Info("Starting ", p.config.DisplayName)
+	_ = logger.Info("Starting ", p.config.Title)
 
 	defer func() {
 		if service.Interactive() {
@@ -132,7 +129,7 @@ func (p *program) run() {
 func (p *program) Stop(s service.Service) error {
 	close(p.exit)
 
-	_ = logger.Info("Stopping ", p.config.DisplayName)
+	_ = logger.Info("Stopping ", p.config.Title)
 	for _, entry := range p.config.Entries {
 		_ = entry.cmd.Process.Kill()
 		//if entry.cmd.ProcessState == nil {
@@ -159,29 +156,26 @@ func getConfigPath() (string, error) {
 	ext := filepath.Ext(execName)
 	name := execName[:len(execName)-len(ext)]
 
-	return filepath.Join(dir, name+".json"), nil
+	return filepath.Join(dir, name+".yaml"), nil
 }
 
 func getConfig(path string) (*Config, error) {
-	f, err := os.Open(path)
+	viper.SetConfigFile(path)
+	viper.SetConfigType("yaml")
+
+	err := viper.ReadInConfig()
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		_ = f.Close()
-	}()
 
-	conf := &Config{}
-
-	r := json.NewDecoder(f)
-	err = r.Decode(&conf)
+	var conf Config
+	err = viper.Unmarshal(&conf)
 	if err != nil {
-		if err == io.EOF {
-			return nil, errors.New("empty config file")
-		}
 		return nil, err
 	}
-	return conf, nil
+
+	//fmt.Printf("%# v", pretty.Formatter(conf))
+	return &conf, nil
 }
 
 func main() {
@@ -209,8 +203,8 @@ func main() {
 
 	svcConfig := &service.Config{
 		Name:        config.Name,
-		DisplayName: config.DisplayName,
-		Description: config.Description,
+		DisplayName: config.Title,
+		Description: config.Desc,
 	}
 
 	prg := &program{
