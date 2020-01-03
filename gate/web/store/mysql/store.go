@@ -1416,11 +1416,14 @@ func (s *mysqlStore) GetDevice(deviceID int64) (model.Device, error) {
 		if err != nil {
 			return err
 		}
+
 		return device
 	})
+
 	if err, ok := result.(error); ok {
 		return nil, err
 	}
+
 	return result.(model.Device), nil
 }
 

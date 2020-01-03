@@ -20,7 +20,7 @@ type Balance struct {
 type EdgesMap struct {
 	edges   []*Balance
 	devices map[string]*Balance
-	mu      sync.Mutex
+	mu      sync.RWMutex
 }
 
 var (
@@ -88,11 +88,17 @@ func Invoke(url, cmd string, request interface{}) (*Result, error) {
 }
 
 func GetBaseInfo(uid string) (map[string]interface{}, error) {
-	defaultEdgesMap.mu.Lock()
-	defer defaultEdgesMap.mu.Unlock()
+	defaultEdgesMap.mu.RLock()
 
+	var url string
 	if b, ok := defaultEdgesMap.devices[uid]; ok {
-		result, err := Invoke(b.url, "Edge.GetBaseInfo", uid)
+		url = b.url
+	}
+
+	defaultEdgesMap.mu.RUnlock()
+
+	if url != "" {
+		result, err := Invoke(url, "Edge.GetBaseInfo", uid)
 		if err != nil {
 			return map[string]interface{}{}, err
 		}
@@ -103,11 +109,13 @@ func GetBaseInfo(uid string) (map[string]interface{}, error) {
 }
 
 func Reset(uid string) {
-	defaultEdgesMap.mu.Lock()
-	defer defaultEdgesMap.mu.Unlock()
+	defaultEdgesMap.mu.RLock()
+	defer defaultEdgesMap.mu.RUnlock()
 
 	if b, ok := defaultEdgesMap.devices[uid]; ok {
-		_, _ = Invoke(b.url, "Edge.Reset", uid)
+		go func() {
+			_, _ = Invoke(b.url, "Edge.Reset", uid)
+		}()
 	}
 }
 
@@ -116,14 +124,16 @@ func Remove(uid string) {
 	defer defaultEdgesMap.mu.Unlock()
 
 	if b, ok := defaultEdgesMap.devices[uid]; ok {
-		_, _ = Invoke(b.url, "Edge.Remove", uid)
+		go func() {
+			_, _ = Invoke(b.url, "Edge.Remove", uid)
+		}()
+
 		b.total -= 1
 	}
 }
 
 func Active(conf *Conf) error {
 	defaultEdgesMap.mu.Lock()
-	defer defaultEdgesMap.mu.Unlock()
 
 	var balance *Balance
 	if v, ok := defaultEdgesMap.devices[conf.UID]; ok {
@@ -141,6 +151,11 @@ func Active(conf *Conf) error {
 			balance.total += 1
 			defaultEdgesMap.devices[conf.UID] = balance
 		}
+	}
+
+	defaultEdgesMap.mu.Unlock()
+
+	if balance != nil {
 		_, err := Invoke(balance.url, "Edge.Active", conf)
 		return err
 	}
@@ -149,11 +164,17 @@ func Active(conf *Conf) error {
 }
 
 func SetValue(uid string, tag string, val interface{}) error {
-	defaultEdgesMap.mu.Lock()
-	defer defaultEdgesMap.mu.Unlock()
+	defaultEdgesMap.mu.RLock()
 
+	var url string
 	if b, ok := defaultEdgesMap.devices[uid]; ok {
-		_, err := Invoke(b.url, "Edge.SetValue", &Value{
+		url = b.url
+	}
+
+	defaultEdgesMap.mu.RUnlock()
+
+	if url != "" {
+		_, err := Invoke(url, "Edge.SetValue", &Value{
 			CH: CH{
 				UID: uid,
 				Tag: tag,
@@ -167,11 +188,17 @@ func SetValue(uid string, tag string, val interface{}) error {
 }
 
 func GetValue(uid string, tag string) (map[string]interface{}, error) {
-	defaultEdgesMap.mu.Lock()
-	defer defaultEdgesMap.mu.Unlock()
+	defaultEdgesMap.mu.RLock()
 
+	var url string
 	if b, ok := defaultEdgesMap.devices[uid]; ok {
-		result, err := Invoke(b.url, "Edge.GetValue", &CH{
+		url = b.url
+	}
+
+	defaultEdgesMap.mu.RUnlock()
+
+	if url != "" {
+		result, err := Invoke(url, "Edge.GetValue", &CH{
 			UID: uid,
 			Tag: tag,
 		})
@@ -185,11 +212,17 @@ func GetValue(uid string, tag string) (map[string]interface{}, error) {
 }
 
 func GetRealtimeData(uid string) ([]interface{}, error) {
-	defaultEdgesMap.mu.Lock()
-	defer defaultEdgesMap.mu.Unlock()
+	defaultEdgesMap.mu.RLock()
 
+	var url string
 	if b, ok := defaultEdgesMap.devices[uid]; ok {
-		result, err := Invoke(b.url, "Edge.GetRealtimeData", uid)
+		url = b.url
+	}
+
+	defaultEdgesMap.mu.RUnlock()
+
+	if url != "" {
+		result, err := Invoke(url, "Edge.GetRealtimeData", uid)
 		if err != nil {
 			return nil, err
 		}

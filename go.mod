@@ -38,6 +38,7 @@ require (
 	github.com/klauspost/compress v1.8.2 // indirect
 	github.com/klauspost/cpuid v1.2.1 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
+	github.com/kr/pretty v0.1.0
 	github.com/maritimusj/durafmt v0.0.0-20191209032412-f1943f9a86cc
 	github.com/maritimusj/modbus v0.1.1
 	github.com/mattn/go-colorable v0.1.4 // indirect
