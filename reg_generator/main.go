@@ -5,7 +5,7 @@ import (
 	"crypto/sha1"
 	"flag"
 	"fmt"
-	"log"
+	"os"
 	"strings"
 
 	"github.com/maritimusj/centrum/util"
@@ -17,7 +17,8 @@ func main() {
 
 	*owner = strings.TrimSpace(*owner)
 	if *owner == "" {
-		log.Fatal("invalid owner name")
+		flag.PrintDefaults()
+		os.Exit(1)
 	}
 
 	code := strings.ToLower(util.RandStr(4, util.RandAll))
