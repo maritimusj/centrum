@@ -305,6 +305,15 @@ var (
 		UserDetail,
 		UserUpdate,
 		UserDelete,
+
+		ResourceList,
+		ResourceDetail,
+		RoleUpdate,
+
+		RoleList,
+
+		UserLogList,
+		UserLogDelete,
 	}
 
 	//系统日志
