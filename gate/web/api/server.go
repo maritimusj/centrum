@@ -217,7 +217,7 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 				//导出报表
 				p.Get("/export/{uid:string}/stats", hero.Handler(statistics.ExportStats))
 				p.Get("/export/{uid:string}/download", hero.Handler(statistics.ExportDownload))
-				p.Post("/export", hero.Handler(statistics.Export))
+				p.Post("/export", hero.Handler(statistics.Export)).Name = resourceDef.DataExport
 			})
 			//物理点位
 			p.PartyFunc("/measure", func(p router.Party) {
@@ -225,7 +225,7 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 				p.Get("/{id:int64}", hero.Handler(device.MeasureDetail)).Name = resourceDef.MeasureDetail
 
 				//历史趋势
-				p.Post("/{id:int64}/statistics", hero.Handler(statistics.Measure))
+				p.Post("/{id:int64}/statistics", hero.Handler(statistics.Measure)).Name = resourceDef.DeviceStatistics
 			})
 
 			//自定义设备
@@ -259,7 +259,7 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 				p.Delete("/{id:int64}", hero.Handler(equipment.DeleteState)).Name = resourceDef.StateDelete
 
 				//历史趋势
-				p.Post("/{id:int64}/statistics", hero.Handler(statistics.State))
+				p.Post("/{id:int64}/statistics", hero.Handler(statistics.State)).Name = resourceDef.EquipmentStatistics
 			})
 
 			//警报
@@ -287,7 +287,7 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 			})
 
 			//日志等级
-			p.Get("/log/level", hero.Handler(logStore.Level)).Name = resourceDef.LogLevelList
+			p.Get("/log/level", hero.Handler(logStore.Level)).Name = resourceDef.SysBrief
 			//系统日志
 			p.PartyFunc("/syslog", func(p router.Party) {
 				p.Get("/", hero.Handler(logStore.List)).Name = resourceDef.LogList

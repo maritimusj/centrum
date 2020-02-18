@@ -9,6 +9,7 @@ import (
 
 const (
 	_ = iota
+
 	DefaultGroupTitle
 	DefaultGroupDesc
 
@@ -38,7 +39,7 @@ const (
 	MenuRoleDevicesTitle
 	MenuRoleAlertTitle
 	MenuRoleStatsTitle
-	MenuRoleSMSSettingsTitle
+	MenuRoleExportTitle
 	MenuRoleUsersTitle
 	MenuRoleSystemSettingsTitle
 	MenuRoleSysLogsTitle
@@ -50,10 +51,16 @@ const (
 	MenuRoleDevicesDesc
 	MenuRoleAlertDesc
 	MenuRoleStatsDesc
-	MenuRoleSMSSettingsDesc
+	MenuRoleExportDesc
 	MenuRoleUsersDesc
 	MenuRoleSystemSettingsDesc
 	MenuRoleSysLogsDesc
+
+	ResourceConfigBaseDetailTitle
+	ResourceConfigBaseDetailDesc
+
+	ResourceConfigBaseUpdateTitle
+	ResourceConfigBaseUpdateDesc
 
 	ResourceOrganizationCreateTitle
 	ResourceOrganizationListTitle
@@ -96,21 +103,25 @@ const (
 	ResourceDeviceDataTitle
 	ResourceDeviceCtrlTitle
 	ResourceDeviceCHValueTitle
+	ResourceDeviceStatisticsTitle
 
 	ResourceDeviceStatusDesc
 	ResourceDeviceDataDesc
 	ResourceDeviceCtrlDesc
 	ResourceDeviceCHValueDesc
+	ResourceDeviceStatisticsDesc
 
 	ResourceEquipmentStatusTitle
 	ResourceEquipmentDataTitle
 	ResourceEquipmentCtrlTitle
 	ResourceEquipmentCHValueTitle
+	ResourceEquipmentStatisticsTitle
 
 	ResourceEquipmentStatusDesc
 	ResourceEquipmentDataDesc
 	ResourceEquipmentCtrlDesc
 	ResourceEquipmentCHValueDesc
+	ResourceEquipmentStatisticsDesc
 
 	ResourceUserListTitle
 	ResourceUserListDesc
@@ -239,6 +250,9 @@ const (
 	SysBriefTitle
 	SysBriefDesc
 
+	DataExportTitle
+	DataExportDesc
+
 	UserLoginOk
 	UserLoginFailedCauseDisabled
 	UserLoginFailedCausePasswordWrong
@@ -281,14 +295,13 @@ var (
 
 //后台菜单对应的角色
 var (
-	MenuRoleGallery        = "__menu_gallery__"
-	MenuRoleDevices        = "__menu_devices__"
-	MenuRoleAlert          = "__menu_alert__"
-	MenuRoleStats          = "__menu_stats__"
-	MenuRoleSMSSettings    = "__menu_sms_settings__"
-	MenuRoleUsers          = "__menu_users__"
-	MenuRoleSystemSettings = "__menu_sys_settings__"
-	MenuRoleSysLogs        = "__menu_sys_logs__"
+	MenuRoleGallery = "__menu_gallery__"  //设备总览
+	MenuRoleDevices = "__menu_devices__"  //设备管理
+	MenuRoleAlert   = "__menu_alert__"    //报警查询
+	MenuRoleStats   = "__menu_stats__"    //趋势图
+	MenuRoleExport  = "__menu_export__"   //导出报表
+	MenuRoleUsers   = "__menu_users__"    //用户、权限管理
+	MenuRoleSysLogs = "__menu_sys_logs__" //系统日志
 )
 
 //默认角色，名称，说明及权限集合
@@ -299,20 +312,23 @@ func DefaultRoles() map[[3]string][]string {
 		{RoleGuestName, Str(RoleGuestTitle), Str(RoleGuestDesc)}:                                     resource.Guest,
 
 		//后台菜单角色
-		{MenuRoleGallery, Str(MenuRoleGalleryTitle), Str(MenuRoleGalleryDesc)}:                      resource.MenuRoleGallery,
-		{MenuRoleDevices, Str(MenuRoleDevicesTitle), Str(MenuRoleDevicesDesc)}:                      resource.MenuRoleDevices,
-		{MenuRoleAlert, Str(MenuRoleAlertTitle), Str(MenuRoleAlertDesc)}:                            resource.MenuRoleAlert,
-		{MenuRoleStats, Str(MenuRoleStatsTitle), Str(MenuRoleStatsDesc)}:                            resource.MenuRoleStats,
-		{MenuRoleSMSSettings, Str(MenuRoleSMSSettingsTitle), Str(MenuRoleSMSSettingsDesc)}:          resource.MenuRoleSMSSettings,
-		{MenuRoleUsers, Str(MenuRoleUsersTitle), Str(MenuRoleUsersDesc)}:                            resource.MenuRoleUsers,
-		{MenuRoleSystemSettings, Str(MenuRoleSystemSettingsTitle), Str(MenuRoleSystemSettingsDesc)}: resource.MenuRoleSystemSettings,
-		{MenuRoleSysLogs, Str(MenuRoleSysLogsTitle), Str(MenuRoleSysLogsDesc)}:                      resource.MenuRoleSysLogs,
+		{MenuRoleGallery, Str(MenuRoleGalleryTitle), Str(MenuRoleGalleryDesc)}: resource.MenuRoleGallery,
+		{MenuRoleDevices, Str(MenuRoleDevicesTitle), Str(MenuRoleDevicesDesc)}: resource.MenuRoleDevices,
+		{MenuRoleAlert, Str(MenuRoleAlertTitle), Str(MenuRoleAlertDesc)}:       resource.MenuRoleAlert,
+		{MenuRoleStats, Str(MenuRoleStatsTitle), Str(MenuRoleStatsDesc)}:       resource.MenuRoleStats,
+		{MenuRoleUsers, Str(MenuRoleUsersTitle), Str(MenuRoleUsersDesc)}:       resource.MenuRoleUsers,
+		{MenuRoleExport, Str(MenuRoleExportTitle), Str(MenuRoleExportDesc)}:    resource.MenuRoleExport,
+		{MenuRoleSysLogs, Str(MenuRoleSysLogsTitle), Str(MenuRoleSysLogsDesc)}: resource.MenuRoleSysLogs,
 	}
 }
 
 //api资源的名称，标题和说明
 func ApiResourcesMap() [][3]string {
 	return [][3]string{
+
+		{resource.ConfigBaseDetail, Str(ResourceConfigBaseDetailTitle), Str(ResourceConfigBaseDetailDesc)},
+		{resource.ConfigBaseUpdate, Str(ResourceConfigBaseUpdateTitle), Str(ResourceConfigBaseUpdateDesc)},
+
 		{resource.OrganizationCreate, Str(ResourceOrganizationCreateTitle), Str(OrganizationCreateDesc)},
 		{resource.OrganizationList, Str(ResourceOrganizationListTitle), Str(OrganizationListDesc)},
 		{resource.OrganizationDetail, Str(ResourceOrganizationDetailTitle), Str(OrganizationDetailDesc)},
@@ -337,11 +353,13 @@ func ApiResourcesMap() [][3]string {
 		{resource.DeviceData, Str(ResourceDeviceDataTitle), Str(ResourceDeviceDataDesc)},
 		{resource.DeviceCtrl, Str(ResourceDeviceCtrlTitle), Str(ResourceDeviceCtrlDesc)},
 		{resource.DeviceCHValue, Str(ResourceDeviceCHValueTitle), Str(ResourceDeviceCHValueDesc)},
+		{resource.DeviceStatistics, Str(ResourceDeviceStatisticsTitle), Str(ResourceDeviceStatisticsDesc)},
 
 		{resource.EquipmentStatus, Str(ResourceEquipmentStatusTitle), Str(ResourceEquipmentStatusDesc)},
 		{resource.EquipmentData, Str(ResourceEquipmentDataTitle), Str(ResourceEquipmentDataDesc)},
 		{resource.EquipmentCtrl, Str(ResourceEquipmentCtrlTitle), Str(ResourceEquipmentCtrlDesc)},
 		{resource.EquipmentCHValue, Str(ResourceEquipmentCHValueTitle), Str(ResourceEquipmentCHValueDesc)},
+		{resource.EquipmentStatistics, Str(ResourceEquipmentStatisticsTitle), Str(ResourceEquipmentStatisticsDesc)},
 
 		{resource.UserList, Str(ResourceUserListTitle), Str(ResourceUserListDesc)},
 		{resource.UserCreate, Str(ResourceUserCreateTitle), Str(ResourceUserCreateDesc)},
@@ -397,9 +415,9 @@ func ApiResourcesMap() [][3]string {
 
 		{resource.LogList, Str(ResourceLogListTitle), Str(ResourceLogListDesc)},
 		{resource.LogDelete, Str(ResourceLogDeleteTitle), Str(ResourceLogDeleteDesc)},
-		{resource.LogLevelList, Str(ResourceLogLevelListTitle), Str(ResourceLogLevelListDesc)},
 
 		{resource.SysBrief, Str(SysBriefTitle), Str(SysBriefDesc)},
+		{resource.DataExport, Str(DataExportTitle), Str(DataExportDesc)},
 	}
 }
 

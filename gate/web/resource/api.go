@@ -27,15 +27,17 @@ const (
 	EquipmentLogList   = "equip.log.list"
 	EquipmentLogDelete = "equip.log.delete"
 
-	DeviceStatus  = "device.status"
-	DeviceData    = "device.data"
-	DeviceCtrl    = "device.ctrl"
-	DeviceCHValue = "device.val"
+	DeviceStatus     = "device.status"
+	DeviceData       = "device.data"
+	DeviceCtrl       = "device.ctrl"
+	DeviceCHValue    = "device.val"
+	DeviceStatistics = "device.statistics"
 
-	EquipmentStatus  = "equipment.status"
-	EquipmentData    = "equipment.data"
-	EquipmentCtrl    = "equipment.ctrl"
-	EquipmentCHValue = "equipment.val"
+	EquipmentStatus     = "equipment.status"
+	EquipmentData       = "equipment.data"
+	EquipmentCtrl       = "equipment.ctrl"
+	EquipmentCHValue    = "equipment.val"
+	EquipmentStatistics = "equipment.statistics"
 
 	UserList   = "user.list"
 	UserCreate = "user.create"
@@ -89,11 +91,12 @@ const (
 	CommentCreate = "comment.create"
 	CommentDelete = "comment.delete"
 
-	LogLevelList = "log.level.list"
-	LogList      = "log.list"
-	LogDelete    = "log.delete"
+	LogList   = "log.list"
+	LogDelete = "log.delete"
 
 	SysBrief = "sys.brief"
+
+	DataExport = "data.export"
 )
 
 var (
@@ -102,6 +105,8 @@ var (
 		MyProfileUpdate,
 		MyPerm,
 		MyPermMulti,
+
+		ConfigBaseDetail,
 		SysBrief,
 	}
 
@@ -144,11 +149,13 @@ var (
 		DeviceData,
 		DeviceCtrl,
 		DeviceCHValue,
+		DeviceStatistics,
 
 		EquipmentStatus,
 		EquipmentData,
 		EquipmentCtrl,
 		EquipmentCHValue,
+		EquipmentStatistics,
 
 		MeasureList,
 		MeasureCreate,
@@ -178,11 +185,11 @@ var (
 		CommentCreate,
 		CommentDelete,
 
-		LogLevelList,
 		LogList,
 		LogDelete,
 
 		SysBrief,
+		DataExport,
 	)
 
 	SystemAdmin = append(OrganizationAdmin,
@@ -196,7 +203,12 @@ var (
 
 //后台菜单角色权限列表
 var (
+	//设备总览
 	MenuRoleGallery = []string{
+		GroupList,
+		DeviceList,
+		EquipmentList,
+
 		DeviceStatus,
 		DeviceData,
 		DeviceCtrl,
@@ -208,6 +220,7 @@ var (
 		EquipmentCHValue,
 	}
 
+	//设备管理
 	MenuRoleDevices = []string{
 		GroupList,
 		GroupCreate,
@@ -250,6 +263,7 @@ var (
 		StateDelete,
 	}
 
+	//报警查询
 	MenuRoleAlert = []string{
 		AlarmList,
 		AlarmConfirm,
@@ -261,14 +275,30 @@ var (
 		CommentCreate,
 	}
 
+	//趋势图
 	MenuRoleStats = []string{
-		Unknown,
+		DeviceList,
+		MeasureList,
+
+		EquipmentList,
+		StateList,
+
+		DeviceStatistics,
+		EquipmentStatistics,
 	}
 
-	MenuRoleSMSSettings = []string{
-		Unknown,
+	//报表导出
+	MenuRoleExport = []string{
+		DeviceList,
+		MeasureList,
+
+		EquipmentList,
+		StateList,
+
+		DataExport,
 	}
 
+	//用户管理
 	MenuRoleUsers = []string{
 		UserList,
 		UserCreate,
@@ -277,14 +307,8 @@ var (
 		UserDelete,
 	}
 
-	MenuRoleSystemSettings = []string{
-		LogLevelList,
-		LogList,
-		LogDelete,
-	}
-
+	//系统日志
 	MenuRoleSysLogs = []string{
-		LogLevelList,
 		LogList,
 		LogDelete,
 	}
