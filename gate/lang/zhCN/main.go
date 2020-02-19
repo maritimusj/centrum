@@ -278,7 +278,7 @@ var (
 		lang.ErrInvalidRequestData:              "不正确的请求数据！",
 		lang.ErrConfirmCodeWrong:                "确认操作输入错误！",
 		lang.ErrTokenExpired:                    "请先登录！",
-		lang.ErrNoPermission:                    "没有权限",
+		lang.ErrNoPermission:                    "请求失败：没有权限！",
 		lang.ErrCacheNotFound:                   "缓存中没有数据！",
 		lang.ErrOrganizationNotFound:            "组织机构不存在！",
 		lang.ErrOrganizationDifferent:           "不同的组织机构！",
