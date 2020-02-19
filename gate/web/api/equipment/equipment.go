@@ -236,7 +236,12 @@ func Detail(deviceID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		return equipment.Detail()
+		detail := equipment.Detail()
+		detail["perm"] = iris.Map{
+			"view": true,
+			"ctrl": app.Allow(admin, equipment, resource.Ctrl),
+		}
+		return detail
 	})
 }
 
