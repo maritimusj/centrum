@@ -48,25 +48,14 @@ func main() {
 		lang.Active(*langID)
 	}
 
-	if *langID == lang.ZhCN {
-		durafmt.SetAlias("years", "年")
-		durafmt.SetAlias("weeks", "星期")
-		durafmt.SetAlias("days", "天")
-		durafmt.SetAlias("hours", "小时")
-		durafmt.SetAlias("minutes", "分钟")
-		durafmt.SetAlias("seconds", "秒")
-		durafmt.SetAlias("milliseconds", "毫秒")
-		durafmt.SetAlias("microseconds", "微秒")
-	} else if *langID == lang.EnUS {
-		durafmt.SetAlias("years", "y")
-		durafmt.SetAlias("weeks", "w")
-		durafmt.SetAlias("days", "d")
-		durafmt.SetAlias("hours", "h")
-		durafmt.SetAlias("minutes", "m")
-		durafmt.SetAlias("seconds", "s")
-		durafmt.SetAlias("milliseconds", "ms")
-		durafmt.SetAlias("microseconds", "'s")
-	}
+	durafmt.SetAlias("years", lang.Str(lang.Years))
+	durafmt.SetAlias("weeks", lang.Str(lang.Weeks))
+	durafmt.SetAlias("days", lang.Str(lang.Days))
+	durafmt.SetAlias("hours", lang.Str(lang.Hours))
+	durafmt.SetAlias("minutes", lang.Str(lang.Minutes))
+	durafmt.SetAlias("seconds", lang.Str(lang.Seconds))
+	durafmt.SetAlias("milliseconds", lang.Str(lang.Milliseconds))
+	durafmt.SetAlias("microseconds", "'")
 
 	viper.SetConfigFile(*config)
 	viper.SetConfigType("yaml")

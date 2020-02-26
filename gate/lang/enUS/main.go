@@ -29,6 +29,14 @@ var (
 		lang.LogFatal: "fatal",
 		lang.LogPanic: "panic",
 
+		lang.Years:        "y",
+		lang.Weeks:        "w",
+		lang.Days:         "d",
+		lang.Hours:        "h",
+		lang.Minutes:      "m",
+		lang.Seconds:      "s",
+		lang.Milliseconds: "ms",
+
 		lang.AlarmUnconfirmed: "unconfirmed",
 		lang.AlarmConfirmed:   "confirmed",
 

@@ -29,6 +29,14 @@ const (
 	LogFatal
 	LogPanic
 
+	Years
+	Weeks
+	Days
+	Hours
+	Minutes
+	Seconds
+	Milliseconds
+
 	UserDefaultRoleDesc
 
 	RoleSystemAdminTitle

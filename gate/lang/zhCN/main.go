@@ -29,6 +29,14 @@ var (
 		lang.LogFatal: "严重",
 		lang.LogPanic: "异常",
 
+		lang.Years:        "年",
+		lang.Weeks:        "星期",
+		lang.Days:         "天",
+		lang.Hours:        "小时",
+		lang.Minutes:      "分钟",
+		lang.Seconds:      "秒",
+		lang.Milliseconds: "毫秒",
+
 		lang.AlarmUnconfirmed: "未确认",
 		lang.AlarmConfirmed:   "已确认",
 
