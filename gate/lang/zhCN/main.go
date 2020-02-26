@@ -353,7 +353,7 @@ var (
 		lang.ErrConfigNotFound:                  "没找到这个配置项！",
 		lang.ErrAlarmNotFound:                   "没有找到这个警报数据！",
 		lang.ErrCommentNotFound:                 "没有找到这个备注！",
-		lang.ErrNotStatisticsData:               "没有任何数据！",
+		lang.ErrNoStatisticsData:                "没有任何数据！",
 		lang.ErrExportNotExists:                 "导出任务不存在！",
 		lang.ErrRegFirst:                        "请先注册软件！",
 		lang.ErrInvalidRegCode:                  "无效的注册码！",

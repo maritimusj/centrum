@@ -2,16 +2,18 @@ package lang
 
 import (
 	"fmt"
+
 	"github.com/maritimusj/centrum/synchronized"
 )
 
 const (
 	_ = iota
 	ZhCN
+	EnUS
 )
 
 var (
-	regionIndex = ZhCN
+	regionIndex = EnUS
 )
 
 var (
@@ -30,6 +32,7 @@ func Active(r int) {
 func Lang() map[string]int {
 	return map[string]int{
 		"zhCN": ZhCN,
+		"enUS": EnUS,
 	}
 }
 

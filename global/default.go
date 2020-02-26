@@ -5,6 +5,8 @@ import (
 	"time"
 
 	edgeLang "github.com/maritimusj/centrum/edge/lang"
+	_ "github.com/maritimusj/centrum/edge/lang/enUS"
+	_ "github.com/maritimusj/centrum/edge/lang/zhCN"
 
 	"github.com/maritimusj/centrum/gate/web/model"
 )

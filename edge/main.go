@@ -9,6 +9,9 @@ import (
 
 	"github.com/maritimusj/centrum/edge/devices/InverseServer"
 	"github.com/maritimusj/centrum/edge/devices/event"
+
+	"github.com/maritimusj/centrum/edge/lang"
+	_ "github.com/maritimusj/centrum/edge/lang/enUS"
 	_ "github.com/maritimusj/centrum/edge/lang/zhCN"
 
 	"flag"
@@ -29,7 +32,13 @@ import (
 func main() {
 	logLevel := flag.String("l", "", "log error level")
 	config := flag.String("config", "edge.yaml", "config file name")
+	langID := flag.Int("lang", lang.EnUS, "language ID")
+
 	flag.Parse()
+
+	if *langID == lang.ZhCN || *langID == lang.EnUS {
+		lang.Active(*langID)
+	}
 
 	viper.SetConfigFile(*config)
 	viper.AddConfigPath(".")

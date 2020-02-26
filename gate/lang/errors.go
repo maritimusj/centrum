@@ -64,7 +64,7 @@ const (
 
 	ErrCommentNotFound
 
-	ErrNotStatisticsData
+	ErrNoStatisticsData
 	ErrExportNotExists
 
 	ErrRegFirst

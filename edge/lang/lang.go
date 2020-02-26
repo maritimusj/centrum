@@ -2,21 +2,27 @@ package lang
 
 import (
 	"fmt"
+
 	"github.com/maritimusj/centrum/synchronized"
 )
 
 const (
 	_ = iota
 	ZhCN
+	EnUS
 )
 
 var (
-	regionIndex = ZhCN
+	regionIndex = EnUS
 )
 
 var (
 	langMap = map[int]map[StrIndex]string{}
 )
+
+func Active(r int) {
+	regionIndex = r
+}
 
 func Register(region int, lang map[StrIndex]string, err map[ErrorCode]string) {
 	langMap[region] = lang

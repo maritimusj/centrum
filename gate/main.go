@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/maritimusj/durafmt"
+
 	"github.com/maritimusj/centrum/gate/web/edge"
 
 	"github.com/spf13/viper"
@@ -17,6 +19,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/maritimusj/centrum/gate/lang"
+	_ "github.com/maritimusj/centrum/gate/lang/enUS"
 	_ "github.com/maritimusj/centrum/gate/lang/zhCN"
 
 	webAPI "github.com/maritimusj/centrum/gate/web/api"
@@ -37,8 +40,24 @@ func main() {
 	logLevel := flag.String("l", "", "log level, [trace,debug,info,warn,error,fatal]")
 	resetDefaultUserPassword := flag.Bool("reset", false, "reset default user password")
 	flushDB := flag.Bool("flush", false, "erase all data in database")
+	langID := flag.Int("lang", lang.EnUS, "lang ID")
 
 	flag.Parse()
+
+	if *langID == lang.ZhCN || *langID == lang.EnUS {
+		lang.Active(*langID)
+	}
+
+	if *langID == lang.ZhCN {
+		durafmt.SetAlias("years", "年")
+		durafmt.SetAlias("weeks", "星期")
+		durafmt.SetAlias("days", "天")
+		durafmt.SetAlias("hours", "小时")
+		durafmt.SetAlias("minutes", "分钟")
+		durafmt.SetAlias("seconds", "秒")
+		durafmt.SetAlias("milliseconds", "毫秒")
+		durafmt.SetAlias("microseconds", "微秒")
+	}
 
 	viper.SetConfigFile(*config)
 	viper.SetConfigType("yaml")
