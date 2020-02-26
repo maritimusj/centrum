@@ -57,6 +57,15 @@ func main() {
 		durafmt.SetAlias("seconds", "秒")
 		durafmt.SetAlias("milliseconds", "毫秒")
 		durafmt.SetAlias("microseconds", "微秒")
+	} else if *langID == lang.EnUS {
+		durafmt.SetAlias("years", "y")
+		durafmt.SetAlias("weeks", "w")
+		durafmt.SetAlias("days", "d")
+		durafmt.SetAlias("hours", "h")
+		durafmt.SetAlias("minutes", "m")
+		durafmt.SetAlias("seconds", "s")
+		durafmt.SetAlias("milliseconds", "ms")
+		durafmt.SetAlias("microseconds", "'s")
 	}
 
 	viper.SetConfigFile(*config)
