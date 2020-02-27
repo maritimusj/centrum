@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/maritimusj/durafmt"
@@ -41,6 +42,7 @@ func main() {
 	resetDefaultUserPassword := flag.Bool("reset", false, "reset default user password")
 	flushDB := flag.Bool("flush", false, "erase all data in database")
 	langID := flag.Int("lang", lang.EnUS, "lang ID")
+	webDir := flag.String("web", "./public", "directory of static web files")
 
 	flag.Parse()
 
@@ -56,6 +58,15 @@ func main() {
 	durafmt.SetAlias("seconds", lang.Str(lang.Seconds))
 	durafmt.SetAlias("milliseconds", lang.Str(lang.Milliseconds))
 	durafmt.SetAlias("microseconds", "'")
+
+	if *webDir == "" {
+		*webDir = "./public"
+	}
+
+	langWebDir := *webDir + "/" + strconv.FormatInt(int64(*langID), 10)
+	if exists, _ := util.PathExists(langWebDir); exists {
+		*webDir = langWebDir
+	}
 
 	viper.SetConfigFile(*config)
 	viper.SetConfigType("yaml")
@@ -116,7 +127,7 @@ func main() {
 
 	//API服务
 
-	webAPI.Start(ctx, webApp.Config)
+	webAPI.Start(ctx, *webDir, webApp.Config)
 
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

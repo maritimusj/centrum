@@ -41,8 +41,8 @@ var (
 	defaultAPIServer = New()
 )
 
-func Start(ctx context.Context, cfg *cfg.Config) {
-	defaultAPIServer.Start(ctx, cfg)
+func Start(ctx context.Context, webDir string, cfg *cfg.Config) {
+	defaultAPIServer.Start(ctx, webDir, cfg)
 }
 
 func Wait() {
@@ -51,7 +51,7 @@ func Wait() {
 
 type Server interface {
 	Register(values ...interface{})
-	Start(ctx context.Context, cfg *cfg.Config)
+	Start(ctx context.Context, webDir string, cfg *cfg.Config)
 	Wait()
 }
 
@@ -74,7 +74,7 @@ func (server *server) Wait() {
 	server.wg.Wait()
 }
 
-func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
+func (server *server) Start(ctx context.Context, webDir string, cfg *cfg.Config) {
 	//server.app.Logger().SetLevel(cfg.LogLevel())
 	server.app.Logger().SetOutput(ioutil.Discard)
 
@@ -86,7 +86,7 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 	})
 
 	//后台
-	server.app.StaticWeb("/", "./public")
+	server.app.StaticWeb("/", webDir)
 
 	//v1
 	v1 := server.app.Party("/v1", crs).AllowMethods(iris.MethodOptions)

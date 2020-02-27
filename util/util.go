@@ -1,10 +1,12 @@
 package util
 
 import (
+	"math/rand"
+	"os"
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"golang.org/x/crypto/bcrypt"
-	"math/rand"
-	"time"
 )
 
 func If(cond bool, yes interface{}, no interface{}) interface{} {
@@ -61,4 +63,15 @@ func RandStr(size int, kind int) string {
 		result[i] = uint8(base + rand.Intn(scope))
 	}
 	return string(result)
+}
+
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
 }

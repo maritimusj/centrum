@@ -10,8 +10,8 @@ func init() {
 
 var (
 	strMap = map[int]string{
-		lang.DefaultGroupTitle: "default",
-		lang.DefaultGroupDesc:  "default group",
+		lang.DefaultGroupTitle: "Default",
+		lang.DefaultGroupDesc:  "Default group",
 
 		lang.ResourceDefault:   "default",
 		lang.ResourceApi:       "api",
@@ -44,14 +44,14 @@ var (
 		lang.RoleOrganizationAdminTitle: "admin",
 		lang.RoleGuestTitle:             "guest",
 
-		lang.MenuRoleGalleryTitle:        "Device Overview",
-		lang.MenuRoleDevicesTitle:        "Device Management",
-		lang.MenuRoleAlertTitle:          "Alarm Query",
-		lang.MenuRoleStatsTitle:          "Trend Graph",
-		lang.MenuRoleUsersTitle:          "Authorization Setting",
-		lang.MenuRoleExportTitle:         "Exporting Report",
-		lang.MenuRoleSystemSettingsTitle: "System Setting",
-		lang.MenuRoleSysLogsTitle:        "System Log",
+		lang.MenuRoleGalleryTitle:        "Overview",
+		lang.MenuRoleDevicesTitle:        "Devices",
+		lang.MenuRoleAlertTitle:          "Alarm",
+		lang.MenuRoleStatsTitle:          "Graph",
+		lang.MenuRoleUsersTitle:          "Users",
+		lang.MenuRoleExportTitle:         "Report",
+		lang.MenuRoleSystemSettingsTitle: "Setting",
+		lang.MenuRoleSysLogsTitle:        "Logs",
 
 		lang.UserDefaultRoleDesc: "",
 
@@ -351,7 +351,7 @@ var (
 		lang.ErrGroupNotFound:                   "Group does not exists.",
 		lang.ErrDeviceNotFound:                  "Device does not exists.",
 		lang.ErrDeviceExists:                    "Device existed.",
-		lang.ErrMeasureNotFound:                 "Measure does not exist.",
+		lang.ErrMeasureNotFound:                 "Tag does not exist.",
 		lang.ErrEquipmentNotFound:               "Customized device does not exists.",
 		lang.ErrStateNotFound:                   "Customized state does not exists.",
 		lang.ErrDeviceOrganizationDifferent:     "Err: device and organization unmatched.",
