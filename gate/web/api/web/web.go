@@ -3,7 +3,7 @@ package web
 import (
 	"crypto/hmac"
 	"crypto/sha1"
-	"fmt"
+	"encoding/hex"
 	"strings"
 	"time"
 
@@ -61,7 +61,7 @@ func IsRegistered(owner, code string) bool {
 		codes := strings.Split(code, "-")
 		if len(codes) == 3 {
 			hash := hmac.New(sha1.New, []byte(codes[0]))
-			x := fmt.Sprintf("%x", hash.Sum([]byte(owner)))
+			x := hex.EncodeToString(hash.Sum([]byte(owner)))
 			return x[:4] == codes[1] && x[(len(x)-4):] == codes[2]
 		}
 	}
