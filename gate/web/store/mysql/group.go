@@ -160,7 +160,7 @@ func (g *Group) Destroy() error {
 			equipments = append(equipments, e)
 		}
 
-		err = g.RemoveDevice(equipments...)
+		err = g.RemoveEquipment(equipments...)
 		if err != nil {
 			return err
 		}
