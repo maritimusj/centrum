@@ -92,8 +92,11 @@ func (r *Data) VONum() int {
 }
 
 func (r *Data) GetAIValue(index int, point int) (float32, bool) {
-	v, ok := r.getFloat32(index)
-	return util.ToFloat32(v, point), ok
+	if v, ready := r.getFloat32(index); ready {
+		return util.ToFloat32(v, point), true
+	}
+
+	return 0, false
 }
 
 func (r *Data) GetDIValue(index int) (bool, bool) {
