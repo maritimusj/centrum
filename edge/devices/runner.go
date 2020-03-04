@@ -212,23 +212,24 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 				return values, err
 			}
 
+			entry := map[string]interface{}{
+				"tag":   ai.GetConfig().TagName,
+				"title": ai.GetConfig().Title,
+				"unit":  ai.GetConfig().Uint,
+			}
+
 			if v, ok := r.GetAIValue(i, ai.GetConfig().Point); ok {
 				av, x := ai.CheckAlarm(v)
 
-				entry := map[string]interface{}{
-					"tag":   ai.GetConfig().TagName,
-					"title": ai.GetConfig().Title,
-					"unit":  ai.GetConfig().Uint,
-					"alarm": ep6v2.AlarmDesc(av),
-					"value": v,
-				}
+				entry["alarm"] = ep6v2.AlarmDesc(av)
+				entry["value"] = v
 
 				if av != ep6v2.AlarmNormal {
 					entry["threshold"] = x
 				}
-
-				values = append(values, entry)
 			}
+
+			values = append(values, entry)
 			adapter.OnMeasureDiscovered(ai.GetConfig().TagName, ai.GetConfig().Title)
 		}
 
@@ -237,14 +238,18 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 			if err != nil {
 				return values, err
 			}
-			if v, ok := r.GetAOValue(i); ok {
-				values = append(values, map[string]interface{}{
-					"tag":   ao.GetConfig().TagName,
-					"title": ao.GetConfig().Title,
-					"unit":  ao.GetConfig().Uint,
-					"value": v,
-				})
+
+			entry := map[string]interface{}{
+				"tag":   ao.GetConfig().TagName,
+				"title": ao.GetConfig().Title,
+				"unit":  ao.GetConfig().Uint,
 			}
+
+			if v, ok := r.GetAOValue(i); ok {
+				entry["value"] = v
+			}
+
+			values = append(values, entry)
 			adapter.OnMeasureDiscovered(ao.GetConfig().TagName, ao.GetConfig().Title)
 		}
 
@@ -253,13 +258,17 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 			if err != nil {
 				return values, err
 			}
-			if v, ok := r.GetDIValue(i); ok {
-				values = append(values, map[string]interface{}{
-					"tag":   di.GetConfig().TagName,
-					"title": di.GetConfig().Title,
-					"value": v,
-				})
+
+			entry := map[string]interface{}{
+				"tag":   di.GetConfig().TagName,
+				"title": di.GetConfig().Title,
 			}
+
+			if v, ok := r.GetDIValue(i); ok {
+				entry["value"] = v
+			}
+
+			values = append(values, entry)
 			adapter.OnMeasureDiscovered(di.GetConfig().TagName, di.GetConfig().Title)
 		}
 
@@ -268,14 +277,18 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 			if err != nil {
 				return values, err
 			}
-			if v, ok := r.GetDOValue(i); ok {
-				values = append(values, map[string]interface{}{
-					"tag":   do.GetConfig().TagName,
-					"title": do.GetConfig().Title,
-					"value": v,
-					"ctrl":  do.GetConfig().IsManual,
-				})
+
+			entry := map[string]interface{}{
+				"tag":   do.GetConfig().TagName,
+				"title": do.GetConfig().Title,
+				"ctrl":  do.GetConfig().IsManual,
 			}
+
+			if v, ok := r.GetDOValue(i); ok {
+				entry["value"] = v
+			}
+
+			values = append(values, entry)
 			adapter.OnMeasureDiscovered(do.GetConfig().TagName, do.GetConfig().Title)
 		}
 
