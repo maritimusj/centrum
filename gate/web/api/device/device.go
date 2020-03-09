@@ -142,6 +142,10 @@ func List(ctx iris.Context) hero.Result {
 }
 
 func Create(ctx iris.Context) hero.Result {
+	if !app.IsRegistered() {
+		return response.Wrap(lang.ErrRegFirst)
+	}
+
 	var form struct {
 		OrgID    int64   `json:"org"`
 		Title    string  `json:"title" valid:"required"`

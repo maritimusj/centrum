@@ -22,6 +22,7 @@ import (
 	"github.com/maritimusj/centrum/gate/web/store"
 	mysqlStore "github.com/maritimusj/centrum/gate/web/store/mysql"
 	"github.com/maritimusj/centrum/global"
+	"github.com/maritimusj/centrum/register"
 	log "github.com/sirupsen/logrus"
 
 	edgeLang "github.com/maritimusj/centrum/edge/lang"
@@ -239,7 +240,33 @@ func Start(ctx context.Context, logLevel string) error {
 	return nil
 }
 
+func Fingerprints() string {
+	return register.Fingerprints()
+}
+
+func IsRegistered() bool {
+	return register.Verify(Config.RegOwner(), Config.RegCode())
+}
+
+func SaveRegisterInfo(owner, code string) error {
+	if !register.Verify(owner, code) {
+		return lang.Error(lang.ErrInvalidRegCode)
+	}
+
+	_ = Config.BaseConfig.SetOption(config.SysRegOwnerPath, owner)
+	_ = Config.BaseConfig.SetOption(config.SysRegCodePath, code)
+
+	if err := Config.BaseConfig.Save(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func BootAllDevices() {
+	if !IsRegistered() {
+		return
+	}
+
 	select {
 	case <-Ctx.Done():
 		return
