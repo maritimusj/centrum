@@ -1,8 +1,6 @@
 package user
 
 import (
-	"fmt"
-
 	"github.com/asaskevich/govalidator"
 	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/kataras/iris"
@@ -16,7 +14,6 @@ import (
 	"github.com/maritimusj/centrum/gate/web/response"
 	"github.com/maritimusj/centrum/gate/web/status"
 	"github.com/maritimusj/centrum/gate/web/store"
-	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/centrum/util"
 )
 
@@ -310,12 +307,6 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 
 func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		key := fmt.Sprintf("UpdatePerm.%d", userID)
-		if _, ok := global.Params.Get(key); ok {
-			return lang.ErrServerIsBusy
-		}
-
-		_ = global.Params.Set(key, true)
 		result := app.TransactionDo(func(s store.Store) interface{} {
 			user, err := s.GetUser(userID)
 			if err != nil {
@@ -428,7 +419,6 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 			return lang.ErrRoleNotFound
 		})
 
-		global.Params.Remove(key)
 		if data, ok := result.(event.Data); ok {
 			app.Event.Publish(event.UserUpdated, data.Get("adminID"), data.Get("userID"))
 			return lang.Ok

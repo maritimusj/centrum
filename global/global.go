@@ -1,9 +1,10 @@
 package global
 
 import (
+	"sync"
+
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"sync"
 )
 
 var (
@@ -23,6 +24,7 @@ func New() *stats {
 func (stats *stats) Set(path string, val interface{}) error {
 	stats.Lock()
 	defer stats.Unlock()
+
 	data, err := sjson.SetBytes(stats.data, path, val)
 	if err != nil {
 		return err
