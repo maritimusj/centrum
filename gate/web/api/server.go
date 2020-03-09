@@ -261,10 +261,10 @@ func (server *server) Start(ctx context.Context, webDir string, cfg *cfg.Config)
 				p.Get("/{alarm:int64}/comments", hero.Handler(comment.List)).Name = resourceDef.CommentList
 
 				//历史趋势
-				p.Post("/statistics", hero.Handler(statistics.Alarm))
+				p.Post("/statistics", hero.Handler(statistics.Alarm)).Name = resourceDef.AlarmList
 
 				//导出报表
-				p.Get("/export", hero.Handler(alarm.Export))
+				p.Get("/export", hero.Handler(alarm.Export)).Name = resourceDef.AlarmList
 			})
 
 			//警报备注
