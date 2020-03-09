@@ -204,8 +204,8 @@ func (server *server) Start(ctx context.Context, webDir string, cfg *cfg.Config)
 				p.Get("/{id:int64}/{tagName:string}", hero.Handler(device.GetCHValue)).Name = resourceDef.DeviceCHValue
 
 				//导出报表
-				p.Get("/export/{uid:string}/stats", hero.Handler(statistics.ExportStats))
-				p.Get("/export/{uid:string}/download", hero.Handler(statistics.ExportDownload))
+				p.Get("/export/{uid:string}/stats", hero.Handler(statistics.ExportStats)).Name = resourceDef.DataExport
+				p.Get("/export/{uid:string}/download", hero.Handler(statistics.ExportDownload)).Name = resourceDef.DataExport
 				p.Post("/export", hero.Handler(statistics.Export)).Name = resourceDef.DataExport
 			})
 			//物理点位
