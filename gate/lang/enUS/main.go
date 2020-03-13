@@ -24,7 +24,7 @@ var (
 		lang.LogTrace: "trace",
 		lang.LogDebug: "debug",
 		lang.LogInfo:  "info",
-		lang.LogWarn:  "warn",
+		lang.LogWarn:  "warning",
 		lang.LogError: "error",
 		lang.LogFatal: "fatal",
 		lang.LogPanic: "panic",
