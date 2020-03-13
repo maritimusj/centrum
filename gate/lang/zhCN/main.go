@@ -313,6 +313,16 @@ var (
 		lang.ArrangingData:                     "正在整理数据...",
 		lang.WritingData:                       "正在写入数据 %d%%...",
 		lang.ExportReady:                       "导出完成！",
+
+		lang.CVSHeaderDevice:      "设备",
+		lang.CVSHeaderPoint:       "点位",
+		lang.CVSHeaderVal:         "值",
+		lang.CVSHeaderThreshold:   "阈值",
+		lang.CVSHeaderAlarm:       "警报",
+		lang.CVSHeaderCreatedAt:   "创建时间",
+		lang.CVSHeaderUpdatedAt:   "更新时间",
+		lang.CVSHeaderUser:        "用户",
+		lang.CVSHeaderConfirmedBy: "确认人",
 	}
 
 	errStrMap = map[lang.ErrorCode]string{

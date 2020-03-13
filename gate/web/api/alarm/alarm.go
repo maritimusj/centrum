@@ -318,7 +318,20 @@ func Export(ctx iris.Context) {
 		}
 
 		seg := make([]string, 0, 10)
-		_, _ = csvFile.WriteString("#,device,point,val,threshold,alarm,created,updated,user,confirm\r\n")
+
+		_, _ = csvFile.WriteString(strings.Join([]string{
+			"#",
+			lang.Str(lang.CVSHeaderDevice),
+			lang.Str(lang.CVSHeaderPoint),
+			lang.Str(lang.CVSHeaderVal),
+			lang.Str(lang.CVSHeaderThreshold),
+			lang.Str(lang.CVSHeaderAlarm),
+			lang.Str(lang.CVSHeaderCreatedAt),
+			lang.Str(lang.CVSHeaderUpdatedAt),
+			lang.Str(lang.CVSHeaderUser),
+			lang.Str(lang.CVSHeaderConfirmedBy) + "\r\n",
+		}, ","))
+
 		for index, alarm := range alarms {
 			seg = append(seg, strconv.FormatInt(int64(index+1), 10))
 

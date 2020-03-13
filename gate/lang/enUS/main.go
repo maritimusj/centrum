@@ -313,6 +313,16 @@ var (
 		lang.ArrangingData:                     "Arrange data...",
 		lang.WritingData:                       "Writing data %d%%...",
 		lang.ExportReady:                       "Export ok.",
+
+		lang.CVSHeaderDevice:      "device",
+		lang.CVSHeaderPoint:       "point",
+		lang.CVSHeaderVal:         "value",
+		lang.CVSHeaderThreshold:   "threshold",
+		lang.CVSHeaderAlarm:       "alarm",
+		lang.CVSHeaderCreatedAt:   "createdAt",
+		lang.CVSHeaderUpdatedAt:   "updatedAt",
+		lang.CVSHeaderUser:        "user",
+		lang.CVSHeaderConfirmedBy: "confirmedBy",
 	}
 
 	errStrMap = map[lang.ErrorCode]string{

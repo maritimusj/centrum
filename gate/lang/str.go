@@ -271,6 +271,16 @@ const (
 	ArrangingData
 	WritingData
 	ExportReady
+
+	CVSHeaderDevice
+	CVSHeaderPoint
+	CVSHeaderVal
+	CVSHeaderThreshold
+	CVSHeaderAlarm
+	CVSHeaderCreatedAt
+	CVSHeaderUpdatedAt
+	CVSHeaderUser
+	CVSHeaderConfirmedBy
 )
 
 var (
