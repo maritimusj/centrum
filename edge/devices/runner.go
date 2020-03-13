@@ -430,14 +430,7 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 			adapter.wg.Done()
 		}()
 
-		var delay = adapter.conf.Interval
-		if delay < 6*time.Second {
-			delay = 6 * time.Second
-		}
-
-		if delay > 60*time.Second {
-			delay = 60 * time.Second
-		}
+		const delay = 10 * time.Second
 
 	tryConnectToDevice:
 		device := adapter.device
