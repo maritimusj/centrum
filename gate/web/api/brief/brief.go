@@ -11,7 +11,7 @@ import (
 	"github.com/maritimusj/centrum/version"
 )
 
-func Simple() hero.Result {
+func Simple(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		devices, total, err := app.Store().GetDeviceList()
 		if err != nil {
@@ -35,7 +35,20 @@ func Simple() hero.Result {
 			},
 		}
 
-		_, total, err = app.Store().GetAlarmList(nil, nil, helper.Limit(1))
+		opts := []helper.OptionFN{
+			helper.Limit(1),
+		}
+
+		var (
+			s     = app.Store()
+			admin = s.MustGetUserFromContext(ctx)
+		)
+
+		if !app.IsDefaultAdminUser(admin) {
+			opts = append(opts, helper.User(admin.GetID()))
+		}
+
+		_, total, err = app.Store().GetAlarmList(nil, nil, opts...)
 		if err != nil {
 			return err
 		}
