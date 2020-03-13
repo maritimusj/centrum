@@ -1,4 +1,4 @@
-package mysql
+package app
 
 const initDBSQL = `
 --

@@ -82,6 +82,13 @@ func InitDB(params map[string]interface{}) error {
 		log.Fatal(err)
 	}
 
+	if initDB, ok := params["initDB"].(bool); ok && initDB {
+		_, err = conn.Exec(initDBSQL)
+		if err != nil {
+			return lang.InternalError(err)
+		}
+	}
+
 	DB = conn
 	s = mysqlStore.Attach(Ctx, DB)
 	return nil
@@ -119,13 +126,16 @@ func Start(ctx context.Context, logLevel string) error {
 
 	const dbFile = "./chuanyan.db"
 	var initDB bool
+
 	if _, err := os.Stat(dbFile); err != nil {
 		if os.IsNotExist(err) {
 			f, err := os.Create(dbFile)
 			if err != nil {
 				return lang.InternalError(err)
 			}
+
 			_ = f.Close()
+
 			initDB = true
 		}
 	}

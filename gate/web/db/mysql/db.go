@@ -3,9 +3,10 @@ package mysql
 import (
 	"context"
 	"database/sql"
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/db"
-	"time"
 )
 
 type mysqlDB struct {
@@ -55,13 +56,6 @@ func Open(ctx context.Context, option map[string]interface{}) (db.WithTransactio
 		err = conn.PingContext(ctxTimeout)
 		if err != nil {
 			return nil, lang.InternalError(err)
-		}
-
-		if initDB, ok := option["initDB"].(bool); ok && initDB {
-			_, err = conn.Exec(initDBSQL)
-			if err != nil {
-				return nil, lang.InternalError(err)
-			}
 		}
 
 		return &mysqlDB{
