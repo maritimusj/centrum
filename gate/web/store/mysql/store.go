@@ -2788,7 +2788,7 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 	option := parseOption(options...)
 
 	var (
-		fromSQL = "FROM " + TbApiResources + " WHERE title != ''"
+		fromSQL = "FROM " + TbApiResources + " WHERE 1"
 	)
 
 	var params []interface{}
@@ -2861,6 +2861,8 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 }
 
 func (s *mysqlStore) InitApiResource() error {
+	log.Println("InitApiResource...")
+
 	result := <-synchronized.Do(TbApiResources, func() interface{} {
 		err := RemoveData(s.db, TbApiResources, "1")
 		if err != nil {
