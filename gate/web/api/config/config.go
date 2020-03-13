@@ -51,7 +51,7 @@ func Base() hero.Result {
 			Sys: &SysConfig{
 				Title:    app.Config.SysTitle(),
 				RegOwner: app.Config.RegOwner(),
-				RegCode:  app.Config.RegCode(),
+				//RegCode:  app.Config.RegCode(),
 			},
 			Api: &APIConfig{
 				Addr: app.Config.APIAddr(),
