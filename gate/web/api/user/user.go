@@ -114,26 +114,19 @@ func Create(ctx iris.Context) hero.Result {
 				org = admin.OrganizationID()
 			}
 
-			//创建用户同名的role，并设置guest权限
+			//创建用户同名的role
 			role, err := s.CreateRole(org, form.Username, form.Username, lang.Str(lang.UserDefaultRoleDesc))
 			if err != nil {
 				return err
 			}
-			for _, res := range resource.Guest {
-				if res == resource.Unknown {
-					continue
-				}
-				res, err := s.GetApiResource(res)
-				if err != nil {
-					return err
-				}
-				_, err = role.SetPolicy(res, resource.Invoke, resource.Allow, nil)
-				if err != nil {
-					return err
-				}
+
+			//设置guest角色
+			guestRole, err := s.GetRole(lang.RoleGuestName)
+			if err != nil {
+				return err
 			}
 
-			roles = append(roles, role)
+			roles = append(roles, role, guestRole)
 			user, err := s.CreateUser(org, form.Username, []byte(form.Password), roles...)
 			if err != nil {
 				return err
@@ -317,11 +310,6 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 				return lang.ErrFailedEditDefaultUser
 			}
 
-			roles, err := user.GetRoles()
-			if err != nil {
-				return err
-			}
-
 			type P struct {
 				ResourceClass int   `json:"class"`
 				ResourceID    int64 `json:"id"`
@@ -335,6 +323,11 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 			}
 			if err = ctx.ReadJSON(&form); err != nil {
 				return lang.ErrInvalidRequestData
+			}
+
+			roles, err := user.GetRoles()
+			if err != nil {
+				return err
 			}
 
 			newRoles := hashset.New()
@@ -360,6 +353,7 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 					}
 				}
 			}
+
 			err = user.SetRoles(newRoles.Values()...)
 			if err != nil {
 				return err
