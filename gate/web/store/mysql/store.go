@@ -2335,6 +2335,11 @@ func (s *mysqlStore) GetAlarmList(start, end *time.Time, options ...helper.Optio
 		params []interface{}
 	)
 
+	if option.Status != nil {
+		where += " AND status=?"
+		params = append(params, *option.Status)
+	}
+
 	if option.UserID != nil {
 		userID := *option.UserID
 		if userID > 0 {

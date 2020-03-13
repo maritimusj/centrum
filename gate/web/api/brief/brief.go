@@ -3,10 +3,10 @@ package brief
 import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
-	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/app"
 	"github.com/maritimusj/centrum/gate/web/helper"
 	"github.com/maritimusj/centrum/gate/web/response"
+	"github.com/maritimusj/centrum/gate/web/status"
 	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/centrum/version"
 )
@@ -35,14 +35,15 @@ func Simple(ctx iris.Context) hero.Result {
 			},
 		}
 
-		opts := []helper.OptionFN{
-			helper.Limit(1),
-		}
-
 		var (
 			s     = app.Store()
 			admin = s.MustGetUserFromContext(ctx)
 		)
+
+		opts := []helper.OptionFN{
+			helper.Status(status.Unconfirmed),
+			helper.Limit(1),
+		}
 
 		if !app.IsDefaultAdminUser(admin) {
 			opts = append(opts, helper.User(admin.GetID()))
@@ -51,14 +52,6 @@ func Simple(ctx iris.Context) hero.Result {
 		_, total, err = app.Store().GetAlarmList(nil, nil, opts...)
 		if err != nil {
 			return err
-		}
-
-		_, total, err = app.Store().GetLastUnconfirmedAlarm()
-		if err != nil {
-			if err != lang.Error(lang.ErrAlarmNotFound) {
-				return err
-			}
-
 		}
 
 		result["alarm"] = iris.Map{

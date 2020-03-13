@@ -19,6 +19,8 @@ type Option struct {
 	EquipmentID int64
 	StateID     int64
 
+	Status *int64
+
 	Name          string
 	Keyword       string
 	DefaultEffect resource2.Effect
@@ -129,5 +131,11 @@ func Name(name string) OptionFN {
 func Keyword(keyword string) OptionFN {
 	return func(i *Option) {
 		i.Keyword = keyword
+	}
+}
+
+func Status(status int64) OptionFN {
+	return func(i *Option) {
+		i.Status = &status
 	}
 }
