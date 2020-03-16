@@ -29,7 +29,7 @@ func Level() hero.Result {
 			},
 			{
 				"id":    "warning",
-				"title": lang.Str(lang.LogWarn),
+				"title": lang.Str(lang.LogWarning),
 			},
 			{
 				"id":    "error",

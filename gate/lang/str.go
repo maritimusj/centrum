@@ -24,7 +24,7 @@ const (
 	LogTrace
 	LogDebug
 	LogInfo
-	LogWarn
+	LogWarning
 	LogError
 	LogFatal
 	LogPanic
