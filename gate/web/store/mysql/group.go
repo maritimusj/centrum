@@ -375,7 +375,7 @@ func (g *Group) RemoveEquipment(equipments ...interface{}) error {
 			return err
 		}
 
-		if err := RemoveData(g.store.db, TbDeviceGroups, "group_id=? AND equipment_id=?", g.id, equipmentID); err != nil {
+		if err := RemoveData(g.store.db, TbEquipmentGroups, "group_id=? AND equipment_id=?", g.id, equipmentID); err != nil {
 			if err != sql.ErrNoRows {
 				return lang.InternalError(err)
 			}
