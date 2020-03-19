@@ -231,19 +231,19 @@ func (ai *AI) CheckAlarm(val float32) (AlarmValue, float32) {
 		return AlarmHF, cfg.HF.Value
 	}
 
-	if val >= cfg.HiHi.Value-cfg.DeadBand && cfg.HiHi.Style == Alarm {
+	if val >= cfg.HiHi.Value && cfg.HiHi.Style == Alarm {
 		return AlarmHH, cfg.HiHi.Value
 	}
 
-	if val >= cfg.HI.Value-cfg.DeadBand && cfg.HI.Style == Alarm {
+	if val >= cfg.HI.Value && cfg.HI.Style == Alarm {
 		return AlarmHI, cfg.HI.Value
 	}
 
-	if val < cfg.LO.Value+cfg.DeadBand && cfg.LO.Style == Alarm {
+	if val < cfg.LO.Value && cfg.LO.Style == Alarm {
 		return AlarmLO, cfg.LO.Value
 	}
 
-	if val < cfg.LoLo.Value+cfg.DeadBand && cfg.LoLo.Style == Alarm {
+	if val < cfg.LoLo.Value && cfg.LoLo.Style == Alarm {
 		return AlarmLL, cfg.LoLo.Value
 	}
 
