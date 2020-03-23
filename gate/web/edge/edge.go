@@ -11,7 +11,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/gorilla/rpc/json"
+	"github.com/gorilla/rpc/v2/json"
 	. "github.com/maritimusj/centrum/json_rpc"
 )
 

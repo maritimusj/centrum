@@ -20,8 +20,8 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/gorilla/mux"
-	"github.com/gorilla/rpc"
-	"github.com/gorilla/rpc/json"
+	"github.com/gorilla/rpc/v2"
+	"github.com/gorilla/rpc/v2/json"
 	"github.com/maritimusj/centrum/edge/devices"
 	"github.com/maritimusj/centrum/json_rpc"
 	log "github.com/sirupsen/logrus"
