@@ -14,9 +14,8 @@ import (
 func Measure(measureID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
-			Start    *time.Time    `json:"start"`
-			End      *time.Time    `json:"end"`
-			Interval time.Duration `json:"interval"`
+			Start *time.Time `json:"start"`
+			End   *time.Time `json:"end"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
@@ -41,15 +40,30 @@ func Measure(measureID int64, ctx iris.Context) hero.Result {
 
 		org, _ := device.Organization()
 
-		var start time.Time
+		var (
+			start time.Time
+			end   time.Time
+		)
+
 		if form.Start != nil {
 			start = *form.Start
 		} else {
 			start = time.Now().Add(-time.Hour * 1)
-			form.Interval = 15
 		}
 
-		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, form.Interval*time.Second)
+		if form.End != nil {
+			end = *form.End
+		} else {
+			end = time.Now()
+		}
+
+		//最多取1000个点位数据
+		intervalSeconds := end.Sub(start).Seconds() / 1000
+		if intervalSeconds < 1 {
+			intervalSeconds = float64(time.Second * 1)
+		}
+
+		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, time.Duration(intervalSeconds)*time.Second)
 		if err != nil {
 			return iris.Map{}
 		}
@@ -61,9 +75,8 @@ func Measure(measureID int64, ctx iris.Context) hero.Result {
 func State(stateID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
-			Start    *time.Time    `json:"start"`
-			End      *time.Time    `json:"end"`
-			Interval time.Duration `json:"interval"`
+			Start *time.Time `json:"start"`
+			End   *time.Time `json:"end"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
@@ -94,14 +107,25 @@ func State(stateID int64, ctx iris.Context) hero.Result {
 		org, _ := device.Organization()
 
 		var start time.Time
+		var end time.Time
 		if form.Start != nil {
 			start = *form.Start
 		} else {
 			start = time.Now().Add(-time.Hour * 1)
-			form.Interval = 15
+		}
+		if form.End != nil {
+			end = *form.End
+		} else {
+			end = time.Now()
 		}
 
-		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, form.Interval*time.Second)
+		//最多取1000个点位数据
+		intervalSeconds := end.Sub(start).Seconds() / 1000
+		if intervalSeconds < 1 {
+			intervalSeconds = float64(time.Second * 1)
+		}
+
+		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, time.Duration(intervalSeconds)*time.Second)
 		if err != nil {
 			return lang.InternalError(err)
 		}
