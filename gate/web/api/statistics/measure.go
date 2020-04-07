@@ -58,12 +58,12 @@ func Measure(measureID int64, ctx iris.Context) hero.Result {
 		}
 
 		//最多取1000个点位数据
-		intervalSeconds := end.Sub(start).Seconds() / 1000
-		if intervalSeconds < 1 {
-			intervalSeconds = float64(time.Second * 1)
+		interval := int64(end.Sub(start).Seconds() / 1000)
+		if interval < 1 {
+			interval = 1
 		}
 
-		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, time.Duration(intervalSeconds)*time.Second)
+		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, time.Duration(interval)*time.Second)
 		if err != nil {
 			return iris.Map{}
 		}
@@ -120,12 +120,12 @@ func State(stateID int64, ctx iris.Context) hero.Result {
 		}
 
 		//最多取1000个点位数据
-		intervalSeconds := end.Sub(start).Seconds() / 1000
-		if intervalSeconds < 1 {
-			intervalSeconds = float64(time.Second * 1)
+		interval := int64(end.Sub(start).Seconds() / 1000)
+		if interval < 1 {
+			interval = 1
 		}
 
-		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, time.Duration(intervalSeconds)*time.Second)
+		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, time.Duration(interval)*time.Second)
 		if err != nil {
 			return lang.InternalError(err)
 		}
