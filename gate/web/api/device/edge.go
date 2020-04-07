@@ -79,7 +79,7 @@ func Data(deviceID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 
-		testPerm := func(measure model.Measure, action resource.Action) bool {
+		allow := func(measure model.Measure, action resource.Action) bool {
 			if app.IsDefaultAdminUser(admin) {
 				return true
 			}
@@ -95,10 +95,10 @@ func Data(deviceID int64, ctx iris.Context) hero.Result {
 					if err != nil {
 						continue
 					}
-					if testPerm(measure, resource.View) {
+					if allow(measure, resource.View) {
 						e["perm"] = map[string]bool{
 							"view": true,
-							"ctrl": testPerm(measure, resource.Ctrl),
+							"ctrl": allow(measure, resource.Ctrl),
 						}
 						result = append(result, entry)
 					}

@@ -8,7 +8,7 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/asaskevich/EventBus v0.0.0-20180315140547-d46933a94f05
-	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
+	github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496
 	github.com/aymerick/raymond v2.0.2+incompatible // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385 // indirect
@@ -16,16 +16,17 @@ require (
 	github.com/etcd-io/bbolt v1.3.3
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/flosch/pongo2 v0.0.0-20190707114632-bbf5a6c351f4 // indirect
+	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gavv/monotime v0.0.0-20190418164738-30dba4353424 // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/goburrow/serial v0.1.0 // indirect
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/google/go-querystring v1.0.0 // indirect
-	github.com/gorilla/mux v1.7.3
+	github.com/gorilla/mux v1.7.4
 	github.com/gorilla/rpc v1.2.0
 	github.com/gorilla/schema v1.1.0 // indirect
 	github.com/imkira/go-interpol v1.1.0 // indirect
-	github.com/influxdata/influxdb1-client v0.0.0-20190809212627-fc22c7df067e
+	github.com/influxdata/influxdb1-client v0.0.0-20191209144304-8bf82d3c094d
 	github.com/iris-contrib/blackfriday v2.0.0+incompatible // indirect
 	github.com/iris-contrib/formBinder v5.0.0+incompatible // indirect
 	github.com/iris-contrib/go.uuid v2.0.0+incompatible // indirect
@@ -45,21 +46,27 @@ require (
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-sqlite3 v1.11.0
 	github.com/microcosm-cc/bluemonday v1.0.2 // indirect
+	github.com/mitchellh/mapstructure v1.2.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect; igondirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/onsi/ginkgo v1.10.2 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/pelletier/go-toml v1.7.0 // indirect
 	github.com/ryanuber/columnize v2.1.0+incompatible // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/shirou/gopsutil v2.20.2+incompatible
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
-	github.com/sirupsen/logrus v1.4.2
-	github.com/spf13/viper v1.6.1
+	github.com/sirupsen/logrus v1.5.0
+	github.com/spf13/afero v1.2.2 // indirect
+	github.com/spf13/cast v1.3.1 // indirect
+	github.com/spf13/jwalterweatherman v1.1.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/viper v1.6.2
 	github.com/stretchr/testify v1.4.0 // indirect
-	github.com/tidwall/gjson v1.3.5
-	github.com/tidwall/sjson v1.0.4
+	github.com/tidwall/gjson v1.6.0
+	github.com/tidwall/sjson v1.1.1
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0 // indirect
 	github.com/yudai/gojsondiff v1.0.0 // indirect
@@ -68,8 +75,9 @@ require (
 	go.etcd.io/bbolt v1.3.3 // indirect
 	golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc
 	golang.org/x/net v0.0.0-20191007182048-72f939374954 // indirect
-	golang.org/x/sys v0.0.0-20191118133127-cf1e2d577169 // indirect
+	golang.org/x/sys v0.0.0-20200406155108-e3b113bbe6a4 // indirect
 	golang.org/x/text v0.3.2 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	gopkg.in/ini.v1 v1.55.0 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 )
