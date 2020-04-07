@@ -139,9 +139,11 @@ func (r *Data) GetVOValue(index int) (bool, bool) {
 
 func (r *Data) getFloat32(index int) (float32, bool) {
 	pos := index * 4
-	if r.data.Len() > pos+4 && index < r.ready.Len() && r.ready.Bytes()[index] == 0 {
+
+	if r.data.Len() >= pos+4 && r.ready.Len() > index && r.ready.Bytes()[index] == 0 {
 		return util.ToSingle(r.data.Bytes()[pos:]), true
 	}
+
 	return 0, false
 }
 
@@ -189,8 +191,8 @@ func (r *Data) FetchData(conn modbus.Client) (retErr error) {
 		r.ready.Grow(r.chNum.Sum())
 	}
 
-	r.data.Truncate(0)
-	r.ready.Truncate(0)
+	r.data.Reset()
+	r.ready.Reset()
 
 	var (
 		address  uint16 = realtimeDataStartAddress
