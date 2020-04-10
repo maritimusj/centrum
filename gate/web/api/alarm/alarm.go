@@ -186,21 +186,21 @@ func Confirm(alarmID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 
-		if !app.Allow(admin, measure, resource.Ctrl) {
-			return lang.ErrNoPermission
+		if app.Allow(admin, measure, resource.View) || app.Allow(admin, measure, resource.Ctrl) {
+			err = alarm.Confirm(map[string]interface{}{
+				"admin": admin.Brief(),
+				"time":  time.Now().Format("2006-01-02 15:04:05"),
+				"ip":    ctx.RemoteAddr(),
+				"desc":  form.Desc,
+			})
+			if err != nil {
+				return err
+			}
+
+			return lang.Ok
 		}
 
-		err = alarm.Confirm(map[string]interface{}{
-			"admin": admin.Brief(),
-			"time":  time.Now().Format("2006-01-02 15:04:05"),
-			"ip":    ctx.RemoteAddr(),
-			"desc":  form.Desc,
-		})
-		if err != nil {
-			return err
-		}
-
-		return lang.Ok
+		return lang.ErrNoPermission
 	})
 }
 

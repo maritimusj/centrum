@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"syscall"
 
+	edgeLang "github.com/maritimusj/centrum/edge/lang"
+
 	"github.com/maritimusj/durafmt"
 
 	"github.com/maritimusj/centrum/gate/web/edge"
@@ -41,13 +43,14 @@ func main() {
 	logLevel := flag.String("l", "", "log level, [trace,debug,info,warn,error,fatal]")
 	resetDefaultUserPassword := flag.Bool("reset", false, "reset default user password")
 	flushDB := flag.Bool("flush", false, "erase all data in database")
-	langID := flag.Int("lang", lang.EnUS, "lang ID")
+	langID := flag.Int("lang", lang.ZhCN, "lang ID")
 	webDir := flag.String("web", "./public", "directory of static web files")
 
 	flag.Parse()
 
 	if *langID == lang.ZhCN || *langID == lang.EnUS {
 		lang.Active(*langID)
+		edgeLang.Active(*langID)
 	}
 
 	durafmt.SetAlias("years", lang.Str(lang.Years))

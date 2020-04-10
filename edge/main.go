@@ -32,7 +32,7 @@ import (
 func main() {
 	logLevel := flag.String("l", "", "log error level")
 	config := flag.String("config", "edge.yaml", "config file name")
-	langID := flag.Int("lang", lang.EnUS, "language ID")
+	langID := flag.Int("lang", lang.ZhCN, "language ID")
 
 	flag.Parse()
 
@@ -124,11 +124,11 @@ func main() {
 	}
 
 	var (
-		pprofEnable = viper.GetBool("pprof.enable")
-		addr        = viper.GetString("pprof.addr")
-		port        = viper.GetInt("pprof.port")
+		perfEnable = viper.GetBool("perf.enable")
+		addr       = viper.GetString("perf.addr")
+		port       = viper.GetInt("perf.port")
 	)
-	if pprofEnable {
+	if perfEnable {
 		go func() {
 			_ = http.ListenAndServe(fmt.Sprintf("%s:%d", addr, port), nil)
 		}()
