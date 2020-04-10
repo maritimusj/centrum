@@ -1,8 +1,8 @@
 package version
 
 var (
-	EdgeVersion   = "2.0.13"
-	EdgeBuildDate = "2019122101"
-	GateVersion   = "2.0.15"
-	GeteBuildDate = "2020031301"
+	EdgeVersion   = "2.0.16"
+	EdgeBuildDate = "20200410003"
+	GateVersion   = "2.0.17"
+	GateBuildDate = "20200410006"
 )

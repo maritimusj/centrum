@@ -65,7 +65,7 @@ func Simple(ctx iris.Context) hero.Result {
 			},
 			"gate": iris.Map{
 				"ver":   version.GateVersion,
-				"build": version.GeteBuildDate,
+				"build": version.GateBuildDate,
 			},
 		}
 		return result
