@@ -2,12 +2,13 @@ package edge
 
 import (
 	"bytes"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/maritimusj/centrum/gate/lang"
 
 	log "github.com/sirupsen/logrus"
 
@@ -134,14 +135,14 @@ func Add(url string) {
 func Invoke(url, cmd string, request interface{}) (*Result, error) {
 	message, err := json.EncodeClientRequest(cmd, request)
 	if err != nil {
-		return nil, err
+		log.Errorln("[invoke]: ", err)
+		return nil, lang.Error(lang.ErrEdgeInvokeFail, 9)
 	}
-
-	log.Traceln("invoke: ", url, string(message))
 
 	resp, err := http.Post(url, "application/json", bytes.NewReader(message))
 	if err != nil {
-		return nil, err
+		log.Errorln("[invoke]: ", err)
+		return nil, lang.Error(lang.ErrEdgeInvokeFail, 10)
 	}
 
 	defer func() {
@@ -154,20 +155,20 @@ func Invoke(url, cmd string, request interface{}) (*Result, error) {
 		data, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Errorf("[invoke] %s, result: %s", err, string(data))
-			return nil, err
+			return nil, lang.Error(lang.ErrEdgeInvokeFail, 11)
 		}
-
-		log.Traceln("[invoke] ", string(data))
 
 		err = json.DecodeClientResponse(bytes.NewReader(data), &reply)
 		if err != nil {
-			return nil, err
+			log.Errorln("[invoke]: ", err)
+			return nil, lang.Error(lang.ErrEdgeInvokeFail, 12)
 		}
 
 	} else {
 		err = json.DecodeClientResponse(resp.Body, &reply)
 		if err != nil {
-			return nil, err
+			log.Errorln("[invoke]: ", err)
+			return nil, lang.Error(lang.ErrEdgeInvokeFail, 13)
 		}
 	}
 
@@ -183,7 +184,7 @@ func Restart(url string) {
 func GetBaseInfo(uid string) (map[string]interface{}, error) {
 	balance := defaultEdgesMap.GetBalanceByDeviceUID(uid)
 	if balance == nil {
-		return map[string]interface{}{}, errors.New("device not found")
+		return map[string]interface{}{}, lang.Error(lang.ErrDeviceNotExistsOrActive)
 	}
 
 	if e := balance.Get(uid, "baseInfo"); !e.IsExpired() {
@@ -232,7 +233,7 @@ func Active(conf *Conf) error {
 		return err
 	}
 
-	return errors.New("no edge")
+	return lang.Error(lang.ErrNoEdgeAvailable)
 }
 
 //SetValue 设置设备指定点位的值
@@ -249,7 +250,7 @@ func SetValue(uid string, tag string, val interface{}) error {
 		return err
 	}
 
-	return errors.New("device not found")
+	return lang.Error(lang.ErrDeviceNotExistsOrActive)
 }
 
 //GetValue 获取设备指定点位的值
@@ -275,7 +276,7 @@ func GetValue(uid string, tag string) (map[string]interface{}, error) {
 		return data, nil
 	}
 
-	return map[string]interface{}{}, errors.New("device not found")
+	return map[string]interface{}{}, lang.Error(lang.ErrDeviceNotExistsOrActive)
 }
 
 //GetRealtimeData 获取指定设备的实时数据
@@ -297,5 +298,5 @@ func GetRealtimeData(uid string) ([]interface{}, error) {
 		return data, nil
 	}
 
-	return []interface{}{}, errors.New("device not found")
+	return []interface{}{}, lang.Error(lang.ErrDeviceNotExistsOrActive)
 }

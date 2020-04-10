@@ -331,6 +331,7 @@ var (
 		lang.ErrUnknownLang:                     "Unknown language region.",
 		lang.ErrInternal:                        "Internal error: %s, file: %s, line: %d.",
 		lang.ErrNetworkFail:                     "Network error: %s.",
+		lang.ErrEdgeInvokeFail:                  "Fail to get device data[error:%d], please try again.",
 		lang.ErrServerIsBusy:                    "Server is busy.",
 		lang.ErrInvalidDBConnStr:                "Invalid parameters.",
 		lang.ErrInvalidRequestData:              "Bad request data.",
@@ -361,6 +362,7 @@ var (
 		lang.ErrPolicyNotFound:                  "Policy does not exists.",
 		lang.ErrGroupNotFound:                   "Group does not exists.",
 		lang.ErrDeviceNotFound:                  "Device does not exists.",
+		lang.ErrDeviceNotExistsOrActive:         "Device does not exists or active, please try again.",
 		lang.ErrDeviceExists:                    "Device existed.",
 		lang.ErrMeasureNotFound:                 "Tag does not exist.",
 		lang.ErrEquipmentNotFound:               "Customized device does not exists.",
@@ -377,5 +379,6 @@ var (
 		lang.ErrRegFirst:                        "Please register first.",
 		lang.ErrInvalidRegCode:                  "Invalid registry code.",
 		lang.ErrDeviceDisconnected:              "Device disconnected.",
+		lang.ErrNoEdgeAvailable:                 "No edge is available",
 	}
 )

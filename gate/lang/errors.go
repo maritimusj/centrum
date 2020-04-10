@@ -21,6 +21,7 @@ const (
 	ErrUnknownLang
 	ErrInternal
 	ErrNetworkFail
+	ErrEdgeInvokeFail
 	ErrServerIsBusy
 	ErrInvalidDBConnStr
 	ErrInvalidRequestData
@@ -72,6 +73,9 @@ const (
 	ErrInvalidRegCode
 
 	ErrDeviceDisconnected
+	ErrDeviceNotExistsOrActive
+
+	ErrNoEdgeAvailable
 )
 
 func ErrorStr(code ErrorCode, params ...interface{}) string {

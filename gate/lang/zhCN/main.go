@@ -331,6 +331,7 @@ var (
 		lang.ErrUnknownLang:                     "未知语言区域！",
 		lang.ErrInternal:                        "系统错误: %s，文件：%s，行：%d",
 		lang.ErrNetworkFail:                     "网络错误：%s",
+		lang.ErrEdgeInvokeFail:                  "获取设备信息失败 [error: %d]，请稍后再试！",
 		lang.ErrServerIsBusy:                    "服务器忙，请稍后再试！",
 		lang.ErrInvalidDBConnStr:                "数据库连接参数不正确！",
 		lang.ErrInvalidRequestData:              "不正确的请求数据！",
@@ -361,6 +362,7 @@ var (
 		lang.ErrPolicyNotFound:                  "策略不存在！",
 		lang.ErrGroupNotFound:                   "设备分组不存在！",
 		lang.ErrDeviceNotFound:                  "设备不存在！",
+		lang.ErrDeviceNotExistsOrActive:         "设备不存在或者还没有加载，请稍后再试！",
 		lang.ErrDeviceExists:                    "设备已经存在！",
 		lang.ErrMeasureNotFound:                 "点位不存在！",
 		lang.ErrEquipmentNotFound:               "自定设备不存在！",
@@ -377,5 +379,6 @@ var (
 		lang.ErrRegFirst:                        "请先注册软件！",
 		lang.ErrInvalidRegCode:                  "无效的注册码！",
 		lang.ErrDeviceDisconnected:              "设备断开连接！",
+		lang.ErrNoEdgeAvailable:                 "没有可用的edge程序，请重启系统！",
 	}
 )
