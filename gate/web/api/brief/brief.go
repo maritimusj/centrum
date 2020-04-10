@@ -68,6 +68,9 @@ func Simple(ctx iris.Context) hero.Result {
 				"build": version.GateBuildDate,
 			},
 		}
+
+		result["sys_stats"] = app.SysStatus()
+
 		return result
 	})
 }

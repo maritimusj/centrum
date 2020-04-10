@@ -2,9 +2,19 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"os"
 	"time"
+
+	"github.com/shirou/gopsutil/host"
+
+	"github.com/shirou/gopsutil/mem"
+
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+
+	"github.com/maritimusj/centrum/util"
 
 	"github.com/spf13/viper"
 
@@ -119,6 +129,63 @@ func InitLog(levelStr string) error {
 	log.SetLevel(level)
 
 	return nil
+}
+
+func HostInfo() interface{} {
+	info, _ := host.Info()
+	return info
+}
+
+func CpuInfo() interface{} {
+	info, _ := cpu.Info()
+	xx := make([]interface{}, 0, len(info))
+	for _, x := range info {
+		xx = append(xx, map[string]interface{}{
+			"cores":     x.Cores,
+			"mhz":       x.Mhz,
+			"modelName": x.ModelName,
+		})
+	}
+
+	percent, _ := cpu.Percent(1*time.Second, false)
+	return map[string]interface{}{
+		"usedPercent": fmt.Sprintf("%.2f", percent[0]),
+		"cpus":        info,
+	}
+}
+
+func MemoryStatus() interface{} {
+	m, _ := mem.VirtualMemory()
+	return map[string]interface{}{
+		"total":       util.FormatFileSize(m.Total),
+		"available":   util.FormatFileSize(m.Available),
+		"used":        util.FormatFileSize(m.Used),
+		"usedPercent": fmt.Sprintf("%.2f", m.UsedPercent),
+	}
+}
+
+func DiskStatus() interface{} {
+	ps, _ := disk.Partitions(true)
+	x := make([]map[string]interface{}, 0, len(ps))
+	for _, p := range ps {
+		v, _ := disk.Usage(p.Device)
+		x = append(x, map[string]interface{}{
+			"path":        v.Path,
+			"total":       util.FormatFileSize(v.Total),
+			"used":        util.FormatFileSize(v.Used),
+			"usedPercent": fmt.Sprintf("%.2f", v.UsedPercent),
+		})
+	}
+	return x
+}
+
+func SysStatus() interface{} {
+	return map[string]interface{}{
+		"host": HostInfo(),
+		"mem":  MemoryStatus(),
+		"disk": DiskStatus(),
+		"cpu":  CpuInfo(),
+	}
 }
 
 func Start(ctx context.Context, logLevel string) error {
