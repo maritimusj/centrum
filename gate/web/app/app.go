@@ -132,12 +132,19 @@ func InitLog(levelStr string) error {
 }
 
 func HostInfo() interface{} {
-	info, _ := host.Info()
+	info, err := host.Info()
+	if err != nil {
+		return map[string]interface{}{}
+	}
 	return info
 }
 
 func CpuInfo() interface{} {
-	info, _ := cpu.Info()
+	info, err := cpu.Info()
+	if err != nil {
+		log.Warningln(err)
+		return map[string]interface{}{}
+	}
 	xx := make([]interface{}, 0, len(info))
 	for _, x := range info {
 		xx = append(xx, map[string]interface{}{
@@ -146,16 +153,25 @@ func CpuInfo() interface{} {
 			"modelName": x.ModelName,
 		})
 	}
-
-	percent, _ := cpu.Percent(1*time.Second, false)
-	return map[string]interface{}{
-		"usedPercent": fmt.Sprintf("%.2f", percent[0]),
-		"cpus":        info,
+	data := map[string]interface{}{
+		"cpus": info,
 	}
+	percent, err := cpu.Percent(1*time.Second, false)
+	if err != nil {
+		log.Warningln(err)
+	} else {
+		data["usedPercent"] = fmt.Sprintf("%.2f", percent[0])
+	}
+	return data
 }
 
 func MemoryStatus() interface{} {
-	m, _ := mem.VirtualMemory()
+	m, err := mem.VirtualMemory()
+	if err != nil {
+		log.Warningln(err)
+		return map[string]interface{}{}
+	}
+
 	return map[string]interface{}{
 		"total":       util.FormatFileSize(m.Total),
 		"available":   util.FormatFileSize(m.Available),
@@ -165,7 +181,11 @@ func MemoryStatus() interface{} {
 }
 
 func DiskStatus() interface{} {
-	ps, _ := disk.Partitions(true)
+	ps, err := disk.Partitions(true)
+	if err != nil {
+		log.Warningln(err)
+		return map[string]interface{}{}
+	}
 	x := make([]map[string]interface{}, 0, len(ps))
 	for _, p := range ps {
 		v, _ := disk.Usage(p.Device)
