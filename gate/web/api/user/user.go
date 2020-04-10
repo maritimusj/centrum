@@ -82,6 +82,10 @@ func Create(ctx iris.Context) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
+		if form.Username == "" {
+			return lang.ErrInvalidUserName
+		}
+
 		result := app.TransactionDo(func(s store.Store) interface{} {
 			admin := s.MustGetUserFromContext(ctx)
 			if exists, err := s.IsUserExists(form.Username); err != nil {

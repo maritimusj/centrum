@@ -343,6 +343,7 @@ var (
 		lang.ErrOrganizationExists:              "Organization existed.",
 		lang.ErrFailedRemoveDefaultOrganization: "Delete default organization does not allowed.",
 		lang.ErrInvalidUser:                     "Invalid user.",
+		lang.ErrInvalidUserName:                 "Invalid user name",
 		lang.ErrUserDisabled:                    "User disabled.",
 		lang.ErrPasswordWrong:                   "Password is wrong.",
 		lang.ErrInvalidResourceClassID:          "Invalid resource class id.",

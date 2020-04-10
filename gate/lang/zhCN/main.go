@@ -343,6 +343,7 @@ var (
 		lang.ErrOrganizationExists:              "组织机构已存在！",
 		lang.ErrFailedRemoveDefaultOrganization: "不能删除默认的组织机构！",
 		lang.ErrInvalidUser:                     "当前用户不可用或者登录超时！",
+		lang.ErrInvalidUserName:                 "无效的用户名！",
 		lang.ErrUserDisabled:                    "用户已经被禁用！",
 		lang.ErrPasswordWrong:                   "密码不正确！",
 		lang.ErrInvalidResourceClassID:          "资源类型不正确！",

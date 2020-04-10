@@ -28,6 +28,7 @@ const (
 	ErrNoPermission
 	ErrCacheNotFound
 	ErrInvalidUser
+	ErrInvalidUserName
 	ErrUserDisabled
 	ErrPasswordWrong
 	ErrConfirmCodeWrong
