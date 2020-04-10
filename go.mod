@@ -32,7 +32,6 @@ require (
 	github.com/iris-contrib/go.uuid v2.0.0+incompatible // indirect
 	github.com/iris-contrib/httpexpect v0.0.0-20180314041918-ebe99fcebbce // indirect
 	github.com/iris-contrib/middleware v0.0.0-20190816193017-7838277651e8
-	github.com/json-iterator/go v1.1.7 // indirect
 	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/kardianos/service v1.0.0
 	github.com/kataras/golog v0.0.0-20190624001437-99c81de45f40 // indirect
@@ -63,10 +62,11 @@ require (
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.6.2
+	github.com/spf13/viper v1.6.3
 	github.com/stretchr/testify v1.4.0 // indirect
 	github.com/tidwall/gjson v1.6.0
 	github.com/tidwall/sjson v1.1.1
+	github.com/ugorji/go v1.1.4 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0 // indirect
 	github.com/yudai/gojsondiff v1.0.0 // indirect
@@ -75,7 +75,7 @@ require (
 	go.etcd.io/bbolt v1.3.3 // indirect
 	golang.org/x/crypto v0.0.0-20191002192127-34f69633bfdc
 	golang.org/x/net v0.0.0-20191007182048-72f939374954 // indirect
-	golang.org/x/sys v0.0.0-20200406155108-e3b113bbe6a4 // indirect
+	golang.org/x/sys v0.0.0-20200409092240-59c9f1ba88fa // indirect
 	golang.org/x/text v0.3.2 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/ini.v1 v1.55.0 // indirect
