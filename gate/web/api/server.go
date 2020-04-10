@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"sync"
 	"time"
 
@@ -74,8 +75,8 @@ func (server *server) Wait() {
 }
 
 func (server *server) Start(ctx context.Context, webDir string, cfg *cfg.Config) {
-	server.app.Logger().SetLevel(cfg.LogLevel())
-	//server.app.Logger().SetOutput(ioutil.Discard)
+	//server.app.Logger().SetLevel(cfg.LogLevel())
+	server.app.Logger().SetOutput(ioutil.Discard)
 
 	crs := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"}, // allows everything, use that to change the hosts.

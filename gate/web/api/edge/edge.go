@@ -140,9 +140,24 @@ func Feedback(deviceID int64, ctx iris.Context) {
 	}
 
 	if form.Perf != nil {
-		global.UpdateDevicePerf(device, iris.Map{
-			"rate": strconv.FormatInt(int64((*form.Perf).Rate), 10) + "kb/s",
-		})
+		rate := int64((*form.Perf).Rate)
+		data := iris.Map{
+			"rate": strconv.FormatInt(rate, 10) + "kb/s",
+		}
+		level := 1
+		if rate < 1 {
+			level = 1
+		} else if rate < 10 {
+			level = 2
+		} else if rate < 50 {
+			level = 3
+		} else if rate < 100 {
+			level = 4
+		} else {
+			level = 5
+		}
+		data["level"] = level
+		global.UpdateDevicePerf(device, data)
 	}
 
 	if form.Log != nil {

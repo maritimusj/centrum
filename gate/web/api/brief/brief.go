@@ -69,7 +69,17 @@ func Simple(ctx iris.Context) hero.Result {
 			},
 		}
 
-		result["sys_stats"] = app.SysStatus()
+		if stats, _ := ctx.URLParamBool("stats"); stats {
+			result["sys_stats"] = app.SysStatus()
+		} else {
+			result["sys_stats"] = map[string]interface{}{
+				"host": app.HostInfo(),
+				"disk": app.DiskStatus(),
+				"cpu": map[string]interface{}{
+					"cpus": app.CpuInfo(),
+				},
+			}
+		}
 
 		return result
 	})

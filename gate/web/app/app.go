@@ -153,7 +153,16 @@ func HostInfo() interface{} {
 				log.Warn(err)
 				return map[string]interface{}{}, nil
 			}
-			return data, nil
+			bootTime := time.Unix(int64(data.BootTime), 0)
+			return map[string]interface{}{
+				"hostname":        data.Hostname,
+				"uptime":          data.Uptime,
+				"bootTime":        bootTime.Format("2006-01-02 15:04:05"),
+				"os":              data.OS,
+				"platform":        data.Platform,
+				"platformVersion": data.PlatformVersion,
+				"kernelArch":      data.KernelArch,
+			}, nil
 		})
 	}
 	return __hostInfo.Data()
@@ -180,11 +189,11 @@ func CpuInfo() interface{} {
 		})
 	}
 
-	data := map[string]interface{}{
-		"cpus": __cpuInfo.Data(),
-	}
+	return __cpuInfo.Data()
+}
 
-	if __cpuTimes.Expired(3 * time.Second) {
+func CpuTimes() interface{} {
+	if __cpuTimes.Expired(1 * time.Second) {
 		__cpuTimes.Fetch(func() (interface{}, error) {
 			percent, err := cpu.Percent(1*time.Second, false)
 			if err != nil {
@@ -195,12 +204,11 @@ func CpuInfo() interface{} {
 		})
 	}
 
-	data["usedPercent"] = __cpuTimes.Data()
-	return data
+	return __cpuTimes.Data()
 }
 
 func MemoryStatus() interface{} {
-	if __memInfo.Expired(3 * time.Second) {
+	if __memInfo.Expired(1 * time.Second) {
 		__memInfo.Fetch(func() (interface{}, error) {
 			m, err := mem.VirtualMemory()
 			if err != nil {
@@ -248,7 +256,10 @@ func SysStatus() interface{} {
 		"host": HostInfo(),
 		"mem":  MemoryStatus(),
 		"disk": DiskStatus(),
-		"cpu":  CpuInfo(),
+		"cpu": map[string]interface{}{
+			"cpus":        CpuInfo(),
+			"usedPercent": CpuTimes(),
+		},
 	}
 }
 
