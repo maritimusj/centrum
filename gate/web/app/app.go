@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/maritimusj/centrum/gate/web/SysInfo"
+
 	"github.com/shirou/gopsutil/host"
 
 	"github.com/shirou/gopsutil/mem"
@@ -49,6 +51,18 @@ var (
 	LogDBStore = bolt.New()
 	s          store.Store
 	StatsDB    = statistics.New()
+)
+
+var (
+	__hostInfo SysInfo.Info
+
+	__cpuInfo SysInfo.Info
+
+	__cpuTimes SysInfo.Info
+
+	__diskInfo SysInfo.Info
+
+	__memInfo SysInfo.Info
 )
 
 func IsDefaultAdminUser(user model.User) bool {
@@ -132,71 +146,101 @@ func InitLog(levelStr string) error {
 }
 
 func HostInfo() interface{} {
-	info, err := host.Info()
-	if err != nil {
-		return map[string]interface{}{}
+	if !__hostInfo.Have() {
+		__hostInfo.Fetch(func() (interface{}, error) {
+			data, err := host.Info()
+			if err != nil {
+				log.Warn(err)
+				return map[string]interface{}{}, nil
+			}
+			return data, nil
+		})
 	}
-	return info
+	return __hostInfo.Data()
 }
 
 func CpuInfo() interface{} {
-	info, err := cpu.Info()
-	if err != nil {
-		log.Warningln(err)
-		return map[string]interface{}{}
-	}
-	xx := make([]interface{}, 0, len(info))
-	for _, x := range info {
-		xx = append(xx, map[string]interface{}{
-			"cores":     x.Cores,
-			"mhz":       x.Mhz,
-			"modelName": x.ModelName,
+	if !__cpuInfo.Have() {
+		__cpuInfo.Fetch(func() (interface{}, error) {
+			var err error
+			info, err := cpu.Info()
+			if err != nil {
+				log.Warningln(err)
+			}
+
+			xx := make([]interface{}, 0, len(info))
+			for _, x := range info {
+				xx = append(xx, map[string]interface{}{
+					"cores":     x.Cores,
+					"mhz":       x.Mhz,
+					"modelName": x.ModelName,
+				})
+			}
+			return xx, nil
 		})
 	}
+
 	data := map[string]interface{}{
-		"cpus": info,
+		"cpus": __cpuInfo.Data(),
 	}
-	percent, err := cpu.Percent(1*time.Second, false)
-	if err != nil {
-		log.Warningln(err)
-	} else {
-		data["usedPercent"] = fmt.Sprintf("%.2f", percent[0])
+
+	if __cpuTimes.Expired(3 * time.Second) {
+		__cpuTimes.Fetch(func() (interface{}, error) {
+			percent, err := cpu.Percent(1*time.Second, false)
+			if err != nil {
+				log.Warningln(err)
+				return nil, err
+			}
+			return fmt.Sprintf("%.2f", percent[0]), nil
+		})
 	}
+
+	data["usedPercent"] = __cpuTimes.Data()
 	return data
 }
 
 func MemoryStatus() interface{} {
-	m, err := mem.VirtualMemory()
-	if err != nil {
-		log.Warningln(err)
-		return map[string]interface{}{}
+	if __memInfo.Expired(3 * time.Second) {
+		__memInfo.Fetch(func() (interface{}, error) {
+			m, err := mem.VirtualMemory()
+			if err != nil {
+				return nil, err
+			}
+
+			return map[string]interface{}{
+				"total":       util.FormatFileSize(m.Total),
+				"available":   util.FormatFileSize(m.Available),
+				"used":        util.FormatFileSize(m.Used),
+				"usedPercent": fmt.Sprintf("%.2f", m.UsedPercent),
+			}, nil
+		})
 	}
 
-	return map[string]interface{}{
-		"total":       util.FormatFileSize(m.Total),
-		"available":   util.FormatFileSize(m.Available),
-		"used":        util.FormatFileSize(m.Used),
-		"usedPercent": fmt.Sprintf("%.2f", m.UsedPercent),
-	}
+	return __memInfo.Data()
 }
 
 func DiskStatus() interface{} {
-	ps, err := disk.Partitions(true)
-	if err != nil {
-		log.Warningln(err)
-		return map[string]interface{}{}
-	}
-	x := make([]map[string]interface{}, 0, len(ps))
-	for _, p := range ps {
-		v, _ := disk.Usage(p.Device)
-		x = append(x, map[string]interface{}{
-			"path":        v.Path,
-			"total":       util.FormatFileSize(v.Total),
-			"used":        util.FormatFileSize(v.Used),
-			"usedPercent": fmt.Sprintf("%.2f", v.UsedPercent),
+	if __diskInfo.Expired(1 * time.Minute) {
+		__diskInfo.Fetch(func() (interface{}, error) {
+			ps, err := disk.Partitions(true)
+			if err != nil {
+				return nil, err
+			}
+			x := make([]map[string]interface{}, 0, len(ps))
+			for _, p := range ps {
+				v, _ := disk.Usage(p.Device)
+				x = append(x, map[string]interface{}{
+					"path":        v.Path,
+					"total":       util.FormatFileSize(v.Total),
+					"used":        util.FormatFileSize(v.Used),
+					"usedPercent": fmt.Sprintf("%.2f", v.UsedPercent),
+				})
+			}
+			return x, nil
 		})
 	}
-	return x
+
+	return __diskInfo.Data()
 }
 
 func SysStatus() interface{} {
