@@ -14,7 +14,6 @@ import (
 )
 
 func AddMessage(data interface{}, fn func(string, int64) bool) {
-	println("add message")
 	Messages.Add(data, func(uid string) bool {
 		if fn != nil {
 			arr := strings.Split(uid, ":")
@@ -33,17 +32,14 @@ func AddMessage(data interface{}, fn func(string, int64) bool) {
 }
 
 func GetAllMessage(uid string, userId int64) []*msg {
-	println("get message:", uid, userId)
 	return Messages.GetAll(fmt.Sprintf("%s:%d", uid, userId))
 }
 
 func Create(uid string, userId int64) {
-	println("create: ", uid, userId)
 	Messages.Create(fmt.Sprintf("%s:%d", uid, userId))
 }
 
 func Close(uid string, userId int64) {
-	println("close: ", uid, userId)
 	Messages.Close(fmt.Sprintf("%s:%d", uid, userId))
 }
 
