@@ -4,6 +4,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/maritimusj/centrum/global"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
@@ -112,6 +114,9 @@ func Login(ctx iris.Context) hero.Result {
 		if !ctx.URLParamExists("refresh") {
 			log.WithField("src", logStore.SystemLog).Infoln(lang.Str(lang.UserLoginOk, user.Name(), ctx.RemoteAddr()))
 		}
+
+		//注册用户，接收消息
+		global.Create(token, user.GetID())
 
 		return iris.Map{
 			"token": token,

@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/maritimusj/centrum/gate/web/model"
+
 	"github.com/maritimusj/centrum/util"
 
 	"github.com/maritimusj/centrum/gate/web/app"
@@ -47,6 +49,19 @@ type Perf struct {
 	Rate int `json:"rate"`
 }
 
+func createMsg(res model.Resource, data interface{}) {
+	store := app.Store()
+	global.AddMessage(data, func(uid string, userId int64) bool {
+		user, err := store.GetUser(userId)
+		if err != nil {
+			global.Close(uid, userId)
+			return false
+		}
+
+		return app.Allow(user, res, resource.View)
+	})
+}
+
 func Feedback(deviceID int64, ctx iris.Context) {
 	device, err := app.Store().GetDevice(deviceID)
 	if err != nil {
@@ -77,7 +92,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 		if form.Status.Index == int(edgeLang.Disconnected) {
 			global.UpdateDevicePerf(device, iris.Map{})
 			if org == int(edgeLang.Connected) {
-				global.AddRealtimeMessage(iris.Map{
+				createMsg(device, iris.Map{
 					"level":      "warning",
 					"title":      device.Title(),
 					"message":    lang.Error(lang.ErrDeviceDisconnected).Error(),
@@ -87,7 +102,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 			}
 		} else if form.Status.Index == int(edgeLang.Connected) {
 			if org != int(edgeLang.Connected) {
-				global.AddRealtimeMessage(iris.Map{
+				createMsg(device, iris.Map{
 					"level":      "success",
 					"title":      device.Title(),
 					"message":    lang.Str(lang.DeviceConnected),

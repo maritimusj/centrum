@@ -2,6 +2,8 @@ package global
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	edgeLang "github.com/maritimusj/centrum/edge/lang"
@@ -11,12 +13,38 @@ import (
 	"github.com/maritimusj/centrum/gate/web/model"
 )
 
-func AddRealtimeMessage(data map[string]interface{}) {
-	Messages.Add(data)
+func AddMessage(data interface{}, fn func(string, int64) bool) {
+	println("add message")
+	Messages.Add(data, func(uid string) bool {
+		if fn != nil {
+			arr := strings.Split(uid, ":")
+			if len(arr) != 2 {
+				return false
+			}
+			userId, err := strconv.ParseInt(arr[1], 10, 0)
+			if err != nil {
+				return false
+			}
+			return fn(arr[0], userId)
+		}
+
+		return true
+	})
 }
 
-func GetAllRealtimeMessage() []*messageEntry {
-	return Messages.GetAll()
+func GetAllMessage(uid string, userId int64) []*msg {
+	println("get message:", uid, userId)
+	return Messages.GetAll(fmt.Sprintf("%s:%d", uid, userId))
+}
+
+func Create(uid string, userId int64) {
+	println("create: ", uid, userId)
+	Messages.Create(fmt.Sprintf("%s:%d", uid, userId))
+}
+
+func Close(uid string, userId int64) {
+	println("close: ", uid, userId)
+	Messages.Close(fmt.Sprintf("%s:%d", uid, userId))
 }
 
 func UpdateDeviceStatus(device model.Device, index int, title string) {

@@ -81,7 +81,7 @@ func Simple(ctx iris.Context) hero.Result {
 			}
 		}
 
-		messages := global.GetAllRealtimeMessage()
+		messages := global.GetAllMessage(ctx.GetHeader("token"), admin.GetID())
 		if len(messages) > 0 {
 			var formattedMsg []interface{}
 			for _, msg := range messages {

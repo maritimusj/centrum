@@ -11,50 +11,93 @@ import (
 var (
 	Params   = New()
 	Stats    = New()
-	Messages = &messages{}
+	Messages = &messages{
+		msgBoxes: map[string]*msgBox{},
+	}
 )
 
-type messageEntry struct {
+type msgBox struct {
+	lastUse time.Time
+	list    []*msg
+}
+
+type msg struct {
 	CreatedAt time.Time
 	Data      interface{}
 }
 
 type messages struct {
 	sync.Mutex
-	list []*messageEntry
+	msgBoxes map[string]*msgBox
 }
 
-func (msg *messages) Add(data interface{}) {
-	msg.Lock()
-	defer msg.Unlock()
+func (m *messages) Add(data interface{}, fn func(string) bool) {
+	m.Lock()
+	defer m.Unlock()
 
-	//删除超过3分钟的消息
-	for i := 0; i < len(msg.list); {
-		if time.Now().Sub(msg.list[i].CreatedAt) > 3*time.Minute {
-			msg.list = append(msg.list[:i], msg.list[i+1:]...)
-		} else {
-			i++
+	for uid, box := range m.msgBoxes {
+		//删除长时间不用的信箱
+		if time.Now().Sub(box.lastUse) > 30*time.Minute {
+			delete(m.msgBoxes, uid)
+			continue
 		}
+
+		if fn != nil && !fn(uid) {
+			continue
+		}
+
+		//删除超过3分钟的消息
+		for i := 0; i < len(box.list); {
+			if time.Now().Sub(box.list[i].CreatedAt) > 3*time.Minute {
+				box.list = append(box.list[:i], box.list[i+1:]...)
+			} else {
+				i++
+			}
+		}
+
+		if len(box.list) > 6 {
+			box.list = box.list[len(box.list)-6:]
+		}
+
+		box.list = append(box.list, &msg{
+			CreatedAt: time.Now(),
+			Data:      data,
+		})
+
+		m.msgBoxes[uid] = box
 	}
 
-	if len(msg.list) > 10 {
-		msg.list = msg.list[len(msg.list)-9:]
-	}
-
-	msg.list = append(msg.list, &messageEntry{
-		CreatedAt: time.Now(),
-		Data:      data,
-	})
 }
 
-func (msg *messages) GetAll() []*messageEntry {
-	msg.Lock()
-	defer msg.Unlock()
+func (m *messages) Create(uid string) {
+	m.Lock()
+	defer m.Unlock()
 
-	list := msg.list
-	msg.list = []*messageEntry{}
+	m.msgBoxes[uid] = &msgBox{
+		lastUse: time.Now(),
+	}
+}
 
-	return list
+func (m *messages) Close(uid string) {
+	m.Lock()
+	defer m.Unlock()
+
+	delete(m.msgBoxes, uid)
+}
+
+func (m *messages) GetAll(uid string) []*msg {
+	m.Lock()
+	defer m.Unlock()
+
+	box, ok := m.msgBoxes[uid]
+	if ok {
+		list := box.list
+		box.list = []*msg{}
+		box.lastUse = time.Now()
+		return list
+	}
+
+	return []*msg{}
 }
 
 type stats struct {
