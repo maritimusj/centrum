@@ -252,7 +252,10 @@ func (r *Data) FetchData(conn modbus.Client) (retErr error) {
 		used = 1
 	}
 
-	r.rate = (totalBytes / used) * 1000 / 1024
+	r.rate = (totalBytes / used) * 1000
+	if r.rate < 1 {
+		r.rate = 1
+	}
 	r.lastReadTime = time.Now()
 	return nil
 }

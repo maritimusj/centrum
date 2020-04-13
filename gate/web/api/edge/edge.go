@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/maritimusj/centrum/util"
+
 	"github.com/maritimusj/centrum/gate/web/app"
 
 	"github.com/maritimusj/centrum/gate/lang"
@@ -140,9 +142,10 @@ func Feedback(deviceID int64, ctx iris.Context) {
 	}
 
 	if form.Perf != nil {
-		rate := int64((*form.Perf).Rate)
+		rate := uint64((*form.Perf).Rate)
+		str := util.FormatFileSize(rate)
 		data := iris.Map{
-			"rate": strconv.FormatInt(rate, 10) + "kb/s",
+			"rate": str + "/s",
 		}
 		level := 1
 		if rate < 1 {
