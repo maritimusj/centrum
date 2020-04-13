@@ -80,7 +80,7 @@ func PathExists(path string) (bool, error) {
 func FormatFileSize(fileSize uint64) (size string) {
 	if fileSize < 1024 {
 		//return strconv.FormatInt(fileSize, 10) + "B"
-		return fmt.Sprintf("%.2fB", float64(fileSize)/float64(1))
+		return fmt.Sprintf("%dB", fileSize)
 	} else if fileSize < (1024 * 1024) {
 		return fmt.Sprintf("%.2fKB", float64(fileSize)/float64(1024))
 	} else if fileSize < (1024 * 1024 * 1024) {
@@ -92,4 +92,8 @@ func FormatFileSize(fileSize uint64) (size string) {
 	} else { //if fileSize < (1024 * 1024 * 1024 * 1024 * 1024 * 1024)
 		return fmt.Sprintf("%.2fEB", float64(fileSize)/float64(1024*1024*1024*1024*1024))
 	}
+}
+
+func FormatDatetime(time time.Time) string {
+	return time.Format("2006-01-02 15:04:05")
 }

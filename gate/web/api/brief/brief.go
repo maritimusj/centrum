@@ -81,6 +81,15 @@ func Simple(ctx iris.Context) hero.Result {
 			}
 		}
 
+		messages := global.GetAllRealtimeMessage()
+		if len(messages) > 0 {
+			var formattedMsg []interface{}
+			for _, msg := range messages {
+				formattedMsg = append(formattedMsg, msg.Data)
+			}
+			result["messages"] = formattedMsg
+		}
+
 		return result
 	})
 }

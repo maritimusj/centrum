@@ -281,6 +281,8 @@ const (
 	CVSHeaderUpdatedAt
 	CVSHeaderUser
 	CVSHeaderConfirmedBy
+
+	DeviceConnected
 )
 
 var (

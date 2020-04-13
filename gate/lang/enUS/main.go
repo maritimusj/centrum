@@ -323,6 +323,8 @@ var (
 		lang.CVSHeaderUpdatedAt:   "updatedAt",
 		lang.CVSHeaderUser:        "user",
 		lang.CVSHeaderConfirmedBy: "confirmedBy",
+
+		lang.DeviceConnected: "device connected.",
 	}
 
 	errStrMap = map[lang.ErrorCode]string{

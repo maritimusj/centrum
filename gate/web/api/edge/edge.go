@@ -72,12 +72,27 @@ func Feedback(deviceID int64, ctx iris.Context) {
 	}
 
 	if form.Status != nil {
+		org, _, _ := global.GetDeviceStatus(device)
+
 		if form.Status.Index == int(edgeLang.Disconnected) {
 			global.UpdateDevicePerf(device, iris.Map{})
-
-			org, _, _ := global.GetDeviceStatus(device)
 			if org == int(edgeLang.Connected) {
+				global.AddRealtimeMessage(iris.Map{
+					"level":      "warning",
+					"title":      device.Title(),
+					"message":    lang.Error(lang.ErrDeviceDisconnected).Error(),
+					"created_at": util.FormatDatetime(time.Now()),
+				})
 				device.Logger().Warningln(lang.Error(lang.ErrDeviceDisconnected))
+			}
+		} else if form.Status.Index == int(edgeLang.Connected) {
+			if org != int(edgeLang.Connected) {
+				global.AddRealtimeMessage(iris.Map{
+					"level":      "success",
+					"title":      device.Title(),
+					"message":    lang.Str(lang.DeviceConnected),
+					"created_at": util.FormatDatetime(time.Now()),
+				})
 			}
 		}
 		global.UpdateDeviceStatus(device, form.Status.Index, form.Status.Title)
@@ -148,13 +163,13 @@ func Feedback(deviceID int64, ctx iris.Context) {
 			"rate": str + "/s",
 		}
 		level := 1
-		if rate < 1 {
+		if rate < 1024 {
 			level = 1
-		} else if rate < 10 {
+		} else if rate < 10240 {
 			level = 2
-		} else if rate < 50 {
+		} else if rate < 51200 {
 			level = 3
-		} else if rate < 100 {
+		} else if rate < 102400 {
 			level = 4
 		} else {
 			level = 5

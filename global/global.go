@@ -2,15 +2,60 @@ package global
 
 import (
 	"sync"
+	"time"
 
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
 
 var (
-	Params = New()
-	Stats  = New()
+	Params   = New()
+	Stats    = New()
+	Messages = &messages{}
 )
+
+type messageEntry struct {
+	CreatedAt time.Time
+	Data      interface{}
+}
+
+type messages struct {
+	sync.Mutex
+	list []*messageEntry
+}
+
+func (msg *messages) Add(data interface{}) {
+	msg.Lock()
+	defer msg.Unlock()
+
+	//删除超过3分钟的消息
+	for i := 0; i < len(msg.list); {
+		if time.Now().Sub(msg.list[i].CreatedAt) > 3*time.Minute {
+			msg.list = append(msg.list[:i], msg.list[i+1:]...)
+		} else {
+			i++
+		}
+	}
+
+	if len(msg.list) > 10 {
+		msg.list = msg.list[len(msg.list)-9:]
+	}
+
+	msg.list = append(msg.list, &messageEntry{
+		CreatedAt: time.Now(),
+		Data:      data,
+	})
+}
+
+func (msg *messages) GetAll() []*messageEntry {
+	msg.Lock()
+	defer msg.Unlock()
+
+	list := msg.list
+	msg.list = []*messageEntry{}
+
+	return list
+}
 
 type stats struct {
 	data []byte

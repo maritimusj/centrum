@@ -11,6 +11,14 @@ import (
 	"github.com/maritimusj/centrum/gate/web/model"
 )
 
+func AddRealtimeMessage(data map[string]interface{}) {
+	Messages.Add(data)
+}
+
+func GetAllRealtimeMessage() []*messageEntry {
+	return Messages.GetAll()
+}
+
 func UpdateDeviceStatus(device model.Device, index int, title string) {
 	path := fmt.Sprintf("device.%d.stats", device.GetID())
 	data := map[string]interface{}{

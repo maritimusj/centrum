@@ -323,6 +323,8 @@ var (
 		lang.CVSHeaderUpdatedAt:   "更新时间",
 		lang.CVSHeaderUser:        "用户",
 		lang.CVSHeaderConfirmedBy: "确认人",
+
+		lang.DeviceConnected: "设备已连接！",
 	}
 
 	errStrMap = map[lang.ErrorCode]string{
