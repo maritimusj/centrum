@@ -99,6 +99,7 @@ func main() {
 	if err := webApp.Start(ctx, *logLevel); err != nil {
 		log.Fatal(err)
 	}
+	defer webApp.Close()
 
 	if *flushDB {
 		code := util.RandStr(4, util.RandNum)
@@ -115,10 +116,10 @@ func main() {
 			} else {
 				fmt.Printf(lang.Str(lang.FlushDBOk))
 				log.WithField("src", logStore.SystemLog).Warningln(lang.Str(lang.FlushDBOk))
-				os.Exit(0)
+				return
 			}
 		}
-		os.Exit(-1)
+		return
 	}
 
 	if *resetDefaultUserPassword {
@@ -127,12 +128,13 @@ func main() {
 			log.Fatal(err)
 		}
 		log.WithField("src", logStore.SystemLog).Warnln(lang.Str(lang.DefaultUserPasswordResetOk))
-		os.Exit(0)
+		return
 	}
 
 	//API服务
 
 	webAPI.Start(ctx, *webDir, webApp.Config)
+	defer webAPI.Wait()
 
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -141,7 +143,4 @@ func main() {
 	fmt.Println("exit...")
 
 	cancel()
-
-	webAPI.Wait()
-	webApp.Close()
 }
