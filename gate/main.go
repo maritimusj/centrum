@@ -118,6 +118,7 @@ func main() {
 				os.Exit(0)
 			}
 		}
+		os.Exit(-1)
 	}
 
 	if *resetDefaultUserPassword {
@@ -126,6 +127,7 @@ func main() {
 			log.Fatal(err)
 		}
 		log.WithField("src", logStore.SystemLog).Warnln(lang.Str(lang.DefaultUserPasswordResetOk))
+		os.Exit(0)
 	}
 
 	//API服务
