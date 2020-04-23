@@ -266,6 +266,7 @@ func (device *Device) GetRealTimeData() (*realtime.Data, error) {
 	if device == nil {
 		return nil, lang.Error(lang.ErrDeviceNotExists)
 	}
+
 	if !device.IsConnected() {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}

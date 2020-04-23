@@ -333,7 +333,7 @@ var (
 		lang.ErrUnknownLang:                     "未知语言区域！",
 		lang.ErrInternal:                        "系统错误: %s，文件：%s，行：%d",
 		lang.ErrNetworkFail:                     "网络错误：%s",
-		lang.ErrEdgeInvokeFail:                  "请求设备数据失败 [error: %d]，请稍后再试！",
+		lang.ErrEdgeInvokeFail:                  "请求数据失败 [error: %d]，请稍后再试！",
 		lang.ErrServerIsBusy:                    "服务器忙，请稍后再试！",
 		lang.ErrInvalidDBConnStr:                "数据库连接参数不正确！",
 		lang.ErrInvalidRequestData:              "提交的数据不正确，请检查后再试！",

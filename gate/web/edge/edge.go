@@ -155,20 +155,20 @@ func Invoke(url, cmd string, request interface{}) (*Result, error) {
 		data, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Errorf("[invoke] %s, result: %s", err, string(data))
-			return nil, lang.Error(lang.ErrEdgeInvokeFail, 11)
+			//return nil, lang.Error(lang.ErrEdgeInvokeFail, 11)
 		}
 
 		err = json.DecodeClientResponse(bytes.NewReader(data), &reply)
 		if err != nil {
 			log.Errorln("[invoke]: ", err)
-			return nil, lang.Error(lang.ErrEdgeInvokeFail, 12)
+			//return nil, lang.Error(lang.ErrEdgeInvokeFail, 12)
 		}
 
 	} else {
 		err = json.DecodeClientResponse(resp.Body, &reply)
 		if err != nil {
 			log.Errorln("[invoke]: ", err)
-			return nil, lang.Error(lang.ErrEdgeInvokeFail, 13)
+			//return nil, lang.Error(lang.ErrEdgeInvokeFail, 13)
 		}
 	}
 

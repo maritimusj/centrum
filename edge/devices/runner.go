@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/maritimusj/centrum/edge/devices/realtime"
+
 	"github.com/maritimusj/centrum/edge/logStore"
 
 	"github.com/maritimusj/centrum/edge/devices/InverseServer"
@@ -49,30 +51,40 @@ func (runner *Runner) StartInverseServer(conf *json_rpc.InverseConf) error {
 
 func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 	if v, ok := runner.adapters.Load(uid); ok {
-		baseInfo := make(map[string]interface{})
-
 		adapter := v.(*Adapter)
-		model, err := adapter.device.GetModel()
+
+		baseInfo := make(map[string]interface{})
+		var err error
+		runner.retryWhenNetworkTimeout(func() error {
+			var model *ep6v2.Model
+			model, err = adapter.device.GetModel()
+			if err != nil {
+				return err
+			}
+
+			baseInfo["model"] = model.ID
+			baseInfo["version"] = model.Version
+			baseInfo["title"] = model.Title
+
+			addr, err := adapter.device.GetAddr()
+			if err != nil {
+				return err
+			}
+
+			baseInfo["addr"] = addr.Ip.String() + "/" + addr.Mask.String()
+			baseInfo["mac"] = addr.Mac.String()
+
+			baseInfo["status"] = map[string]interface{}{
+				"index": adapter.device.GetStatus(),
+				"title": adapter.device.GetStatusTitle(),
+			}
+			return nil
+		}, 3)
+
 		if err != nil {
 			return nil, err
 		}
 
-		baseInfo["model"] = model.ID
-		baseInfo["version"] = model.Version
-		baseInfo["title"] = model.Title
-
-		addr, err := adapter.device.GetAddr()
-		if err != nil {
-			return baseInfo, err
-		}
-
-		baseInfo["addr"] = addr.Ip.String() + "/" + addr.Mask.String()
-		baseInfo["mac"] = addr.Mac.String()
-
-		baseInfo["status"] = map[string]interface{}{
-			"index": adapter.device.GetStatus(),
-			"title": adapter.device.GetStatusTitle(),
-		}
 		return baseInfo, nil
 	}
 
@@ -175,14 +187,30 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 	return nil
 }
 
-func (runner *Runner) GetValue(ch *json_rpc.CH) (interface{}, error) {
+func (runner *Runner) retryWhenNetworkTimeout(fn func() error, retries int) {
+	if fn != nil {
+		var err error
+		for i := 0; i < retries; i++ {
+			err = fn()
+			if err != nil {
+				if e, ok := err.(net.Error); ok && (e.Temporary() || e.Timeout()) {
+					time.Sleep(time.Duration(i+1) * time.Second)
+					continue
+				}
+			}
+			break
+		}
+	}
+}
+
+func (runner *Runner) GetValue(ch *json_rpc.CH) (retVal interface{}, err error) {
 	if v, ok := runner.adapters.Load(ch.UID); ok {
 		adapter := v.(*Adapter)
-		v, err := adapter.device.GetCHValue(ch.Tag)
-		if err != nil {
-			return nil, err
-		}
-		return v, nil
+		runner.retryWhenNetworkTimeout(func() error {
+			retVal, err = adapter.device.GetCHValue(ch.Tag)
+			return err
+		}, 3)
+		return
 	}
 	return nil, lang.Error(lang.ErrDeviceNotExists)
 }
@@ -190,7 +218,15 @@ func (runner *Runner) GetValue(ch *json_rpc.CH) (interface{}, error) {
 func (runner *Runner) SetValue(val *json_rpc.Value) error {
 	if v, ok := runner.adapters.Load(val.UID); ok {
 		adapter := v.(*Adapter)
-		return adapter.device.SetCHValue(val.Tag, val.V)
+
+		var err error
+
+		runner.retryWhenNetworkTimeout(func() error {
+			err = adapter.device.SetCHValue(val.Tag, val.V)
+			return err
+		}, 3)
+
+		return err
 	}
 	return lang.Error(lang.ErrDeviceNotExists)
 }
@@ -198,7 +234,17 @@ func (runner *Runner) SetValue(val *json_rpc.Value) error {
 func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, error) {
 	if v, ok := runner.adapters.Load(uid); ok {
 		adapter := v.(*Adapter)
-		r, err := adapter.device.GetRealTimeData()
+
+		var (
+			r   *realtime.Data
+			err error
+		)
+
+		runner.retryWhenNetworkTimeout(func() error {
+			r, err = adapter.device.GetRealTimeData()
+			return err
+		}, 3)
+
 		if err != nil {
 			return nil, err
 		}
@@ -473,10 +519,6 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 
 				err := runner.gatherData(adapter)
 				if err != nil {
-					if e, ok := err.(net.Error); ok && e.Temporary() {
-						continue
-					}
-
 					adapter.logger.Errorln(err)
 					device.Close()
 
@@ -492,7 +534,15 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 
 func (runner *Runner) gatherData(adapter *Adapter) error {
 	client := adapter.device
-	data, err := client.GetRealTimeData()
+	var (
+		data *realtime.Data
+		err  error
+	)
+	runner.retryWhenNetworkTimeout(func() error {
+		data, err = client.GetRealTimeData()
+		return err
+	}, 3)
+
 	if err != nil {
 		return err
 	}
