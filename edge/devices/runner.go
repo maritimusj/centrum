@@ -4,11 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"sync"
 	"time"
-
-	"github.com/maritimusj/centrum/edge/devices/realtime"
 
 	"github.com/maritimusj/centrum/edge/logStore"
 
@@ -54,35 +51,27 @@ func (runner *Runner) GetBaseInfo(uid string) (map[string]interface{}, error) {
 		adapter := v.(*Adapter)
 
 		baseInfo := make(map[string]interface{})
-		var err error
-		runner.retryWhenNetworkTimeout(func() error {
-			var model *ep6v2.Model
-			model, err = adapter.device.GetModel()
-			if err != nil {
-				return err
-			}
 
-			baseInfo["model"] = model.ID
-			baseInfo["version"] = model.Version
-			baseInfo["title"] = model.Title
-
-			addr, err := adapter.device.GetAddr()
-			if err != nil {
-				return err
-			}
-
-			baseInfo["addr"] = addr.Ip.String() + "/" + addr.Mask.String()
-			baseInfo["mac"] = addr.Mac.String()
-
-			baseInfo["status"] = map[string]interface{}{
-				"index": adapter.device.GetStatus(),
-				"title": adapter.device.GetStatusTitle(),
-			}
-			return nil
-		}, 3)
-
+		model, err := adapter.device.GetModel()
 		if err != nil {
 			return nil, err
+		}
+
+		baseInfo["model"] = model.ID
+		baseInfo["version"] = model.Version
+		baseInfo["title"] = model.Title
+
+		addr, err := adapter.device.GetAddr()
+		if err != nil {
+			return nil, err
+		}
+
+		baseInfo["addr"] = addr.Ip.String() + "/" + addr.Mask.String()
+		baseInfo["mac"] = addr.Mac.String()
+
+		baseInfo["status"] = map[string]interface{}{
+			"index": adapter.device.GetStatus(),
+			"title": adapter.device.GetStatusTitle(),
 		}
 
 		return baseInfo, nil
@@ -187,30 +176,10 @@ func (runner *Runner) Active(conf *json_rpc.Conf) error {
 	return nil
 }
 
-func (runner *Runner) retryWhenNetworkTimeout(fn func() error, retries int) {
-	if fn != nil {
-		var err error
-		for i := 0; i < retries; i++ {
-			err = fn()
-			if err != nil {
-				if e, ok := err.(net.Error); ok && (e.Temporary() || e.Timeout()) {
-					time.Sleep(time.Duration(i+1) * time.Second)
-					continue
-				}
-			}
-			break
-		}
-	}
-}
-
 func (runner *Runner) GetValue(ch *json_rpc.CH) (retVal interface{}, err error) {
 	if v, ok := runner.adapters.Load(ch.UID); ok {
 		adapter := v.(*Adapter)
-		runner.retryWhenNetworkTimeout(func() error {
-			retVal, err = adapter.device.GetCHValue(ch.Tag)
-			return err
-		}, 3)
-		return
+		return adapter.device.GetCHValue(ch.Tag)
 	}
 	return nil, lang.Error(lang.ErrDeviceNotExists)
 }
@@ -218,15 +187,7 @@ func (runner *Runner) GetValue(ch *json_rpc.CH) (retVal interface{}, err error) 
 func (runner *Runner) SetValue(val *json_rpc.Value) error {
 	if v, ok := runner.adapters.Load(val.UID); ok {
 		adapter := v.(*Adapter)
-
-		var err error
-
-		runner.retryWhenNetworkTimeout(func() error {
-			err = adapter.device.SetCHValue(val.Tag, val.V)
-			return err
-		}, 3)
-
-		return err
+		return adapter.device.SetCHValue(val.Tag, val.V)
 	}
 	return lang.Error(lang.ErrDeviceNotExists)
 }
@@ -234,17 +195,7 @@ func (runner *Runner) SetValue(val *json_rpc.Value) error {
 func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, error) {
 	if v, ok := runner.adapters.Load(uid); ok {
 		adapter := v.(*Adapter)
-
-		var (
-			r   *realtime.Data
-			err error
-		)
-
-		runner.retryWhenNetworkTimeout(func() error {
-			r, err = adapter.device.GetRealTimeData()
-			return err
-		}, 3)
-
+		r, err := adapter.device.GetRealTimeData()
 		if err != nil {
 			return nil, err
 		}
@@ -534,15 +485,8 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 
 func (runner *Runner) gatherData(adapter *Adapter) error {
 	client := adapter.device
-	var (
-		data *realtime.Data
-		err  error
-	)
-	runner.retryWhenNetworkTimeout(func() error {
-		data, err = client.GetRealTimeData()
-		return err
-	}, 3)
 
+	data, err := client.GetRealTimeData()
 	if err != nil {
 		return err
 	}
