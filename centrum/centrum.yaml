@@ -2,21 +2,18 @@ name: centrum
 title: chuanyan centrum service
 desc: chuanyan centrum service
 entries:
-  -
-    dir: {_INSTALL_DIR_}influxdb-1.7.6-1
+  - dir: {_INSTALL_DIR_}influxdb-1.7.6-1
     exec: {_INSTALL_DIR_}influxdb-1.7.6-1\influxd.exe
     args:
       - run
       - -config
       - {_INSTALL_DIR_}influxdb-1.7.6-1\influxdb.conf
-  -
-    dir: {_INSTALL_DIR_}
+  - dir: {_INSTALL_DIR_}
     exec: {_INSTALL_DIR_}gate.exe
     args:
       - -lang
       - 1
-  -
-    dir: {_INSTALL_DIR_}
+  - dir: {_INSTALL_DIR_}
     exec: {_INSTALL_DIR_}edge.exe
     args:
       - -lang

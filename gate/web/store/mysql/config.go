@@ -1,11 +1,12 @@
 package mysqlStore
 
 import (
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/dirty"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"time"
 )
 
 type Config struct {
@@ -64,7 +65,7 @@ func (config *Config) SetOption(key string, value interface{}) error {
 
 		return nil
 	}
-	return lang.Error(lang.ErrDeviceNotFound)
+	return lang.ErrDeviceNotFound.Error()
 }
 
 func (config *Config) CreatedAt() time.Time {
@@ -76,7 +77,7 @@ func (config *Config) CreatedAt() time.Time {
 
 func (config *Config) Destroy() error {
 	if config == nil {
-		return lang.Error(lang.ErrConfigNotFound)
+		return lang.ErrConfigNotFound.Error()
 	}
 
 	return config.store.RemoveConfig(config.id)
@@ -92,5 +93,5 @@ func (config *Config) Save() error {
 		}
 		return nil
 	}
-	return lang.Error(lang.ErrConfigNotFound)
+	return lang.ErrConfigNotFound.Error()
 }

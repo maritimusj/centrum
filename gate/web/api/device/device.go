@@ -101,7 +101,7 @@ func List(ctx iris.Context) hero.Result {
 				"title": title,
 			}
 			if index == int(edgeLang.Connected) {
-				status["from"] = from.Format("2006-01-02 15:04:05")
+				status["from"] = from.Format(lang.DatetimeFormatterStr.Str())
 				status["duration"] = strings.ReplaceAll(durafmt.Parse(time.Now().Sub(from)).LimitFirstN(2).String(), " ", "")
 			}
 			brief["edge"] = iris.Map{
@@ -123,7 +123,7 @@ func List(ctx iris.Context) hero.Result {
 
 			_, total, err = s.GetLastUnconfirmedAlarm(params...)
 			if err != nil {
-				if err != lang.Error(lang.ErrAlarmNotFound) {
+				if err != lang.ErrAlarmNotFound.Error() {
 					return err
 				}
 			}
@@ -257,7 +257,7 @@ func MultiStatus(ctx iris.Context) hero.Result {
 				if !app.Allow(admin, device, resource.View) {
 					result = append(result, iris.Map{
 						"id":    id,
-						"error": lang.Error(lang.ErrNoPermission).Error(),
+						"error": lang.ErrNoPermission.Error(),
 					})
 				} else {
 					index, title, from := global.GetDeviceStatus(device)
@@ -267,7 +267,7 @@ func MultiStatus(ctx iris.Context) hero.Result {
 						"title": title,
 					}
 					if index == int(edgeLang.Connected) {
-						status["from"] = from.Format("2006-01-02 15:04:05")
+						status["from"] = from.Format(lang.DatetimeFormatterStr.Str())
 						status["duration"] = strings.ReplaceAll(durafmt.Parse(time.Now().Sub(from)).LimitFirstN(2).String(), " ", "")
 					}
 					status["perf"] = global.GetDevicePerf(device)

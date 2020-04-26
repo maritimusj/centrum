@@ -3,19 +3,28 @@ package lang
 import (
 	"errors"
 	"fmt"
-	"github.com/maritimusj/centrum/synchronized"
 	"runtime"
+
+	"github.com/maritimusj/centrum/synchronized"
 )
 
 var (
 	errMap    = map[string]error{}
-	errStrMap = map[int]map[ErrorCode]string{}
+	errStrMap = map[int]map[ErrIndex]string{}
 )
 
-type ErrorCode int
+type ErrIndex int
+
+func (index ErrIndex) Str(params ...interface{}) string {
+	return ErrorStr(index, params...)
+}
+
+func (index ErrIndex) Error(params ...interface{}) error {
+	return Error(index, params...)
+}
 
 const (
-	Ok ErrorCode = iota
+	Ok ErrIndex = iota
 	ErrUnknown
 	ErrUnknownLang
 	ErrInternal
@@ -24,11 +33,11 @@ const (
 	ErrDeviceNotConnected
 )
 
-func ErrorStr(code ErrorCode, params ...interface{}) string {
+func ErrorStr(index ErrIndex, params ...interface{}) string {
 	str := <-synchronized.Do("error.str", func() interface{} {
 		var str string
 		if region, ok := errStrMap[regionIndex]; ok {
-			if str, ok = region[code]; !ok {
+			if str, ok = region[index]; !ok {
 				str = region[ErrUnknown]
 			}
 		} else {
@@ -39,11 +48,11 @@ func ErrorStr(code ErrorCode, params ...interface{}) string {
 	return str.(string)
 }
 
-func Error(code ErrorCode, params ...interface{}) error {
+func Error(index ErrIndex, params ...interface{}) error {
 	err := <-synchronized.Do("error.str", func() interface{} {
 		var str string
 		if region, ok := errStrMap[regionIndex]; ok {
-			if str, ok = region[code]; !ok {
+			if str, ok = region[index]; !ok {
 				str = region[ErrUnknown]
 			}
 		} else {

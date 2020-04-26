@@ -31,7 +31,7 @@ func (client *Client) Open(option map[string]interface{}) error {
 		client.db = c
 		return nil
 	}
-	return lang.Error(lang.ErrInvalidDBConnStr)
+	return lang.ErrInvalidDBConnStr.Error()
 }
 
 func (client *Client) queryData(dbName string, cmd string) ([]db.Result, error) {

@@ -105,12 +105,12 @@ func main() {
 
 	if *flushDB {
 		code := util.RandStr(4, util.RandNum)
-		fmt.Print(lang.Str(lang.ConfirmAdminPassword, code))
+		fmt.Print(lang.ConfirmAdminPassword.Str(code))
 
 		var confirm string
 		_, _ = fmt.Scanln(&confirm)
 		if confirm != code {
-			log.Fatal(lang.Error(lang.ErrConfirmCodeWrong))
+			log.Fatal(lang.ErrConfirmCodeWrong.Error())
 		} else {
 			err := webApp.FlushDB()
 			if err != nil {

@@ -17,7 +17,7 @@ var (
 		lang.InfluxDBError:       "InfluxDBError",
 	}
 
-	errStrMap = map[lang.ErrorCode]string{
+	errStrMap = map[lang.ErrIndex]string{
 		lang.Ok:                    "Ok",
 		lang.ErrDeviceNotExists:    "device does not exists!",
 		lang.ErrDeviceNotConnected: "device does not connected！",

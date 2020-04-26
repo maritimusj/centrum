@@ -77,7 +77,7 @@ func Allow(user model.User, res model.Resource, action resource.Action) bool {
 	}
 
 	allow, err := user.IsAllow(res, action)
-	if err != nil && err == lang.Error(lang.ErrPolicyNotFound) {
+	if err != nil && err == lang.ErrPolicyNotFound.Error() {
 		return Config.DefaultEffect() == resource.Allow
 	}
 	return allow
@@ -159,7 +159,7 @@ func HostInfo() interface{} {
 			return map[string]interface{}{
 				"hostname":        data.Hostname,
 				"uptime":          data.Uptime,
-				"bootTime":        bootTime.Format("2006-01-02 15:04:05"),
+				"bootTime":        bootTime.Format(lang.DatetimeFormatterStr.Str()),
 				"os":              data.OS,
 				"platform":        data.Platform,
 				"platformVersion": data.PlatformVersion,
@@ -355,7 +355,7 @@ func Start(ctx context.Context, logLevel string) error {
 		defaultOrg := Config.DefaultOrganization()
 		org, err := s.GetOrganization(defaultOrg)
 		if err != nil {
-			if err != lang.Error(lang.ErrOrganizationNotFound) {
+			if err != lang.ErrOrganizationNotFound.Error() {
 				return err
 			}
 			org, err = s.CreateOrganization(defaultOrg, defaultOrg)
@@ -363,7 +363,7 @@ func Start(ctx context.Context, logLevel string) error {
 				return err
 			}
 
-			_, err = s.CreateGroup(org, lang.Str(lang.DefaultGroupTitle), lang.Str(lang.DefaultGroupDesc), 0)
+			_, err = s.CreateGroup(org, lang.DefaultGroupTitle.Str(), lang.DefaultGroupDesc.Str(), 0)
 			if err != nil {
 				return err
 			}
@@ -377,7 +377,7 @@ func Start(ctx context.Context, logLevel string) error {
 		//初始化系统角色
 		_, err = s.GetRole(lang.RoleSystemAdminName)
 		if err != nil {
-			if err != lang.Error(lang.ErrRoleNotFound) {
+			if err != lang.ErrRoleNotFound.Error() {
 				return err
 			}
 			err = s.InitDefaultRoles(defaultOrg)
@@ -390,7 +390,7 @@ func Start(ctx context.Context, logLevel string) error {
 		defaultUserName := Config.DefaultUserName()
 		_, err = s.GetUser(defaultUserName)
 		if err != nil {
-			if err != lang.Error(lang.ErrUserNotFound) {
+			if err != lang.ErrUserNotFound.Error() {
 				return err
 			}
 			_, err = s.CreateUser(defaultOrg, defaultUserName, []byte(defaultUserName), lang.RoleSystemAdminName)
@@ -424,7 +424,7 @@ func IsRegistered() bool {
 
 func SaveRegisterInfo(owner, code string) error {
 	if !register.Verify(owner, code) {
-		return lang.Error(lang.ErrInvalidRegCode)
+		return lang.ErrInvalidRegCode.Error()
 	}
 
 	_ = Config.BaseConfig.SetOption(config.SysRegOwnerPath, owner)

@@ -103,7 +103,7 @@ func List(ctx iris.Context) hero.Result {
 
 			_, total, err = s.GetLastUnconfirmedAlarm(params...)
 			if err != nil {
-				if err != lang.Error(lang.ErrAlarmNotFound) {
+				if err != lang.ErrAlarmNotFound.Error() {
 					return err
 				}
 			}

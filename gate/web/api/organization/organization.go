@@ -88,10 +88,10 @@ func Create(ctx iris.Context) hero.Result {
 				go admin.Logger().WithFields(logrus.Fields{
 					"name":  form.Name,
 					"title": form.Title,
-				}).Info(lang.Str(lang.CreateOrgFail, form.Name, form.Title, err))
+				}).Info(lang.CreateOrgFail.Str(form.Name, form.Title, err))
 				return err
 			} else {
-				go admin.Logger().WithFields(logrus.Fields(org.Brief())).Info(lang.Str(lang.CreateOrgOk, org.Title(), org.Name()))
+				go admin.Logger().WithFields(logrus.Fields(org.Brief())).Info(lang.CreateOrgOk.Str(org.Title(), org.Name()))
 			}
 
 			return org.Simple()

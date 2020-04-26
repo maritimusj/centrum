@@ -106,7 +106,7 @@ func (p *Policy) Brief() model.Map {
 		},
 		"action":     p.action,
 		"effect":     p.effect,
-		"created_at": p.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": p.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 }
 
@@ -122,6 +122,6 @@ func (p *Policy) Detail() model.Map {
 		},
 		"action":     p.action,
 		"effect":     p.effect,
-		"created_at": p.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": p.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 }

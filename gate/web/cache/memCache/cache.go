@@ -139,7 +139,7 @@ func (c *cache) LoadConfig(config interface{}) (model.Config, error) {
 			return u, nil
 		}
 	}
-	return nil, lang.Error(lang.ErrCacheNotFound)
+	return nil, lang.ErrCacheNotFound.Error()
 }
 
 func (c *cache) LoadOrganization(o interface{}) (model.Organization, error) {
@@ -148,7 +148,7 @@ func (c *cache) LoadOrganization(o interface{}) (model.Organization, error) {
 			return u, nil
 		}
 	}
-	return nil, lang.Error(lang.ErrCacheNotFound)
+	return nil, lang.ErrCacheNotFound.Error()
 }
 
 func (c *cache) LoadUser(u interface{}) (model.User, error) {
@@ -157,7 +157,7 @@ func (c *cache) LoadUser(u interface{}) (model.User, error) {
 			return u, nil
 		}
 	}
-	return nil, lang.Error(lang.ErrCacheNotFound)
+	return nil, lang.ErrCacheNotFound.Error()
 }
 
 func (c *cache) LoadRole(r interface{}) (model.Role, error) {
@@ -166,7 +166,7 @@ func (c *cache) LoadRole(r interface{}) (model.Role, error) {
 			return u, nil
 		}
 	}
-	return nil, lang.Error(lang.ErrCacheNotFound)
+	return nil, lang.ErrCacheNotFound.Error()
 }
 
 func (c *cache) LoadPolicy(p interface{}) (model.Policy, error) {
@@ -175,7 +175,7 @@ func (c *cache) LoadPolicy(p interface{}) (model.Policy, error) {
 			return u, nil
 		}
 	}
-	return nil, lang.Error(lang.ErrCacheNotFound)
+	return nil, lang.ErrCacheNotFound.Error()
 }
 
 func (c *cache) LoadGroup(g interface{}) (model.Group, error) {
@@ -184,7 +184,7 @@ func (c *cache) LoadGroup(g interface{}) (model.Group, error) {
 			return u, nil
 		}
 	}
-	return nil, lang.Error(lang.ErrCacheNotFound)
+	return nil, lang.ErrCacheNotFound.Error()
 }
 
 func (c *cache) LoadDevice(device interface{}) (model.Device, error) {
@@ -193,7 +193,7 @@ func (c *cache) LoadDevice(device interface{}) (model.Device, error) {
 			return u, nil
 		}
 	}
-	return nil, lang.Error(lang.ErrCacheNotFound)
+	return nil, lang.ErrCacheNotFound.Error()
 }
 
 func (c *cache) LoadMeasure(m interface{}) (model.Measure, error) {
@@ -202,7 +202,7 @@ func (c *cache) LoadMeasure(m interface{}) (model.Measure, error) {
 			return u, nil
 		}
 	}
-	return nil, lang.Error(lang.ErrCacheNotFound)
+	return nil, lang.ErrCacheNotFound.Error()
 }
 
 func (c *cache) LoadEquipment(e interface{}) (model.Equipment, error) {
@@ -211,7 +211,7 @@ func (c *cache) LoadEquipment(e interface{}) (model.Equipment, error) {
 			return u, nil
 		}
 	}
-	return nil, lang.Error(lang.ErrCacheNotFound)
+	return nil, lang.ErrCacheNotFound.Error()
 }
 
 func (c *cache) LoadState(state interface{}) (model.State, error) {
@@ -220,7 +220,7 @@ func (c *cache) LoadState(state interface{}) (model.State, error) {
 			return u, nil
 		}
 	}
-	return nil, lang.Error(lang.ErrCacheNotFound)
+	return nil, lang.ErrCacheNotFound.Error()
 }
 
 func (c *cache) LoadApiResource(api interface{}) (model.ApiResource, error) {
@@ -229,7 +229,7 @@ func (c *cache) LoadApiResource(api interface{}) (model.ApiResource, error) {
 			return u, nil
 		}
 	}
-	return nil, lang.Error(lang.ErrCacheNotFound)
+	return nil, lang.ErrCacheNotFound.Error()
 }
 
 func (c *cache) LoadAlarm(alarm interface{}) (model.Alarm, error) {
@@ -238,7 +238,7 @@ func (c *cache) LoadAlarm(alarm interface{}) (model.Alarm, error) {
 			return u, nil
 		}
 	}
-	return nil, lang.Error(lang.ErrCacheNotFound)
+	return nil, lang.ErrCacheNotFound.Error()
 }
 func (c *cache) LoadComment(comment interface{}) (model.Comment, error) {
 	if v, ok := c.client.Get(prefixComment + c.getUID(comment)); ok {
@@ -246,5 +246,5 @@ func (c *cache) LoadComment(comment interface{}) (model.Comment, error) {
 			return u, nil
 		}
 	}
-	return nil, lang.Error(lang.ErrCommentNotFound)
+	return nil, lang.ErrCommentNotFound.Error()
 }

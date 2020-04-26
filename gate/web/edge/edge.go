@@ -136,13 +136,13 @@ func Invoke(url, cmd string, request interface{}) (*Result, error) {
 	message, err := json.EncodeClientRequest(cmd, request)
 	if err != nil {
 		log.Errorln("[invoke]: ", err)
-		return nil, lang.Error(lang.ErrEdgeInvokeFail, 9)
+		return nil, lang.ErrEdgeInvokeFail.Error(9)
 	}
 
 	resp, err := http.Post(url, "application/json", bytes.NewReader(message))
 	if err != nil {
 		log.Errorln("[invoke]: ", err)
-		return nil, lang.Error(lang.ErrEdgeInvokeFail, 10)
+		return nil, lang.ErrEdgeInvokeFail.Error(10)
 	}
 
 	defer func() {
@@ -155,20 +155,20 @@ func Invoke(url, cmd string, request interface{}) (*Result, error) {
 		data, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Errorf("[invoke] %s, result: %s", err, string(data))
-			//return nil, lang.Error(lang.ErrEdgeInvokeFail, 11)
+			//return nil, lang.ErrEdgeInvokeFail, 11.Error()
 		}
 
 		err = json.DecodeClientResponse(bytes.NewReader(data), &reply)
 		if err != nil {
 			log.Errorln("[invoke]: ", err)
-			//return nil, lang.Error(lang.ErrEdgeInvokeFail, 12)
+			//return nil, lang.ErrEdgeInvokeFail, 12.Error()
 		}
 
 	} else {
 		err = json.DecodeClientResponse(resp.Body, &reply)
 		if err != nil {
 			log.Errorln("[invoke]: ", err)
-			//return nil, lang.Error(lang.ErrEdgeInvokeFail, 13)
+			//return nil, lang.ErrEdgeInvokeFail, 13.Error()
 		}
 	}
 
@@ -184,7 +184,7 @@ func Restart(url string) {
 func GetBaseInfo(uid string) (map[string]interface{}, error) {
 	balance := defaultEdgesMap.GetBalanceByDeviceUID(uid)
 	if balance == nil {
-		return map[string]interface{}{}, lang.Error(lang.ErrDeviceNotExistsOrActive)
+		return map[string]interface{}{}, lang.ErrDeviceNotExistsOrActive.Error()
 	}
 
 	if e := balance.Get(uid, "baseInfo"); !e.IsExpired() {
@@ -233,7 +233,7 @@ func Active(conf *Conf) error {
 		return err
 	}
 
-	return lang.Error(lang.ErrNoEdgeAvailable)
+	return lang.ErrNoEdgeAvailable.Error()
 }
 
 //SetValue 设置设备指定点位的值
@@ -250,7 +250,7 @@ func SetValue(uid string, tag string, val interface{}) error {
 		return err
 	}
 
-	return lang.Error(lang.ErrDeviceNotExistsOrActive)
+	return lang.ErrDeviceNotExistsOrActive.Error()
 }
 
 //GetValue 获取设备指定点位的值
@@ -276,7 +276,7 @@ func GetValue(uid string, tag string) (map[string]interface{}, error) {
 		return data, nil
 	}
 
-	return map[string]interface{}{}, lang.Error(lang.ErrDeviceNotExistsOrActive)
+	return map[string]interface{}{}, lang.ErrDeviceNotExistsOrActive.Error()
 }
 
 //GetRealtimeData 获取指定设备的实时数据
@@ -298,5 +298,5 @@ func GetRealtimeData(uid string) ([]interface{}, error) {
 		return data, nil
 	}
 
-	return []interface{}{}, lang.Error(lang.ErrDeviceNotExistsOrActive)
+	return []interface{}{}, lang.ErrDeviceNotExistsOrActive.Error()
 }

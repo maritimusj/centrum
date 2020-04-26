@@ -110,7 +110,7 @@ func (c *Comment) Save() error {
 
 func (c *Comment) Destroy() error {
 	if c == nil {
-		return lang.Error(lang.ErrCommentNotFound)
+		return lang.ErrCommentNotFound.Error()
 	}
 	comments, _, err := c.store.GetCommentList(nil, 0, helper.Parent(c.id))
 	if err != nil {
@@ -152,7 +152,7 @@ func (c *Comment) SetOption(path string, value interface{}) error {
 		return nil
 	}
 
-	return lang.Error(lang.ErrDeviceNotFound)
+	return lang.ErrDeviceNotFound.Error()
 }
 
 func (c *Comment) Simple() model.Map {
@@ -165,7 +165,7 @@ func (c *Comment) Simple() model.Map {
 		"parent":     c.parentID,
 		"user":       c.userID,
 		"comment":    c.Option(),
-		"created_at": c.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": c.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 }
 
@@ -179,7 +179,7 @@ func (c *Comment) Brief() model.Map {
 		"alarm":      c.refID,
 		"parent":     c.parentID,
 		"comment":    c.Option(),
-		"created_at": c.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": c.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 	if user != nil {
 		brief["user"] = user.Simple()
@@ -197,7 +197,7 @@ func (c *Comment) Detail() model.Map {
 		"alarm":      c.refID,
 		"parent":     c.parentID,
 		"comment":    c.Option(),
-		"created_at": c.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": c.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 	if user != nil {
 		detail["user"] = user.Simple()

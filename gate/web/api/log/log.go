@@ -17,31 +17,31 @@ func Level() hero.Result {
 		return []iris.Map{
 			{
 				"id":    "trace",
-				"title": lang.Str(lang.LogTrace),
+				"title": lang.LogTrace.Str(),
 			},
 			{
 				"id":    "debug",
-				"title": lang.Str(lang.LogDebug),
+				"title": lang.LogDebug.Str(),
 			},
 			{
 				"id":    "info",
-				"title": lang.Str(lang.LogInfo),
+				"title": lang.LogInfo.Str(),
 			},
 			{
 				"id":    "warning",
-				"title": lang.Str(lang.LogWarning),
+				"title": lang.LogWarning.Str(),
 			},
 			{
 				"id":    "error",
-				"title": lang.Str(lang.LogError),
+				"title": lang.LogError.Str(),
 			},
 			{
 				"id":    "fatal",
-				"title": lang.Str(lang.LogFatal),
+				"title": lang.LogFatal.Str(),
 			},
 			{
 				"id":    "panic",
-				"title": lang.Str(lang.LogPanic),
+				"title": lang.LogPanic.Str(),
 			},
 		}
 	})
@@ -116,6 +116,6 @@ func DeleteLog(ctx iris.Context, orgID int64, src string) interface{} {
 		return err
 	}
 
-	log.WithField("src", logStore.SystemLog).Info(lang.Str(lang.LogDeletedByUser, admin.Name()))
+	log.WithField("src", logStore.SystemLog).Info(lang.LogDeletedByUser.Str(admin.Name()))
 	return lang.Ok
 }

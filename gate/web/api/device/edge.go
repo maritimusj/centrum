@@ -74,7 +74,7 @@ func Data(deviceID int64, ctx iris.Context) hero.Result {
 		data, err := edge.GetRealTimeData(device)
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok {
-				return lang.Error(lang.ErrNetworkFail, netErr.Error())
+				return lang.ErrNetworkFail.Error(netErr.Error())
 			}
 			return err
 		}

@@ -52,9 +52,9 @@ func eventUserCreated(userID int64, newUserID int64) {
 		return
 	}
 
-	log.WithField("src", logStore.SystemLog).Info(lang.Str(lang.AdminCreateUserOk, adminUser.Name(), user.Title()))
-	adminUser.Logger().Info(lang.Str(lang.AdminCreateUserOk, adminUser.Name(), user.Title()))
-	user.Logger().Info(lang.Str(lang.AdminCreateUserOk, adminUser.Name(), user.Title()))
+	log.WithField("src", logStore.SystemLog).Info(lang.AdminCreateUserOk.Str(adminUser.Name(), user.Title()))
+	adminUser.Logger().Info(lang.AdminCreateUserOk.Str(adminUser.Name(), user.Title()))
+	user.Logger().Info(lang.AdminCreateUserOk.Str(adminUser.Name(), user.Title()))
 }
 
 func eventUserUpdated(userID int64, newUserID int64) {
@@ -69,9 +69,9 @@ func eventUserUpdated(userID int64, newUserID int64) {
 		return
 	}
 
-	log.WithField("src", logStore.SystemLog).Info(lang.Str(lang.AdminUpdateUserOk, adminUser.Name(), user.Title()))
-	adminUser.Logger().Info(lang.Str(lang.AdminUpdateUserOk, adminUser.Name(), user.Title()))
-	user.Logger().Info(lang.Str(lang.AdminUpdateUserOk, adminUser.Name(), user.Title()))
+	log.WithField("src", logStore.SystemLog).Info(lang.AdminUpdateUserOk.Str(adminUser.Name(), user.Title()))
+	adminUser.Logger().Info(lang.AdminUpdateUserOk.Str(adminUser.Name(), user.Title()))
+	user.Logger().Info(lang.AdminUpdateUserOk.Str(adminUser.Name(), user.Title()))
 }
 
 func eventUserDeleted(userID int64, name string) {
@@ -81,8 +81,8 @@ func eventUserDeleted(userID int64, name string) {
 		return
 	}
 
-	log.WithField("src", logStore.SystemLog).Warn(lang.Str(lang.AdminDeleteUserOk, adminUser.Name(), name))
-	adminUser.Logger().Warn(lang.Str(lang.AdminDeleteUserOk, adminUser.Name(), name))
+	log.WithField("src", logStore.SystemLog).Warn(lang.AdminDeleteUserOk.Str(adminUser.Name(), name))
+	adminUser.Logger().Warn(lang.AdminDeleteUserOk.Str(adminUser.Name(), name))
 }
 
 func eventDeviceCreated(userID int64, deviceID int64) {
@@ -102,9 +102,9 @@ func eventDeviceCreated(userID int64, deviceID int64) {
 		log.Error("eventDeviceCreated: active device: ", err)
 	}
 
-	log.WithField("src", logStore.SystemLog).Info(lang.Str(lang.UserCreateDeviceOk, user.Name(), device.Title()))
-	user.Logger().Info(lang.Str(lang.UserCreateDeviceOk, user.Name(), device.Title()))
-	device.Logger().Info(lang.Str(lang.UserCreateDeviceOk, user.Name(), device.Title()))
+	log.WithField("src", logStore.SystemLog).Info(lang.UserCreateDeviceOk.Str(user.Name(), device.Title()))
+	user.Logger().Info(lang.UserCreateDeviceOk.Str(user.Name(), device.Title()))
+	device.Logger().Info(lang.UserCreateDeviceOk.Str(user.Name(), device.Title()))
 }
 
 func eventDeviceUpdated(userID int64, deviceID int64) {
@@ -124,9 +124,9 @@ func eventDeviceUpdated(userID int64, deviceID int64) {
 		log.Error("eventDeviceUpdated: active device: ", err)
 	}
 
-	log.WithField("src", logStore.SystemLog).Info(lang.Str(lang.UserUpdateDeviceOk, user.Name(), device.Title()))
-	user.Logger().Info(lang.Str(lang.UserUpdateDeviceOk, user.Name(), device.Title()))
-	device.Logger().Info(lang.Str(lang.UserUpdateDeviceOk, user.Name(), device.Title()))
+	log.WithField("src", logStore.SystemLog).Info(lang.UserUpdateDeviceOk.Str(user.Name(), device.Title()))
+	user.Logger().Info(lang.UserUpdateDeviceOk.Str(user.Name(), device.Title()))
+	device.Logger().Info(lang.UserUpdateDeviceOk.Str(user.Name(), device.Title()))
 }
 
 func eventDeviceDeleted(userID int64, id int64, uid string, title string) {
@@ -138,8 +138,8 @@ func eventDeviceDeleted(userID int64, id int64, uid string, title string) {
 
 	edge.Remove(strconv.FormatInt(id, 10))
 
-	log.WithField("src", logStore.SystemLog).Warn(lang.Str(lang.UserDeleteDeviceOk, user.Name(), title))
-	user.Logger().Warn(lang.Str(lang.UserDeleteDeviceOk, user.Name(), title))
+	log.WithField("src", logStore.SystemLog).Warn(lang.UserDeleteDeviceOk.Str(user.Name(), title))
+	user.Logger().Warn(lang.UserDeleteDeviceOk.Str(user.Name(), title))
 }
 
 func eventEquipmentCreated(userID int64, equipmentID int64) {
@@ -154,9 +154,9 @@ func eventEquipmentCreated(userID int64, equipmentID int64) {
 		return
 	}
 
-	log.WithField("src", logStore.SystemLog).Info(lang.Str(lang.UserCreateEquipmentOk, user.Name(), equipment.Title()))
-	user.Logger().Info(lang.Str(lang.UserCreateEquipmentOk, user.Name(), equipment.Title()))
-	equipment.Logger().Info(lang.Str(lang.UserCreateEquipmentOk, user.Name(), equipment.Title()))
+	log.WithField("src", logStore.SystemLog).Info(lang.UserCreateEquipmentOk.Str(user.Name(), equipment.Title()))
+	user.Logger().Info(lang.UserCreateEquipmentOk.Str(user.Name(), equipment.Title()))
+	equipment.Logger().Info(lang.UserCreateEquipmentOk.Str(user.Name(), equipment.Title()))
 }
 
 func eventEquipmentUpdated(userID int64, equipmentID int64) {
@@ -171,9 +171,9 @@ func eventEquipmentUpdated(userID int64, equipmentID int64) {
 		return
 	}
 
-	log.WithField("src", logStore.SystemLog).Info(lang.Str(lang.UserUpdateEquipmentOk, user.Name(), equipment.Title()))
-	user.Logger().Info(lang.Str(lang.UserUpdateEquipmentOk, user.Name(), equipment.Title()))
-	equipment.Logger().Info(lang.Str(lang.UserUpdateEquipmentOk, user.Name(), equipment.Title()))
+	log.WithField("src", logStore.SystemLog).Info(lang.UserUpdateEquipmentOk.Str(user.Name(), equipment.Title()))
+	user.Logger().Info(lang.UserUpdateEquipmentOk.Str(user.Name(), equipment.Title()))
+	equipment.Logger().Info(lang.UserUpdateEquipmentOk.Str(user.Name(), equipment.Title()))
 }
 
 func eventEquipmentDeleted(userID int64, title string) {
@@ -183,6 +183,6 @@ func eventEquipmentDeleted(userID int64, title string) {
 		return
 	}
 
-	log.WithField("src", logStore.SystemLog).Warn(lang.Str(lang.UserDeleteEquipmentOk, user.Name(), title))
-	user.Logger().Warn(lang.Str(lang.UserDeleteEquipmentOk, user.Name(), title))
+	log.WithField("src", logStore.SystemLog).Warn(lang.UserDeleteEquipmentOk.Str(user.Name(), title))
+	user.Logger().Warn(lang.UserDeleteEquipmentOk.Str(user.Name(), title))
 }

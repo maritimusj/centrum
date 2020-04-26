@@ -62,10 +62,10 @@ func getEquipmentSimpleStatus(user model.User, equipment model.Equipment) map[st
 	_ = rangeEquipmentStates(user, equipment, func(device model.Device, measure model.Measure, state model.State) error {
 		if device == nil {
 			res["index"] = edgeLang.MalFunctioned
-			return lang.Error(lang.ErrDeviceNotFound)
+			return lang.ErrDeviceNotFound.Error()
 		} else if measure == nil {
 			res["index"] = edgeLang.MalFunctioned
-			return lang.Error(lang.ErrMeasureNotFound)
+			return lang.ErrMeasureNotFound.Error()
 		}
 		index, title, _ := global.GetDeviceStatus(device)
 		if index != int(edgeLang.Connected) {
@@ -111,7 +111,7 @@ func Status(equipmentID int64, ctx iris.Context) hero.Result {
 							"title": title,
 						}
 						if index == int(edgeLang.Connected) {
-							status["from"] = from.Format("2006-01-02 15:04:05")
+							status["from"] = from.Format(lang.DatetimeFormatterStr.Str())
 							status["duration"] = strings.ReplaceAll(durafmt.Parse(time.Now().Sub(from)).LimitFirstN(2).String(), " ", "")
 						}
 						dataMap["edge"] = map[string]interface{}{
@@ -126,9 +126,9 @@ func Status(equipmentID int64, ctx iris.Context) hero.Result {
 			}
 
 			if device == nil {
-				dataMap["error"] = lang.Error(lang.ErrDeviceNotFound)
+				dataMap["error"] = lang.ErrDeviceNotFound.Error()
 			} else if measure == nil {
-				dataMap["error"] = lang.Error(lang.ErrMeasureNotFound)
+				dataMap["error"] = lang.ErrMeasureNotFound.Error()
 			}
 
 			devices = append(devices, dataMap)
@@ -170,9 +170,9 @@ func Data(equipmentID int64, ctx iris.Context) hero.Result {
 			}
 
 			if device == nil {
-				dataMap["error"] = lang.Error(lang.ErrDeviceNotFound)
+				dataMap["error"] = lang.ErrDeviceNotFound.Error()
 			} else if measure == nil {
-				dataMap["error"] = lang.Error(lang.ErrMeasureNotFound)
+				dataMap["error"] = lang.ErrMeasureNotFound.Error()
 			}
 
 			if device != nil && measure != nil {
@@ -239,12 +239,12 @@ func Ctrl(ctx iris.Context) hero.Result {
 
 		measure := state.Measure()
 		if measure == nil {
-			return lang.Error(lang.ErrMeasureNotFound)
+			return lang.ErrMeasureNotFound.Error()
 		}
 
 		device := measure.Device()
 		if device == nil {
-			return lang.Error(lang.ErrDeviceNotFound)
+			return lang.ErrDeviceNotFound.Error()
 		}
 
 		err = edge.SetCHValue(device, measure.TagName(), form.Val)
@@ -289,12 +289,12 @@ func GetCHValue(ctx iris.Context) hero.Result {
 
 		measure := state.Measure()
 		if measure == nil {
-			return lang.Error(lang.ErrMeasureNotFound)
+			return lang.ErrMeasureNotFound.Error()
 		}
 
 		device := measure.Device()
 		if device == nil {
-			return lang.Error(lang.ErrDeviceNotFound)
+			return lang.ErrDeviceNotFound.Error()
 		}
 
 		val, err := edge.GetCHValue(device, measure.TagName())

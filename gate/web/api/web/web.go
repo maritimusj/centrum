@@ -92,11 +92,11 @@ func Login(ctx iris.Context) hero.Result {
 			return err
 		}
 		if !user.IsEnabled() {
-			log.WithField("src", logStore.SystemLog).Infoln(lang.Str(lang.UserLoginFailedCauseDisabled, user.Name(), ctx.RemoteAddr()))
+			log.WithField("src", logStore.SystemLog).Infoln(lang.UserLoginFailedCauseDisabled.Str(user.Name(), ctx.RemoteAddr()))
 			return lang.ErrUserDisabled
 		}
 		if !user.CheckPassword(form.Password) {
-			log.WithField("src", logStore.SystemLog).Infoln(lang.Str(lang.UserLoginFailedCausePasswordWrong, user.Name(), ctx.RemoteAddr()))
+			log.WithField("src", logStore.SystemLog).Infoln(lang.UserLoginFailedCausePasswordWrong.Str(user.Name(), ctx.RemoteAddr()))
 			return lang.ErrPasswordWrong
 		}
 
@@ -112,7 +112,7 @@ func Login(ctx iris.Context) hero.Result {
 		}
 
 		if !ctx.URLParamExists("refresh") {
-			log.WithField("src", logStore.SystemLog).Infoln(lang.Str(lang.UserLoginOk, user.Name(), ctx.RemoteAddr()))
+			log.WithField("src", logStore.SystemLog).Infoln(lang.UserLoginOk.Str(user.Name(), ctx.RemoteAddr()))
 		}
 
 		//注册用户，接收消息

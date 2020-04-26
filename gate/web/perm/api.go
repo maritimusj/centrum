@@ -22,7 +22,7 @@ func CheckApiPerm(ctx iris.Context) hero.Result {
 		router := ctx.GetCurrentRoute()
 		res, err := s.GetApiResource(router.Name())
 		if err != nil {
-			if err != lang.Error(lang.ErrApiResourceNotFound) {
+			if err != lang.ErrApiResourceNotFound.Error() {
 				return err
 			}
 			return util.If(app.Config.DefaultEffect() == resource.Allow, nil, lang.ErrNoPermission)

@@ -66,7 +66,7 @@ func createMsg(res model.Resource, data interface{}) {
 func Feedback(deviceID int64, ctx iris.Context) {
 	device, err := app.Store().GetDevice(deviceID)
 	if err != nil {
-		if err != lang.Error(lang.ErrDeviceNotFound) {
+		if err != lang.ErrDeviceNotFound.Error() {
 			log.Debugln("[Feedback 1]", err)
 		} else {
 			edge.Remove(strconv.FormatInt(deviceID, 10))
@@ -96,17 +96,17 @@ func Feedback(deviceID int64, ctx iris.Context) {
 				createMsg(device, iris.Map{
 					"level":      "warning",
 					"title":      device.Title(),
-					"message":    lang.Error(lang.ErrDeviceDisconnected).Error(),
+					"message":    lang.ErrDeviceDisconnected.Str(),
 					"created_at": util.FormatDatetime(time.Now()),
 				})
-				device.Logger().Warningln(lang.Error(lang.ErrDeviceDisconnected))
+				device.Logger().Warningln(lang.ErrDeviceDisconnected.Str())
 			}
 		} else if form.Status.Index == int(edgeLang.Connected) {
 			if org != int(edgeLang.Connected) {
 				createMsg(device, iris.Map{
 					"level":      "success",
 					"title":      device.Title(),
-					"message":    lang.Str(lang.DeviceConnected),
+					"message":    lang.DeviceConnected.Str(),
 					"created_at": util.FormatDatetime(time.Now()),
 				})
 			}
@@ -117,13 +117,13 @@ func Feedback(deviceID int64, ctx iris.Context) {
 	if form.Measure != nil {
 		measure, err := app.Store().GetMeasureFromTagName(device.GetID(), form.Measure.TagName)
 		if err != nil {
-			if err != lang.Error(lang.ErrMeasureNotFound) {
+			if err != lang.ErrMeasureNotFound.Error() {
 				log.Debugln("[Feedback 4]", err)
 				return
 			}
 			kind := resource.ParseMeasureKind(form.Measure.TagName)
 			if kind == resource.UnknownKind {
-				log.Debugln("[Feedback 5]", lang.Error(lang.ErrMeasureNotFound))
+				log.Debugln("[Feedback 5]", lang.ErrMeasureNotFound.Str())
 				return
 			}
 			measure, err = app.Store().CreateMeasure(device.GetID(), form.Measure.Title, form.Measure.TagName, kind)
@@ -151,7 +151,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 
 		alarm, _, err := app.Store().GetLastUnconfirmedAlarm(helper.Device(device.GetID()), helper.Measure(measure.GetID()))
 		if err != nil {
-			if err != lang.Error(lang.ErrAlarmNotFound) {
+			if err != lang.ErrAlarmNotFound.Error() {
 				log.Debugln("[Feedback 9]", err)
 				return
 			}

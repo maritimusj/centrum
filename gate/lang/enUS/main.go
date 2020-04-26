@@ -9,9 +9,10 @@ func init() {
 }
 
 var (
-	strMap = map[int]string{
-		lang.DefaultGroupTitle: "Default",
-		lang.DefaultGroupDesc:  "Default group",
+	strMap = map[lang.StrIndex]string{
+		lang.DatetimeFormatterStr: "2006-01-02 15:04:05",
+		lang.DefaultGroupTitle:    "Default",
+		lang.DefaultGroupDesc:     "Default group",
 
 		lang.ResourceDefault:   "default",
 		lang.ResourceApi:       "api",
@@ -327,7 +328,7 @@ var (
 		lang.DeviceConnected: "device connected.",
 	}
 
-	errStrMap = map[lang.ErrorCode]string{
+	errStrMap = map[lang.ErrIndex]string{
 		lang.Ok:                                 "Success",
 		lang.ErrUnknown:                         "Unknown error.",
 		lang.ErrUnknownLang:                     "Unknown language region.",

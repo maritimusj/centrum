@@ -17,10 +17,10 @@ var (
 )
 
 var (
-	langMap = map[int]map[int]string{}
+	langMap = map[int]map[StrIndex]string{}
 )
 
-func Register(region int, lang map[int]string, err map[ErrorCode]string) {
+func Register(region int, lang map[StrIndex]string, err map[ErrIndex]string) {
 	langMap[region] = lang
 	errStrMap[region] = err
 }
@@ -29,14 +29,14 @@ func Active(r int) {
 	regionIndex = r
 }
 
-func Lang() map[string]int {
-	return map[string]int{
-		"zhCN": ZhCN,
-		"enUS": EnUS,
-	}
-}
+//func Lang() map[string]int {
+//	return map[string]int{
+//		"zhCN": ZhCN,
+//		"enUS": EnUS,
+//	}
+//}
 
-func Str(index int, params ...interface{}) string {
+func Str(index StrIndex, params ...interface{}) string {
 	str := <-synchronized.Do("lang.str", func() interface{} {
 		if region, ok := langMap[regionIndex]; ok {
 			if str, ok := region[index]; ok {

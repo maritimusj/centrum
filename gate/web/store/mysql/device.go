@@ -50,7 +50,7 @@ func (d *Device) Organization() (model.Organization, error) {
 	if d != nil {
 		return d.store.GetOrganization(d.orgID)
 	}
-	return nil, lang.Error(lang.ErrDeviceNotFound)
+	return nil, lang.ErrDeviceNotFound.Error()
 }
 
 func (d *Device) UID() string {
@@ -108,7 +108,7 @@ func (d *Device) GetChildrenResources(options ...helper.OptionFN) ([]model.Resou
 		return result, total, nil
 	}
 
-	return nil, 0, lang.Error(lang.ErrDeviceNotFound)
+	return nil, 0, lang.ErrDeviceNotFound.Error()
 }
 
 func (d *Device) GetID() int64 {
@@ -181,7 +181,7 @@ func (d *Device) SetOption(key string, value interface{}) error {
 
 		return nil
 	}
-	return lang.Error(lang.ErrDeviceNotFound)
+	return lang.ErrDeviceNotFound.Error()
 }
 
 func (d *Device) SetGroups(groups ...interface{}) error {
@@ -218,7 +218,7 @@ func (d *Device) SetGroups(groups ...interface{}) error {
 		}
 		return nil
 	}
-	return lang.Error(lang.ErrDeviceNotFound)
+	return lang.ErrDeviceNotFound.Error()
 }
 
 func (d *Device) Groups() ([]model.Group, error) {
@@ -229,21 +229,21 @@ func (d *Device) Groups() ([]model.Group, error) {
 		}
 		return groups, nil
 	}
-	return nil, lang.Error(lang.ErrDeviceNotFound)
+	return nil, lang.ErrDeviceNotFound.Error()
 }
 
 func (d *Device) GetMeasureList(options ...helper.OptionFN) ([]model.Measure, int64, error) {
 	if d != nil {
 		return d.store.GetMeasureList(options...)
 	}
-	return nil, 0, lang.Error(lang.ErrDeviceNotFound)
+	return nil, 0, lang.ErrDeviceNotFound.Error()
 }
 
 func (d *Device) CreateMeasure(title string, tag string, kind resource.MeasureKind) (model.Measure, error) {
 	if d != nil {
 		return d.store.CreateMeasure(d.GetID(), title, tag, kind)
 	}
-	return nil, lang.Error(lang.ErrDeviceNotFound)
+	return nil, lang.ErrDeviceNotFound.Error()
 }
 
 func (d *Device) CreatedAt() time.Time {
@@ -255,7 +255,7 @@ func (d *Device) CreatedAt() time.Time {
 
 func (d *Device) Destroy() error {
 	if d == nil {
-		return lang.Error(lang.ErrDeviceNotFound)
+		return lang.ErrDeviceNotFound.Error()
 	}
 
 	alarms, _, err := d.store.GetAlarmList(nil, nil, helper.Device(d.GetID()))
@@ -310,7 +310,7 @@ func (d *Device) Save() error {
 		}
 		return nil
 	}
-	return lang.Error(lang.ErrDeviceNotFound)
+	return lang.ErrDeviceNotFound.Error()
 }
 
 func (d *Device) Simple() model.Map {
@@ -333,7 +333,7 @@ func (d *Device) Brief() model.Map {
 		"enable":         d.IsEnabled(),
 		"title":          d.title,
 		"params.connStr": d.GetOption("params.connStr").Str,
-		"created_at":     d.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at":     d.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 }
 
@@ -348,7 +348,7 @@ func (d *Device) Detail() model.Map {
 		"title":           d.title,
 		"params.connStr":  d.GetOption("params.connStr").String(),
 		"params.interval": d.GetOption("params.interval").Int(),
-		"created_at":      d.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at":      d.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 
 	groups, _ := d.Groups()

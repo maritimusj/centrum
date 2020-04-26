@@ -29,7 +29,7 @@ func (m *mysqlDB) TransactionDo(fn func(db db.DB) interface{}) interface{} {
 
 	result := fn(tx)
 	if result != nil {
-		if errCode, ok := result.(lang.ErrorCode); ok && errCode != lang.Ok {
+		if errCode, ok := result.(lang.ErrIndex); ok && errCode != lang.Ok {
 			return lang.Error(errCode)
 		}
 		if err, ok := result.(error); ok {
@@ -63,7 +63,7 @@ func Open(ctx context.Context, option map[string]interface{}) (db.WithTransactio
 			ctx: ctx,
 		}, nil
 	}
-	return nil, lang.Error(lang.ErrInvalidDBConnStr)
+	return nil, lang.ErrInvalidDBConnStr.Error()
 }
 
 func (m *mysqlDB) Close() {

@@ -97,7 +97,7 @@ func Export(ctx iris.Context) hero.Result {
 
 		uid := util.RandStr(16, util.RandNum)
 		stats := &exportStats{
-			Msg:            lang.Str(lang.ExportInitialized),
+			Msg:            lang.ExportInitialized.Str(),
 			LocalFileName:  csvFile.Name(),
 			ExportFileName: time.Now().Format("2006-01-02_15_04_05") + ".csv",
 		}
@@ -172,7 +172,7 @@ func Export(ctx iris.Context) hero.Result {
 
 			getMeasureDataFN := func(device model.Device, measure model.Measure, title string) error {
 				if device != nil && measure != nil {
-					stats.Msg = lang.Str(lang.ExportingData, device.Title(), measure.Title())
+					stats.Msg = lang.ExportingData.Str(device.Title(), measure.Title())
 
 					org, err := device.Organization()
 					if err != nil {
@@ -296,13 +296,13 @@ func Export(ctx iris.Context) hero.Result {
 				return nil
 			})
 
-			stats.Msg = lang.Str(lang.ArrangingData)
+			stats.Msg = lang.ArrangingData.Str()
 			sort.Sort(timeValues)
 
 			total := len(timeValues)
 			if total > 0 {
 				for i, index := range timeValues {
-					stats.Msg = lang.Str(lang.WritingData, int((float32(i+1)/float32(total))*100))
+					stats.Msg = lang.WritingData.Str(int((float32(i+1) / float32(total)) * 100))
 
 					valuesMap := measureValues[index]
 					ts := time.Unix(index, 0)
@@ -326,7 +326,7 @@ func Export(ctx iris.Context) hero.Result {
 			csvWriter.Flush()
 			_ = csvFile.Close()
 
-			stats.Msg = lang.Str(lang.ExportReady)
+			stats.Msg = lang.ExportReady.Str()
 			stats.IsOk = true
 		}()
 

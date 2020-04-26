@@ -188,7 +188,7 @@ func (m *Measure) Brief() model.Map {
 		"kind":       m.kind,
 		"title":      m.title,
 		"tag":        m.tag,
-		"created_at": m.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": m.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 }
 
@@ -202,7 +202,7 @@ func (m *Measure) Detail() model.Map {
 		"kind":       m.kind,
 		"title":      m.title,
 		"tag":        m.tag,
-		"created_at": m.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": m.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 
 	device := m.Device()

@@ -7,8 +7,16 @@ import (
 	"github.com/maritimusj/centrum/gate/web/status"
 )
 
+type StrIndex int
+
+func (index StrIndex) Str(params ...interface{}) string {
+	return Str(index, params...)
+}
+
 const (
-	_ = iota
+	_ StrIndex = iota
+
+	DatetimeFormatterStr
 
 	DefaultGroupTitle
 	DefaultGroupDesc

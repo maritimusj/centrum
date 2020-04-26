@@ -24,7 +24,7 @@ func Active(r int) {
 	regionIndex = r
 }
 
-func Register(region int, lang map[StrIndex]string, err map[ErrorCode]string) {
+func Register(region int, lang map[StrIndex]string, err map[ErrIndex]string) {
 	langMap[region] = lang
 	errStrMap[region] = err
 }

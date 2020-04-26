@@ -9,9 +9,10 @@ func init() {
 }
 
 var (
-	strMap = map[int]string{
-		lang.DefaultGroupTitle: "默认分组",
-		lang.DefaultGroupDesc:  "系统默认分组",
+	strMap = map[lang.StrIndex]string{
+		lang.DatetimeFormatterStr: "2006-01-02 15:04:05",
+		lang.DefaultGroupTitle:    "默认分组",
+		lang.DefaultGroupDesc:     "系统默认分组",
 
 		lang.ResourceDefault:   "默认分组",
 		lang.ResourceApi:       "后台权限",
@@ -327,7 +328,7 @@ var (
 		lang.DeviceConnected: "设备已连接！",
 	}
 
-	errStrMap = map[lang.ErrorCode]string{
+	errStrMap = map[lang.ErrIndex]string{
 		lang.Ok:                                 "成功！",
 		lang.ErrUnknown:                         "未知错误！",
 		lang.ErrUnknownLang:                     "未知语言区域！",

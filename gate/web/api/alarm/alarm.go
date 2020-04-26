@@ -375,15 +375,15 @@ func Export(ctx iris.Context) {
 
 		_, _ = csvFile.WriteString(strings.Join([]string{
 			"#",
-			lang.Str(lang.CVSHeaderDevice),
-			lang.Str(lang.CVSHeaderPoint),
-			lang.Str(lang.CVSHeaderVal),
-			lang.Str(lang.CVSHeaderThreshold),
-			lang.Str(lang.CVSHeaderAlarm),
-			lang.Str(lang.CVSHeaderCreatedAt),
-			lang.Str(lang.CVSHeaderUpdatedAt),
-			lang.Str(lang.CVSHeaderUser),
-			lang.Str(lang.CVSHeaderConfirmedBy) + "\r\n",
+			lang.CVSHeaderDevice.Str(),
+			lang.CVSHeaderPoint.Str(),
+			lang.CVSHeaderVal.Str(),
+			lang.CVSHeaderThreshold.Str(),
+			lang.CVSHeaderAlarm.Str(),
+			lang.CVSHeaderCreatedAt.Str(),
+			lang.CVSHeaderUpdatedAt.Str(),
+			lang.CVSHeaderUser.Str(),
+			lang.CVSHeaderConfirmedBy.Str() + "\r\n",
 		}, ","))
 
 		for index, alarm := range alarms {
