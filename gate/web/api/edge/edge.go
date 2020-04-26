@@ -7,8 +7,6 @@ import (
 
 	"github.com/maritimusj/centrum/gate/web/model"
 
-	"github.com/maritimusj/centrum/util"
-
 	"github.com/maritimusj/centrum/gate/web/app"
 
 	"github.com/maritimusj/centrum/gate/lang"
@@ -97,7 +95,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 					"level":      "warning",
 					"title":      device.Title(),
 					"message":    lang.ErrDeviceDisconnected.Str(),
-					"created_at": util.FormatDatetime(time.Now()),
+					"created_at": time.Now().Format(lang.DatetimeFormatterStr.Str()),
 				})
 				device.Logger().Warningln(lang.ErrDeviceDisconnected.Str())
 			}
@@ -107,7 +105,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 					"level":      "success",
 					"title":      device.Title(),
 					"message":    lang.DeviceConnected.Str(),
-					"created_at": util.FormatDatetime(time.Now()),
+					"created_at": time.Now().Format(lang.DatetimeFormatterStr.Str()),
 				})
 			}
 		}

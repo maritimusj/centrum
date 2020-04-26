@@ -189,7 +189,7 @@ func Confirm(alarmID int64, ctx iris.Context) hero.Result {
 		if app.Allow(admin, measure, resource.View) || app.Allow(admin, measure, resource.Ctrl) {
 			err = alarm.Confirm(map[string]interface{}{
 				"admin": admin.Brief(),
-				"time":  time.Now().Format("2006-01-02 15:04:05"),
+				"time":  time.Now().Format(lang.DatetimeFormatterStr.Str()),
 				"ip":    ctx.RemoteAddr(),
 				"desc":  form.Desc,
 			})
@@ -401,8 +401,8 @@ func Export(ctx iris.Context) {
 				alarm.GetOption("fields.val").String(),
 				alarm.GetOption("fields.threshold").String(),
 				alarm.GetOption("tags.alarm").String(),
-				alarm.CreatedAt().Format("2006-01-02 15:04:05"),
-				alarm.UpdatedAt().Format("2006-01-02 15:04:05"),
+				alarm.CreatedAt().Format(lang.DatetimeFormatterStr.Str()),
+				alarm.UpdatedAt().Format(lang.DatetimeFormatterStr.Str()),
 				alarm.GetOption("confirm.admin.name").String(),
 				alarm.GetOption("confirm.time").String())
 

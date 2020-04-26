@@ -306,7 +306,7 @@ func Export(ctx iris.Context) hero.Result {
 
 					valuesMap := measureValues[index]
 					ts := time.Unix(index, 0)
-					valueSlice := []string{ts.Format("2006-01-02 15:04:05")}
+					valueSlice := []string{ts.Format(lang.DatetimeFormatterStr.Str())}
 
 					for _, header := range headers {
 						if v, ok := valuesMap[header]; ok {
