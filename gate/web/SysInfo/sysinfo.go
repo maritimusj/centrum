@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kataras/iris"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -21,6 +23,11 @@ func (info *Info) Expired(duration time.Duration) bool {
 }
 
 func (info *Info) Fetch(fn func() (interface{}, error)) {
+	defer func() {
+		recover()
+		info.data = iris.Map{}
+	}()
+
 	info.l.Lock()
 	defer info.l.Unlock()
 	if fn != nil {
