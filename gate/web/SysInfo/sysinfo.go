@@ -23,7 +23,6 @@ func (info *Info) Expired(duration time.Duration) bool {
 func (info *Info) Fetch(fn func() (interface{}, error)) {
 	defer func() {
 		recover()
-		info.data = nil
 	}()
 
 	info.l.Lock()
@@ -40,8 +39,5 @@ func (info *Info) Fetch(fn func() (interface{}, error)) {
 }
 
 func (info *Info) Data() interface{} {
-	if info.data == nil {
-		return map[string]interface{}{}
-	}
 	return info.data
 }

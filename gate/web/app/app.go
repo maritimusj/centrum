@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/kataras/iris"
+
 	"github.com/maritimusj/centrum/gate/web/SysInfo"
 
 	"github.com/shirou/gopsutil/host"
@@ -165,7 +167,11 @@ func HostInfo() interface{} {
 			}, nil
 		})
 	}
-	return __hostInfo.Data()
+	res := __hostInfo.Data()
+	if res == nil {
+		return iris.Map{}
+	}
+	return res
 }
 
 func CpuInfo() interface{} {
@@ -189,7 +195,11 @@ func CpuInfo() interface{} {
 		})
 	}
 
-	return __cpuInfo.Data()
+	res := __cpuInfo.Data()
+	if res == nil {
+		return iris.Map{}
+	}
+	return res
 }
 
 func CpuTimes() interface{} {
@@ -204,7 +214,11 @@ func CpuTimes() interface{} {
 		})
 	}
 
-	return __cpuTimes.Data()
+	res := __cpuTimes.Data()
+	if res == nil {
+		return ""
+	}
+	return res
 }
 
 func MemoryStatus() interface{} {
@@ -224,7 +238,11 @@ func MemoryStatus() interface{} {
 		})
 	}
 
-	return __memInfo.Data()
+	res := __memInfo.Data()
+	if res == nil {
+		return iris.Map{}
+	}
+	return res
 }
 
 func DiskStatus() interface{} {
@@ -248,7 +266,11 @@ func DiskStatus() interface{} {
 		})
 	}
 
-	return __diskInfo.Data()
+	res := __diskInfo.Data()
+	if res == nil {
+		return iris.Map{}
+	}
+	return res
 }
 
 func SysStatus() interface{} {
