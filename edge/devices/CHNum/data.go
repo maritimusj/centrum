@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/maritimusj/centrum/edge/devices/modbus"
 )
@@ -17,12 +18,13 @@ var (
 )
 
 type Data struct {
-	AI   int
-	DI   int
-	DO   int
-	AO   int
-	VO   int
-	pool *sync.Pool
+	AI       int
+	DI       int
+	DO       int
+	AO       int
+	VO       int
+	TimeUsed time.Duration
+	pool     *sync.Pool
 }
 
 func New() *Data {
@@ -37,6 +39,7 @@ func (ch *Data) Release() {
 	ch.DI = 0
 	ch.DO = 0
 	ch.VO = 0
+	ch.TimeUsed = 0
 	ch.pool.Put(ch)
 }
 
@@ -51,6 +54,7 @@ func (ch *Data) Clone() *Data {
 	data.DI = ch.DI
 	data.DO = ch.DO
 	data.VO = ch.VO
+	data.TimeUsed = ch.TimeUsed
 	return data
 }
 
@@ -62,7 +66,7 @@ func (ch *Data) FetchData(conn modbus.Client) (retErr error) {
 		}
 	}()
 
-	data, _, err := conn.ReadHoldingRegisters(16, 5)
+	data, used, err := conn.ReadHoldingRegisters(16, 5)
 	if err != nil {
 		return err
 	}
@@ -72,6 +76,7 @@ func (ch *Data) FetchData(conn modbus.Client) (retErr error) {
 	ch.DO = int(binary.BigEndian.Uint16(data[4:]))
 	ch.AO = int(binary.BigEndian.Uint16(data[6:]))
 	ch.VO = int(binary.BigEndian.Uint16(data[8:]))
+	ch.TimeUsed = used
 
 	return nil
 }

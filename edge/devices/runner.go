@@ -496,9 +496,12 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 
 	defer data.Release()
 
-	adapter.OnDevicePerfChanged(map[string]interface{}{
-		"delay": data.TimeUsed(),
-	})
+	chNum := data.CHNum()
+	if chNum != nil {
+		adapter.OnDevicePerfChanged(map[string]interface{}{
+			"delay": chNum.TimeUsed,
+		})
+	}
 
 	getData := func(fn func() error) error {
 		select {

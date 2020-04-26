@@ -67,6 +67,10 @@ func (r *Data) expired() bool {
 	return time.Now().Sub(r.lastReadTime) > 1*time.Second
 }
 
+func (r *Data) CHNum() *CHNum.Data {
+	return r.chNum
+}
+
 func (r *Data) TimeUsed() time.Duration {
 	return r.timeUsed
 }
