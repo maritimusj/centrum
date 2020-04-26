@@ -233,6 +233,56 @@ func Delete(alarmID int64, ctx iris.Context) hero.Result {
 	})
 }
 
+func Statistics(alarmID int64, ctx iris.Context) hero.Result {
+	return response.Wrap(func() interface{} {
+		var (
+			s     = app.Store()
+			admin = s.MustGetUserFromContext(ctx)
+		)
+
+		alarm, err := s.GetAlarm(alarmID)
+		if err != nil {
+			return err
+		}
+
+		measure, err := alarm.Measure()
+		if err != nil {
+			return err
+		}
+
+		device := measure.Device()
+		if device == nil {
+			return lang.ErrDeviceNotFound
+		}
+
+		org, _ := device.Organization()
+
+		if !app.Allow(admin, measure, resource.View) {
+			return lang.ErrNoPermission
+		}
+
+		start := alarm.CreatedAt().Add(-1 * time.Minute)
+		end := alarm.UpdatedAt().Add(1 * time.Minute)
+		if end.After(time.Now()) {
+			end = time.Now()
+		}
+
+		//最多取10000个点位数据
+		interval := int64(end.Sub(start).Seconds() / 10000)
+		if interval < 1 {
+			interval = 1
+		}
+
+		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, &end, time.Duration(interval)*time.Second)
+		if err != nil {
+			return lang.InternalError(err)
+		}
+
+		return result
+
+	})
+}
+
 func Export(ctx iris.Context) {
 	res := response.Wrap(func() interface{} {
 		csvFile, err := ioutil.TempFile("", "tempFile")

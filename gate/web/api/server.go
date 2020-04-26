@@ -258,6 +258,9 @@ func (server *server) Start(ctx context.Context, webDir string, cfg *cfg.Config)
 				p.Get("/{id:int64}", hero.Handler(alarm.Detail)).Name = resourceDef.AlarmDetail
 				p.Delete("/{id:int64}", hero.Handler(alarm.Delete)).Name = resourceDef.AlarmDelete
 
+				//警报当时的趋势数据
+				p.Get("/{alarm:int64}/statistics", hero.Handler(alarm.Statistics)).Name = resourceDef.AlarmDetail
+
 				p.Get("/{alarm:int64}/comments", hero.Handler(comment.List)).Name = resourceDef.CommentList
 
 				//历史趋势
