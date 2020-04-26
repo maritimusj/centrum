@@ -57,8 +57,8 @@ func Measure(measureID int64, ctx iris.Context) hero.Result {
 			end = time.Now()
 		}
 
-		//最多取1000个点位数据
-		interval := int64(end.Sub(start).Seconds() / 1000)
+		//最多取10000个点位数据
+		interval := int64(end.Sub(start).Seconds() / 10000)
 		if interval < 1 {
 			interval = 1
 		}
@@ -119,8 +119,8 @@ func State(stateID int64, ctx iris.Context) hero.Result {
 			end = time.Now()
 		}
 
-		//最多取1000个点位数据
-		interval := int64(end.Sub(start).Seconds() / 1000)
+		//最多取10000个点位数据
+		interval := int64(end.Sub(start).Seconds() / 10000)
 		if interval < 1 {
 			interval = 1
 		}
