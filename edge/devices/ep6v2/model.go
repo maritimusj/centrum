@@ -22,7 +22,7 @@ func (model *Model) fetchData(conn modbus.Client) (retErr error) {
 		}
 	}()
 
-	data, err := conn.ReadHoldingRegisters(0, 4)
+	data, _, err := conn.ReadHoldingRegisters(0, 4)
 	if err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func (model *Model) fetchData(conn modbus.Client) (retErr error) {
 	model.Version = fmt.Sprintf("v%.2f", (float32(data[6])*100+float32(data[7]))/100)
 
 	//读取设备名称
-	data, err = conn.ReadHoldingRegisters(0x0040, 32)
+	data, _, err = conn.ReadHoldingRegisters(0x0040, 32)
 	if err != nil {
 		return err
 	}

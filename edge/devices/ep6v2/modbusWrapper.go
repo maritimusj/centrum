@@ -15,8 +15,9 @@ type modbusWrapper struct {
 	sync.Mutex
 }
 
-func (w *modbusWrapper) retry(fn func() ([]byte, error)) (result []byte, err error) {
+func (w *modbusWrapper) retry(fn func() ([]byte, error)) (result []byte, used time.Duration, err error) {
 	for i := 0; i < 3; i++ {
+		begin := time.Now()
 		result, err = fn()
 		if err != nil {
 			if e, ok := err.(net.Error); ok && (e.Temporary() || e.Timeout()) {
@@ -29,12 +30,13 @@ func (w *modbusWrapper) retry(fn func() ([]byte, error)) (result []byte, err err
 				continue
 			}
 		}
-		return
+		return result, time.Now().Sub(begin), nil
 	}
+	used = -1
 	return
 }
 
-func (w *modbusWrapper) ReadCoils(address, quantity uint16) (results []byte, err error) {
+func (w *modbusWrapper) ReadCoils(address, quantity uint16) (results []byte, duration time.Duration, err error) {
 	w.Lock()
 	defer w.Unlock()
 	return w.retry(func() (bytes []byte, err error) {
@@ -42,7 +44,7 @@ func (w *modbusWrapper) ReadCoils(address, quantity uint16) (results []byte, err
 	})
 }
 
-func (w *modbusWrapper) ReadDiscreteInputs(address, quantity uint16) (results []byte, err error) {
+func (w *modbusWrapper) ReadDiscreteInputs(address, quantity uint16) (results []byte, duration time.Duration, err error) {
 	w.Lock()
 	defer w.Unlock()
 	return w.retry(func() (bytes []byte, err error) {
@@ -50,7 +52,7 @@ func (w *modbusWrapper) ReadDiscreteInputs(address, quantity uint16) (results []
 	})
 }
 
-func (w *modbusWrapper) WriteSingleCoil(address, value uint16) (results []byte, err error) {
+func (w *modbusWrapper) WriteSingleCoil(address, value uint16) (results []byte, duration time.Duration, err error) {
 	w.Lock()
 	defer w.Unlock()
 	return w.retry(func() (bytes []byte, err error) {
@@ -58,7 +60,7 @@ func (w *modbusWrapper) WriteSingleCoil(address, value uint16) (results []byte, 
 	})
 }
 
-func (w *modbusWrapper) ReadInputRegisters(address, quantity uint16) (results []byte, err error) {
+func (w *modbusWrapper) ReadInputRegisters(address, quantity uint16) (results []byte, duration time.Duration, err error) {
 	w.Lock()
 	defer w.Unlock()
 	return w.retry(func() (bytes []byte, err error) {
@@ -66,7 +68,7 @@ func (w *modbusWrapper) ReadInputRegisters(address, quantity uint16) (results []
 	})
 }
 
-func (w *modbusWrapper) ReadHoldingRegisters(address, quantity uint16) (results []byte, err error) {
+func (w *modbusWrapper) ReadHoldingRegisters(address, quantity uint16) (results []byte, duration time.Duration, err error) {
 	w.Lock()
 	defer w.Unlock()
 	return w.retry(func() (bytes []byte, err error) {

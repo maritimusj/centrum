@@ -36,6 +36,8 @@ func main() {
 
 	flag.Parse()
 
+	fmt.Println("edge is running..")
+
 	if *langID == lang.ZhCN || *langID == lang.EnUS {
 		lang.Active(*langID)
 	}

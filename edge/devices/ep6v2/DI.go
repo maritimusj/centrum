@@ -40,7 +40,7 @@ func (di *DI) expired() bool {
 
 func (di *DI) GetValue() (bool, error) {
 	if di.expired() {
-		data, err := di.conn.ReadDiscreteInputs(uint16(di.Index), 1)
+		data, _, err := di.conn.ReadDiscreteInputs(uint16(di.Index), 1)
 		if err != nil {
 			return false, err
 		}
@@ -70,7 +70,7 @@ func (c *DIConfig) fetchData(conn modbus.Client, index int) (retErr error) {
 	}()
 
 	var address, quantity uint16 = DICHStartAddress + uint16(index)*CHBlockSize, 16
-	data, err := conn.ReadHoldingRegisters(address, quantity)
+	data, _, err := conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (c *DIConfig) fetchData(conn modbus.Client, index int) (retErr error) {
 	c.TagName = fmt.Sprintf("DI-%d", index+1)
 
 	address, quantity = DICHStartAddress+uint16(index)*CHBlockSize+32, 7
-	data, err = conn.ReadHoldingRegisters(address, quantity)
+	data, _, err = conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
 		return err
 	}

@@ -105,7 +105,7 @@ func (alarm *AIAlarmConfig) fetchData(conn modbus.Client, index int) (retErr err
 	}()
 
 	var address, quantity uint16 = uint16(index+1)*CHBlockSize + 47, 11
-	data, err := conn.ReadHoldingRegisters(address, quantity)
+	data, _, err := conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func (alarm *AIAlarmConfig) fetchData(conn modbus.Client, index int) (retErr err
 	alarm.Delay = int(binary.BigEndian.Uint16(data[20:]))
 
 	address, quantity = uint16(index+1)*CHBlockSize+80, 30
-	data, err = conn.ReadHoldingRegisters(address, quantity)
+	data, _, err = conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (ai *AI) stateExpired() bool {
 
 func (ai *AI) fetchValue() error {
 	var address, quantity uint16 = uint16(AIValueStartAddress + ai.Index*2), 2
-	data, err := ai.conn.ReadInputRegisters(address, quantity)
+	data, _, err := ai.conn.ReadInputRegisters(address, quantity)
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func (ai *AI) GetConfig() *AIConfig {
 func (ai *AI) GetAlarmState() (AlarmValue, error) {
 	if ai.stateExpired() {
 		address := uint16(AIAlarmStartAddress + ai.Index)
-		data, err := ai.conn.ReadInputRegisters(address, 1)
+		data, _, err := ai.conn.ReadInputRegisters(address, 1)
 		if err != nil {
 			return 0, err
 		}
@@ -262,7 +262,7 @@ func (c *AIConfig) fetchData(conn modbus.Client, index int) (retErr error) {
 	}()
 
 	var address, quantity uint16 = uint16(index+1) * CHBlockSize, 34
-	data, err := conn.ReadHoldingRegisters(address, quantity)
+	data, _, err := conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
 		return err
 	}

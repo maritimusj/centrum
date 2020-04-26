@@ -32,7 +32,7 @@ type Data struct {
 
 	pool *sync.Pool
 
-	rate         int
+	timeUsed     time.Duration
 	lastReadTime time.Time
 }
 
@@ -57,7 +57,7 @@ func (r *Data) Release() {
 func (r *Data) Clone() *Data {
 	rt := New(r.chNum)
 	rt.lastReadTime = r.lastReadTime
-	rt.rate = r.rate
+	rt.timeUsed = r.timeUsed
 	rt.data.Write(r.data.Bytes())
 	rt.ready.Write(r.ready.Bytes())
 	return rt
@@ -67,8 +67,8 @@ func (r *Data) expired() bool {
 	return time.Now().Sub(r.lastReadTime) > 1*time.Second
 }
 
-func (r *Data) Rate() int {
-	return r.rate
+func (r *Data) TimeUsed() time.Duration {
+	return r.timeUsed
 }
 
 func (r *Data) AINum() int {
@@ -191,6 +191,7 @@ func (r *Data) FetchData(conn modbus.Client) (retErr error) {
 		r.ready.Grow(r.chNum.Sum())
 	}
 
+	r.timeUsed = 0
 	r.data.Reset()
 	r.ready.Reset()
 
@@ -198,9 +199,6 @@ func (r *Data) FetchData(conn modbus.Client) (retErr error) {
 		address  uint16 = realtimeDataStartAddress
 		quantity uint16
 		amount   = total
-
-		begin      = time.Now()
-		totalBytes = 0
 	)
 
 	for amount > 0 {
@@ -210,13 +208,13 @@ func (r *Data) FetchData(conn modbus.Client) (retErr error) {
 			quantity = uint16(amount)
 		}
 
-		data, err := conn.ReadInputRegisters(address, quantity)
+		data, used, err := conn.ReadInputRegisters(address, quantity)
 		if err != nil {
 			return err
 		}
 
 		r.data.Write(data)
-		totalBytes += len(data)
+		r.timeUsed = r.timeUsed + used
 
 		amount -= int(quantity)
 		address += quantity
@@ -231,10 +229,13 @@ func (r *Data) FetchData(conn modbus.Client) (retErr error) {
 		} else {
 			quantity = uint16(amount)
 		}
-		state, err := conn.ReadInputRegisters(address, quantity)
+
+		state, used, err := conn.ReadInputRegisters(address, quantity)
 		if err != nil {
 			return err
 		}
+
+		r.timeUsed = r.timeUsed + used
 
 		var i uint16
 		for i = 0; i < quantity; i++ {
@@ -242,20 +243,10 @@ func (r *Data) FetchData(conn modbus.Client) (retErr error) {
 			r.ready.Write([]byte{reading})
 		}
 
-		totalBytes += len(state)
 		amount -= int(quantity)
 		address += quantity
 	}
 
-	used := int(time.Now().Sub(begin) / time.Millisecond)
-	if used == 0 {
-		used = 1
-	}
-
-	r.rate = (totalBytes / used) * 1000
-	if r.rate < 1 {
-		r.rate = 1
-	}
 	r.lastReadTime = time.Now()
 	return nil
 }

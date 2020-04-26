@@ -1,6 +1,7 @@
 package edge
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -46,7 +47,7 @@ type Alarm struct {
 }
 
 type Perf struct {
-	Rate int `json:"rate"`
+	Delay int `json:"delay"`
 }
 
 func createMsg(res model.Resource, data interface{}) {
@@ -172,22 +173,23 @@ func Feedback(deviceID int64, ctx iris.Context) {
 	}
 
 	if form.Perf != nil {
-		rate := uint64((*form.Perf).Rate)
-		str := util.FormatFileSize(rate)
+		delay := time.Duration((*form.Perf).Delay) / time.Millisecond
 		data := iris.Map{
-			"rate": str + "/s",
+			"rate": fmt.Sprintf("%dms", delay),
 		}
 		level := 1
-		if rate < 1024 {
+		if delay == -1 {
 			level = 1
-		} else if rate < 10240 {
-			level = 2
-		} else if rate < 51200 {
-			level = 3
-		} else if rate < 102400 {
-			level = 4
-		} else {
+		} else if delay < 20 {
 			level = 5
+		} else if delay < 100 {
+			level = 4
+		} else if delay < 300 {
+			level = 3
+		} else if delay < 600 {
+			level = 2
+		} else {
+			level = 1
 		}
 		data["level"] = level
 		global.UpdateDevicePerf(device, data)

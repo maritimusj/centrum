@@ -474,6 +474,9 @@ func (runner *Runner) Serve(adapter *Adapter) (err error) {
 					device.Close()
 
 					go adapter.OnDeviceStatusChanged(lang.Disconnected)
+					go adapter.OnDevicePerfChanged(map[string]interface{}{
+						"delay": -1,
+					})
 					goto tryConnectToDevice
 				}
 			}
@@ -494,7 +497,7 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 	defer data.Release()
 
 	adapter.OnDevicePerfChanged(map[string]interface{}{
-		"rate": data.Rate(),
+		"delay": data.TimeUsed(),
 	})
 
 	getData := func(fn func() error) error {

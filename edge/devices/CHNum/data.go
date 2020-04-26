@@ -62,7 +62,7 @@ func (ch *Data) FetchData(conn modbus.Client) (retErr error) {
 		}
 	}()
 
-	data, err := conn.ReadHoldingRegisters(16, 5)
+	data, _, err := conn.ReadHoldingRegisters(16, 5)
 	if err != nil {
 		return err
 	}

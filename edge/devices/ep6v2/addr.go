@@ -34,7 +34,7 @@ func (addr *Addr) fetchData(conn modbus.Client) (retErr error) {
 		}
 	}()
 
-	data, err := conn.ReadHoldingRegisters(0x0020, 18)
+	data, _, err := conn.ReadHoldingRegisters(0x0020, 18)
 	if err != nil {
 		return err
 	}

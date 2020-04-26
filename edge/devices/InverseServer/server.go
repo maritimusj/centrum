@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"net"
+	"sync"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/modbus"
 	log "github.com/sirupsen/logrus"
-	"net"
-	"sync"
 )
 
 type Server struct {
@@ -94,7 +95,7 @@ func (server *Server) Start(ctx context.Context, addr string, port int) error {
 	return nil
 }
 
-func (server *Server) handler(ctx context.Context, conn net.Conn) {
+func (server *Server) handler(_ context.Context, conn net.Conn) {
 	defer server.wg.Done()
 
 	log.Debug("[inverse] handler new conn:", conn.RemoteAddr().String())

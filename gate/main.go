@@ -48,6 +48,8 @@ func main() {
 
 	flag.Parse()
 
+	fmt.Println("gate is running...")
+
 	if *langID == lang.ZhCN || *langID == lang.EnUS {
 		lang.Active(*langID)
 		edgeLang.Active(*langID)
