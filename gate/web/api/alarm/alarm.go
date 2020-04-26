@@ -261,16 +261,20 @@ func Statistics(alarmID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		start := alarm.CreatedAt().Add(-1 * time.Minute)
-		end := alarm.UpdatedAt().Add(1 * time.Minute)
-		if end.After(time.Now()) {
-			end = time.Now()
-		}
+		start := alarm.CreatedAt()
+		end := alarm.UpdatedAt()
 
 		//最多取10000个点位数据
 		interval := int64(end.Sub(start).Seconds() / 10000)
 		if interval < 1 {
 			interval = 1
+		}
+
+		//前后各增加100个点位需要的时间
+		start = start.Add(-1 * time.Duration(interval*100) * time.Second)
+		end = end.Add(time.Duration(interval*100) * time.Second)
+		if end.After(time.Now()) {
+			end = time.Now()
 		}
 
 		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, &end, time.Duration(interval)*time.Second)
