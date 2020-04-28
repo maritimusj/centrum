@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/influxdata/influxdb1-client/models"
+
 	"github.com/maritimusj/centrum/gate/web/app"
 
 	"github.com/kataras/iris"
@@ -264,8 +266,8 @@ func Statistics(alarmID int64, ctx iris.Context) hero.Result {
 		start := alarm.CreatedAt()
 		end := alarm.UpdatedAt()
 
-		//最多取10000个点位数据
-		interval := int64(end.Sub(start).Seconds() / 10000)
+		//最多取20000个点位数据
+		interval := int64(end.Sub(start).Seconds() / 20000)
 		if interval < 1 {
 			interval = 1
 		}
@@ -277,13 +279,24 @@ func Statistics(alarmID int64, ctx iris.Context) hero.Result {
 			end = time.Now()
 		}
 
-		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, &end, time.Duration(interval)*time.Second)
-		if err != nil {
-			return lang.InternalError(err)
+		var (
+			result *models.Row
+		)
+
+		//如果间隔小于设定的读取间隔，则使用读取间隔
+		if interval < device.GetOption("params.interval").Int() {
+			result, err = app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, &end, nil)
+			if err != nil {
+				return lang.InternalError(err)
+			}
+		} else {
+			result, err = app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, &end, time.Duration(interval)*time.Second)
+			if err != nil {
+				return lang.InternalError(err)
+			}
 		}
 
 		return result
-
 	})
 }
 

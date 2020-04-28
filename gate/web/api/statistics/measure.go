@@ -3,6 +3,8 @@ package statistics
 import (
 	"time"
 
+	"github.com/influxdata/influxdb1-client/models"
+
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
@@ -63,7 +65,16 @@ func Measure(measureID int64, ctx iris.Context) hero.Result {
 			interval = 1
 		}
 
-		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, time.Duration(interval)*time.Second)
+		var (
+			result *models.Row
+		)
+		//如果间隔小于设定的读取间隔，则使用读取间隔
+		if interval < device.GetOption("params.interval").Int() {
+			result, err = app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, nil)
+		} else {
+			result, err = app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, time.Duration(interval)*time.Second)
+		}
+
 		if err != nil {
 			return iris.Map{}
 		}
@@ -125,7 +136,16 @@ func State(stateID int64, ctx iris.Context) hero.Result {
 			interval = 1
 		}
 
-		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, time.Duration(interval)*time.Second)
+		var (
+			result *models.Row
+		)
+		//如果间隔小于设定的读取间隔，则使用读取间隔
+		if interval < device.GetOption("params.interval").Int() {
+			result, err = app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, nil)
+		} else {
+			result, err = app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, time.Duration(interval)*time.Second)
+		}
+
 		if err != nil {
 			return lang.InternalError(err)
 		}
