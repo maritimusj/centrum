@@ -143,7 +143,6 @@ func (r *Data) GetVOValue(index int) (bool, bool) {
 
 func (r *Data) getFloat32(index int) (float32, bool) {
 	pos := index * 4
-
 	if r.data.Len() >= pos+4 && r.ready.Len() > index && r.ready.Bytes()[index] == 0 {
 		return util.ToSingle(r.data.Bytes()[pos:]), true
 	}
@@ -153,7 +152,7 @@ func (r *Data) getFloat32(index int) (float32, bool) {
 
 func (r *Data) getInt(index int) (int, bool) {
 	pos := index * 4
-	if r.data.Len() > pos+4 && index < r.ready.Len() && r.ready.Bytes()[index] == 0 {
+	if r.data.Len() >= pos+4 && index < r.ready.Len() && r.ready.Bytes()[index] == 0 {
 		return int(binary.BigEndian.Uint32(r.data.Bytes()[pos:])), true
 	}
 	return 0, false
@@ -161,7 +160,7 @@ func (r *Data) getInt(index int) (int, bool) {
 
 func (r *Data) setInt(index int, value uint32) {
 	pos := index * 4
-	if r.data.Len() > pos+4 && index < r.ready.Len() && r.ready.Bytes()[index] == 0 {
+	if r.data.Len() >= pos+4 && index < r.ready.Len() && r.ready.Bytes()[index] == 0 {
 		binary.BigEndian.PutUint32(r.data.Bytes()[pos:], value)
 	}
 }
