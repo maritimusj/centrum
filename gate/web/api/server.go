@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"sync"
 	"time"
+
+	_ "net/http/pprof"
 
 	"github.com/iris-contrib/middleware/cors"
 	"github.com/kataras/iris"
@@ -313,6 +316,10 @@ func (server *server) Start(ctx context.Context, webDir string, cfg *cfg.Config)
 				log.Tracef("http server shutdown.")
 			}
 		}
+	}()
+
+	go func() {
+		_ = http.ListenAndServe(fmt.Sprintf("%s:%d", app.Config.APIAddr(), 9091), nil)
 	}()
 
 	time.AfterFunc(3*time.Second, func() {

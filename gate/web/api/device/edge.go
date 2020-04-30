@@ -100,6 +100,7 @@ func Data(deviceID int64, ctx iris.Context) hero.Result {
 							"view": true,
 							"ctrl": allow(measure, resource.Ctrl),
 						}
+						e["id"] = measure.GetID()
 						result = append(result, entry)
 					}
 				}
