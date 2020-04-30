@@ -86,15 +86,20 @@ func Data(deviceID int64, ctx iris.Context) hero.Result {
 			return app.Allow(admin, measure, action)
 		}
 
+		arr, _ := data.([]interface{})
+
 		//过滤掉没有权限的measure
-		var result = make([]interface{}, 0, len(data))
-		for _, entry := range data {
+		var result = make([]interface{}, 0, len(arr))
+		for _, entry := range arr {
 			if e, ok := entry.(map[string]interface{}); ok {
 				if chTagName, ok := e["tag"].(string); ok {
 					measure, err := s.GetMeasureFromTagName(deviceID, chTagName)
 					if err != nil {
 						continue
 					}
+
+					e["id"] = measure.GetID()
+
 					if allow(measure, resource.View) {
 						e["perm"] = map[string]bool{
 							"view": true,

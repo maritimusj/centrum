@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/maritimusj/centrum/util"
+
 	"github.com/maritimusj/centrum/gate/logStore"
 
 	bolt "github.com/etcd-io/bbolt"
@@ -35,7 +37,7 @@ func New() logStore.Store {
 		},
 		encoderPool: &sync.Pool{
 			New: func() interface{} {
-				return NewCopier()
+				return util.NewCopier()
 			},
 		},
 		done: make(chan struct{}),
@@ -74,11 +76,11 @@ func (store *store) Open(option map[string]interface{}) error {
 	return nil
 }
 
-func (store *store) getEncoder() *gobCopier {
-	return store.encoderPool.Get().(*gobCopier)
+func (store *store) getEncoder() *util.GobCopier {
+	return store.encoderPool.Get().(*util.GobCopier)
 }
 
-func (store *store) releaseEncoder(encoder *gobCopier) {
+func (store *store) releaseEncoder(encoder *util.GobCopier) {
 	store.encoderPool.Put(encoder)
 }
 
@@ -147,13 +149,13 @@ func (store *store) Fire(entry *logrus.Entry) error {
 	encoder := store.getEncoder()
 	defer store.releaseEncoder(encoder)
 
-	err := encoder.encode(entry.Data)
+	err := encoder.Encode(entry.Data)
 	if err != nil {
 		return err
 	}
 
 	e := map[string]interface{}{}
-	err = encoder.decode(&e)
+	err = encoder.Decode(&e)
 	if err != nil {
 		return err
 	}

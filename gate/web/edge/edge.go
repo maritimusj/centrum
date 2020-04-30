@@ -13,12 +13,31 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/rpc/v2/json"
+	jsoniter "github.com/json-iterator/go"
 	. "github.com/maritimusj/centrum/json_rpc"
 )
 
 type balanceCacheEntry struct {
 	data interface{}
 	exp  time.Time
+	sync.Mutex
+}
+
+func (e *balanceCacheEntry) CloneData() interface{} {
+	e.Lock()
+	defer e.Unlock()
+
+	v, err := jsoniter.MarshalToString(e.data)
+	if err != nil {
+		return nil
+	}
+
+	var result interface{}
+	err = jsoniter.Unmarshal([]byte(v), &result)
+	if err != nil {
+		return nil
+	}
+	return result
 }
 
 func (e *balanceCacheEntry) IsExpired() bool {
@@ -280,11 +299,11 @@ func GetValue(uid string, tag string) (map[string]interface{}, error) {
 }
 
 //GetRealtimeData 获取指定设备的实时数据
-func GetRealtimeData(uid string) ([]interface{}, error) {
+func GetRealtimeData(uid string) (interface{}, error) {
 	balance := defaultEdgesMap.GetBalanceByDeviceUID(uid)
 	if balance != nil {
 		if e := balance.Get(uid, "realtimeData"); !e.IsExpired() {
-			return e.data.([]interface{}), nil
+			return e.CloneData().(interface{}), nil
 		}
 
 		result, err := Invoke(balance.url, "Edge.GetRealtimeData", uid)
@@ -292,7 +311,7 @@ func GetRealtimeData(uid string) ([]interface{}, error) {
 			return nil, err
 		}
 
-		data, _ := result.Data.([]interface{})
+		data, _ := result.Data.(interface{})
 		balance.Set(uid, "realtimeData", data)
 
 		return data, nil
