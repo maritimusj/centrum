@@ -429,20 +429,21 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 	})
 }
 
-func GetLastAlarm(deviceID int64, measureID int64) hero.Result {
+func GetLastAlarm(_ int64, measureID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		s := app.Store()
-		equipment, err := s.GetEquipment(deviceID)
-		if err != nil {
-			return err
-		}
+		admin := s.MustGetUserFromContext(ctx)
 
 		measure, err := app.Store().GetMeasure(measureID)
 		if err != nil {
 			return err
 		}
 
-		alarm, _, err := s.GetLastAlarm(helper.Equipment(equipment.GetID()), helper.Measure(measure.GetID()), helper.OrderBy("id DESC"))
+		if !app.Allow(admin, measure, resource.View) {
+			return lang.ErrNoPermission
+		}
+
+		alarm, _, err := s.GetLastAlarm(helper.Measure(measure.GetID()), helper.OrderBy("id DESC"))
 		if err != nil {
 			return err
 		}
