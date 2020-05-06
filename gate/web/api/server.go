@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
@@ -77,8 +78,8 @@ func (server *server) Wait() {
 }
 
 func (server *server) Start(ctx context.Context, webDir string, cfg *cfg.Config) {
-	server.app.Logger().SetLevel(cfg.LogLevel())
-	//server.app.Logger().SetOutput(ioutil.Discard)
+	//server.app.Logger().SetLevel(cfg.LogLevel())
+	server.app.Logger().SetOutput(ioutil.Discard)
 
 	crs := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"}, // allows everything, use that to change the hosts.
@@ -198,6 +199,9 @@ func (server *server) Start(ctx context.Context, webDir string, cfg *cfg.Config)
 				p.Get("/{id:int64}/log", hero.Handler(device.LogList)).Name = resourceDef.DeviceLogList
 				p.Delete("/{id:int64}/log", hero.Handler(device.LogDelete)).Name = resourceDef.DeviceLogDelete
 
+				//取最后一个警报
+				p.Get("/{id:int64}/{measureID:int64}/alarm", hero.Handler(device.GetLastAlarm)).Name = resourceDef.DeviceStatus
+
 				//实时状态
 				p.Get("/{id:int64}/reset", hero.Handler(device.Reset)).Name = resourceDef.DeviceStatus
 				p.Get("/{id:int64}/status", hero.Handler(device.Status)).Name = resourceDef.DeviceStatus
@@ -235,6 +239,9 @@ func (server *server) Start(ctx context.Context, webDir string, cfg *cfg.Config)
 				//日志
 				p.Get("/{id:int64}/log", hero.Handler(equipment.LogList)).Name = resourceDef.EquipmentLogList
 				p.Delete("/{id:int64}/log", hero.Handler(equipment.LogDelete)).Name = resourceDef.EquipmentLogDelete
+
+				//取最后一个警报
+				p.Get("/{id:int64}/{stateID:int64}/alarm", hero.Handler(equipment.GetLastAlarm)).Name = resourceDef.EquipmentStatus
 
 				//实时状态
 				p.Get("/{id:int64}/status", hero.Handler(equipment.Status)).Name = resourceDef.EquipmentStatus

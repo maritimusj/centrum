@@ -2287,11 +2287,11 @@ func (s *mysqlStore) RemoveAlarm(alarmID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetLastUnconfirmedAlarm(options ...helper.OptionFN) (model.Alarm, int64, error) {
+func (s *mysqlStore) GetLastAlarm(options ...helper.OptionFN) (model.Alarm, int64, error) {
 	option := parseOption(options...)
 	var (
-		fromSQL = "FROM " + TbAlarms + " WHERE status=?"
-		params  = []interface{}{status.Unconfirmed}
+		fromSQL = "FROM " + TbAlarms + " WHERE 1"
+		params  []interface{}
 	)
 	if option.DeviceID > 0 {
 		fromSQL += " AND device_id=?"
@@ -2302,9 +2302,18 @@ func (s *mysqlStore) GetLastUnconfirmedAlarm(options ...helper.OptionFN) (model.
 		params = append(params, option.MeasureID)
 	}
 
+	if option.Status != nil {
+		fromSQL += " AND status=?"
+		params = append(params, *option.Status)
+	}
+
 	var total int64
 	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
 		return nil, 0, lang.InternalError(err)
+	}
+
+	if option.OrderBy != "" {
+		fromSQL += " ORDER BY " + option.OrderBy
 	}
 
 	fromSQL += " LIMIT 1"
@@ -2323,6 +2332,11 @@ func (s *mysqlStore) GetLastUnconfirmedAlarm(options ...helper.OptionFN) (model.
 	}
 
 	return alarm, total, nil
+}
+
+func (s *mysqlStore) GetLastUnconfirmedAlarm(options ...helper.OptionFN) (model.Alarm, int64, error) {
+	options = append(options, helper.Status(status.Unconfirmed))
+	return s.GetLastAlarm(options...)
 }
 
 func (s *mysqlStore) GetAlarmList(start, end *time.Time, options ...helper.OptionFN) ([]model.Alarm, int64, error) {

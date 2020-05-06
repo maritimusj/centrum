@@ -227,10 +227,10 @@ func MultiStatus(ctx iris.Context) hero.Result {
 	})
 }
 
-func Detail(deviceID int64, ctx iris.Context) hero.Result {
+func Detail(equipmentID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		s := app.Store()
-		equipment, err := s.GetEquipment(deviceID)
+		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
@@ -342,5 +342,32 @@ func Delete(equipmentID int64, ctx iris.Context) hero.Result {
 			return lang.Ok
 		}
 		return result
+	})
+}
+
+func GetLastAlarm(equipmentID int64, stateID int64) hero.Result {
+	return response.Wrap(func() interface{} {
+		s := app.Store()
+		equipment, err := s.GetEquipment(equipmentID)
+		if err != nil {
+			return err
+		}
+
+		state, err := app.Store().GetState(stateID)
+		if err != nil {
+			return err
+		}
+
+		measure := state.Measure()
+		if measure == nil {
+			return iris.Map{}
+		}
+
+		alarm, _, err := s.GetLastAlarm(helper.Equipment(equipment.GetID()), helper.Measure(measure.GetID()), helper.OrderBy("id DESC"))
+		if err != nil {
+			return err
+		}
+
+		return alarm.Detail()
 	})
 }

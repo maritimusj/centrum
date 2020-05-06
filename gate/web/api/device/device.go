@@ -428,3 +428,25 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 		return result
 	})
 }
+
+func GetLastAlarm(deviceID int64, measureID int64) hero.Result {
+	return response.Wrap(func() interface{} {
+		s := app.Store()
+		equipment, err := s.GetEquipment(deviceID)
+		if err != nil {
+			return err
+		}
+
+		measure, err := app.Store().GetMeasure(measureID)
+		if err != nil {
+			return err
+		}
+
+		alarm, _, err := s.GetLastAlarm(helper.Equipment(equipment.GetID()), helper.Measure(measure.GetID()), helper.OrderBy("id DESC"))
+		if err != nil {
+			return err
+		}
+
+		return alarm.Detail()
+	})
+}
