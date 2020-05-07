@@ -56,22 +56,17 @@ func rangeEquipmentStates(user model.User, equipment model.Equipment, fn func(de
 
 func getEquipmentSimpleStatus(user model.User, equipment model.Equipment) map[string]interface{} {
 	res := map[string]interface{}{
-		"index": edgeLang.Connected,
-		"title": edgeLang.Str(edgeLang.Connected),
+		"index": edgeLang.Disconnected,
+		"title": edgeLang.Str(edgeLang.Disconnected),
 	}
 	_ = rangeEquipmentStates(user, equipment, func(device model.Device, measure model.Measure, state model.State) error {
-		if device == nil {
-			res["index"] = edgeLang.MalFunctioned
-			return lang.ErrDeviceNotFound.Error()
-		} else if measure == nil {
-			res["index"] = edgeLang.MalFunctioned
-			return lang.ErrMeasureNotFound.Error()
-		}
-		index, title, _ := global.GetDeviceStatus(device)
-		if index != int(edgeLang.Connected) {
-			res["index"] = index
-			res["title"] = title
-			return errors.New(edgeLang.Str(edgeLang.StrIndex(index)))
+		if device != nil {
+			index, title, _ := global.GetDeviceStatus(device)
+			if index == int(edgeLang.Connected) {
+				res["index"] = index
+				res["title"] = title
+				return errors.New("")
+			}
 		}
 		return nil
 	})
