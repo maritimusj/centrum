@@ -42,7 +42,7 @@ func GetStatus(device model.Device) (map[string]interface{}, error) {
 	return GetBaseInfo(strconv.FormatInt(device.GetID(), 10))
 }
 
-func GetRealTimeData(device model.Device) ([]interface{}, error) {
+func GetRealTimeData(device model.Device) (interface{}, error) {
 	return GetRealtimeData(strconv.FormatInt(device.GetID(), 10))
 }
 

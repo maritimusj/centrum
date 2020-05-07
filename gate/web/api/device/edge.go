@@ -74,32 +74,38 @@ func Data(deviceID int64, ctx iris.Context) hero.Result {
 		data, err := edge.GetRealTimeData(device)
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok {
-				return lang.Error(lang.ErrNetworkFail, netErr.Error())
+				return lang.ErrNetworkFail.Error(netErr.Error())
 			}
 			return err
 		}
 
-		testPerm := func(measure model.Measure, action resource.Action) bool {
+		allow := func(measure model.Measure, action resource.Action) bool {
 			if app.IsDefaultAdminUser(admin) {
 				return true
 			}
 			return app.Allow(admin, measure, action)
 		}
 
+		arr, _ := data.([]interface{})
+
 		//过滤掉没有权限的measure
-		var result = make([]interface{}, 0, len(data))
-		for _, entry := range data {
+		var result = make([]interface{}, 0, len(arr))
+		for _, entry := range arr {
 			if e, ok := entry.(map[string]interface{}); ok {
 				if chTagName, ok := e["tag"].(string); ok {
 					measure, err := s.GetMeasureFromTagName(deviceID, chTagName)
 					if err != nil {
 						continue
 					}
-					if testPerm(measure, resource.View) {
+
+					e["id"] = measure.GetID()
+
+					if allow(measure, resource.View) {
 						e["perm"] = map[string]bool{
 							"view": true,
-							"ctrl": testPerm(measure, resource.Ctrl),
+							"ctrl": allow(measure, resource.Ctrl),
 						}
+						e["id"] = measure.GetID()
 						result = append(result, entry)
 					}
 				}

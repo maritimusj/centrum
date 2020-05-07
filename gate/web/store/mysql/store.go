@@ -127,7 +127,7 @@ func (s *mysqlStore) loadConfig(id int64) (*Config, error) {
 		if err != sql.ErrNoRows {
 			return nil, lang.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrConfigNotFound)
+		return nil, lang.ErrConfigNotFound.Error()
 	}
 
 	return cfg, nil
@@ -143,7 +143,7 @@ func (s *mysqlStore) GetConfig(cfg interface{}) (model.Config, error) {
 
 		cfg, err := s.cache.LoadConfig(cfgID)
 		if err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang.ErrCacheNotFound.Error() {
 				return err
 			}
 		} else {
@@ -297,12 +297,12 @@ func (s *mysqlStore) MustGetUserFromContext(ctx iris.Context) model.User {
 		}
 		return user
 	}
-	panic(lang.Error(lang.ErrInvalidUser))
+	panic(lang.ErrInvalidUser.Error())
 }
 
 func (s *mysqlStore) IsOrganizationExists(org interface{}) (bool, error) {
 	if _, err := s.getOrganizationID(org); err != nil {
-		if err != lang.Error(lang.ErrOrganizationNotFound) {
+		if err != lang.ErrOrganizationNotFound.Error() {
 			return false, err
 		}
 		return false, nil
@@ -312,7 +312,7 @@ func (s *mysqlStore) IsOrganizationExists(org interface{}) (bool, error) {
 
 func (s *mysqlStore) IsUserExists(user interface{}) (bool, error) {
 	if _, err := s.getUserID(user); err != nil {
-		if err != lang.Error(lang.ErrUserNotFound) {
+		if err != lang.ErrUserNotFound.Error() {
 			return false, err
 		}
 		return false, nil
@@ -322,7 +322,7 @@ func (s *mysqlStore) IsUserExists(user interface{}) (bool, error) {
 
 func (s *mysqlStore) IsRoleExists(role interface{}) (bool, error) {
 	if _, err := s.getRoleID(role); err != nil {
-		if err != lang.Error(lang.ErrRoleNotFound) {
+		if err != lang.ErrRoleNotFound.Error() {
 			return false, err
 		}
 		return false, nil
@@ -372,7 +372,7 @@ func (s *mysqlStore) loadOrganization(id int64) (*Organization, error) {
 		if err != sql.ErrNoRows {
 			return nil, lang.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrOrganizationNotFound)
+		return nil, lang.ErrOrganizationNotFound.Error()
 	}
 	return org, nil
 }
@@ -387,7 +387,7 @@ func (s *mysqlStore) GetOrganization(id interface{}) (model.Organization, error)
 
 		org, err := s.cache.LoadOrganization(orgID)
 		if err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang.ErrCacheNotFound.Error() {
 				return err
 			}
 		} else {
@@ -545,7 +545,7 @@ func (s *mysqlStore) loadUser(id int64) (*User, error) {
 		if err != sql.ErrNoRows {
 			return nil, lang.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrUserNotFound)
+		return nil, lang.ErrUserNotFound.Error()
 	}
 
 	return user, nil
@@ -559,7 +559,7 @@ func (s *mysqlStore) GetUser(user interface{}) (model.User, error) {
 		}
 
 		if user, err := s.cache.LoadUser(userID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang.ErrCacheNotFound.Error() {
 				return err
 			}
 		} else {
@@ -759,7 +759,7 @@ func (s *mysqlStore) loadRole(id int64) (*Role, error) {
 		if err != sql.ErrNoRows {
 			return nil, lang.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrRoleNotFound)
+		return nil, lang.ErrRoleNotFound.Error()
 	}
 	return role, nil
 }
@@ -771,7 +771,7 @@ func (s *mysqlStore) GetRole(role interface{}) (model.Role, error) {
 			return err
 		}
 		if role, err := s.cache.LoadRole(roleID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang.ErrCacheNotFound.Error() {
 				return lang.InternalError(err)
 			}
 		} else {
@@ -944,7 +944,7 @@ func (s *mysqlStore) loadPolicy(id int64) (model.Policy, error) {
 		if err != sql.ErrNoRows {
 			return nil, lang.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrPolicyNotFound)
+		return nil, lang.ErrPolicyNotFound.Error()
 	}
 	return policy, nil
 }
@@ -952,7 +952,7 @@ func (s *mysqlStore) loadPolicy(id int64) (model.Policy, error) {
 func (s *mysqlStore) GetPolicy(policyID int64) (model.Policy, error) {
 	result := <-synchronized.Do(TbPolicies, func() interface{} {
 		if role, err := s.cache.LoadPolicy(policyID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang.ErrCacheNotFound.Error() {
 				return lang.InternalError(err)
 			}
 		} else {
@@ -987,7 +987,7 @@ func (s *mysqlStore) GetPolicyFrom(roleID int64, res model.Resource, action reso
 		if err != sql.ErrNoRows {
 			return nil, lang.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrPolicyNotFound)
+		return nil, lang.ErrPolicyNotFound.Error()
 	}
 
 	return s.GetPolicy(policyID)
@@ -1122,7 +1122,7 @@ func (s *mysqlStore) loadGroup(id int64) (model.Group, error) {
 		if err != sql.ErrNoRows {
 			return nil, lang.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrGroupNotFound)
+		return nil, lang.ErrGroupNotFound.Error()
 	}
 	return group, nil
 }
@@ -1130,7 +1130,7 @@ func (s *mysqlStore) loadGroup(id int64) (model.Group, error) {
 func (s *mysqlStore) GetGroup(groupID int64) (model.Group, error) {
 	result := <-synchronized.Do(TbGroups, func() interface{} {
 		if group, err := s.cache.LoadGroup(groupID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang.ErrCacheNotFound.Error() {
 				return err
 			}
 		} else {
@@ -1392,7 +1392,7 @@ func (s *mysqlStore) loadDevice(id int64) (model.Device, error) {
 		if err != sql.ErrNoRows {
 			return nil, lang.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrDeviceNotFound)
+		return nil, lang.ErrDeviceNotFound.Error()
 	}
 	return device, nil
 }
@@ -1400,7 +1400,7 @@ func (s *mysqlStore) loadDevice(id int64) (model.Device, error) {
 func (s *mysqlStore) GetDevice(deviceID int64) (model.Device, error) {
 	result := <-synchronized.Do(TbDevices, func() interface{} {
 		if device, err := s.cache.LoadDevice(deviceID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang.ErrCacheNotFound.Error() {
 				return err
 			}
 		} else {
@@ -1589,7 +1589,7 @@ func (s *mysqlStore) loadMeasure(id int64) (model.Measure, error) {
 		if err != sql.ErrNoRows {
 			return nil, lang.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrMeasureNotFound)
+		return nil, lang.ErrMeasureNotFound.Error()
 	}
 	return measure, nil
 }
@@ -1601,7 +1601,7 @@ func (s *mysqlStore) GetMeasureFromTagName(deviceID int64, tagName string) (mode
 			return err
 		}
 		if measure, err := s.cache.LoadMeasure(measureID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang.ErrCacheNotFound.Error() {
 				return lang.InternalError(err)
 			}
 		} else {
@@ -1629,7 +1629,7 @@ func (s *mysqlStore) GetMeasureFromTagName(deviceID int64, tagName string) (mode
 func (s *mysqlStore) GetMeasure(measureID int64) (model.Measure, error) {
 	result := <-synchronized.Do(TbMeasures, func() interface{} {
 		if measure, err := s.cache.LoadMeasure(measureID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang.ErrCacheNotFound.Error() {
 				return err
 			}
 		} else {
@@ -1811,7 +1811,7 @@ func (s *mysqlStore) loadEquipment(id int64) (model.Equipment, error) {
 		if err != sql.ErrNoRows {
 			return nil, err
 		}
-		return nil, lang.Error(lang.ErrEquipmentNotFound)
+		return nil, lang.ErrEquipmentNotFound.Error()
 	}
 	return equipment, nil
 }
@@ -1819,7 +1819,7 @@ func (s *mysqlStore) loadEquipment(id int64) (model.Equipment, error) {
 func (s *mysqlStore) GetEquipment(equipmentID int64) (model.Equipment, error) {
 	result := <-synchronized.Do(TbEquipments, func() interface{} {
 		if equipment, err := s.cache.LoadEquipment(equipmentID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang.ErrCacheNotFound.Error() {
 				return err
 			}
 		} else {
@@ -2007,7 +2007,7 @@ func (s *mysqlStore) loadState(id int64) (model.State, error) {
 		if err != sql.ErrNoRows {
 			return nil, lang.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrStateNotFound)
+		return nil, lang.ErrStateNotFound.Error()
 	}
 	return state, nil
 }
@@ -2015,7 +2015,7 @@ func (s *mysqlStore) loadState(id int64) (model.State, error) {
 func (s *mysqlStore) GetState(stateID int64) (model.State, error) {
 	result := <-synchronized.Do(TbStates, func() interface{} {
 		if state, err := s.cache.LoadState(stateID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang.ErrCacheNotFound.Error() {
 				return err
 			}
 		} else {
@@ -2204,7 +2204,7 @@ func (s *mysqlStore) loadAlarm(id int64) (model.Alarm, error) {
 		if err != sql.ErrNoRows {
 			return nil, lang.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrAlarmNotFound)
+		return nil, lang.ErrAlarmNotFound.Error()
 	}
 	return alarm, nil
 }
@@ -2212,7 +2212,7 @@ func (s *mysqlStore) loadAlarm(id int64) (model.Alarm, error) {
 func (s *mysqlStore) GetAlarm(alarmID int64) (model.Alarm, error) {
 	result := <-synchronized.Do(TbAlarms, func() interface{} {
 		if alarm, err := s.cache.LoadAlarm(alarmID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang.ErrCacheNotFound.Error() {
 				return err
 			}
 		} else {
@@ -2287,11 +2287,11 @@ func (s *mysqlStore) RemoveAlarm(alarmID int64) error {
 	return nil
 }
 
-func (s *mysqlStore) GetLastUnconfirmedAlarm(options ...helper.OptionFN) (model.Alarm, int64, error) {
+func (s *mysqlStore) GetLastAlarm(options ...helper.OptionFN) (model.Alarm, int64, error) {
 	option := parseOption(options...)
 	var (
-		fromSQL = "FROM " + TbAlarms + " WHERE status=?"
-		params  = []interface{}{status.Unconfirmed}
+		fromSQL = "FROM " + TbAlarms + " WHERE 1"
+		params  []interface{}
 	)
 	if option.DeviceID > 0 {
 		fromSQL += " AND device_id=?"
@@ -2302,9 +2302,18 @@ func (s *mysqlStore) GetLastUnconfirmedAlarm(options ...helper.OptionFN) (model.
 		params = append(params, option.MeasureID)
 	}
 
+	if option.Status != nil {
+		fromSQL += " AND status=?"
+		params = append(params, *option.Status)
+	}
+
 	var total int64
 	if err := s.db.QueryRow("SELECT COUNT(*) "+fromSQL, params...).Scan(&total); err != nil {
 		return nil, 0, lang.InternalError(err)
+	}
+
+	if option.OrderBy != "" {
+		fromSQL += " ORDER BY " + option.OrderBy
 	}
 
 	fromSQL += " LIMIT 1"
@@ -2314,7 +2323,7 @@ func (s *mysqlStore) GetLastUnconfirmedAlarm(options ...helper.OptionFN) (model.
 		if err != sql.ErrNoRows {
 			return nil, 0, lang.InternalError(err)
 		}
-		return nil, 0, lang.Error(lang.ErrAlarmNotFound)
+		return nil, 0, lang.ErrAlarmNotFound.Error()
 	}
 
 	alarm, err := s.GetAlarm(alarmID)
@@ -2323,6 +2332,11 @@ func (s *mysqlStore) GetLastUnconfirmedAlarm(options ...helper.OptionFN) (model.
 	}
 
 	return alarm, total, nil
+}
+
+func (s *mysqlStore) GetLastUnconfirmedAlarm(options ...helper.OptionFN) (model.Alarm, int64, error) {
+	options = append(options, helper.Status(status.Unconfirmed))
+	return s.GetLastAlarm(options...)
 }
 
 func (s *mysqlStore) GetAlarmList(start, end *time.Time, options ...helper.OptionFN) ([]model.Alarm, int64, error) {
@@ -2334,6 +2348,11 @@ func (s *mysqlStore) GetAlarmList(start, end *time.Time, options ...helper.Optio
 
 		params []interface{}
 	)
+
+	if option.Status != nil {
+		where += " AND status=?"
+		params = append(params, *option.Status)
+	}
 
 	if option.UserID != nil {
 		userID := *option.UserID
@@ -2452,7 +2471,7 @@ func (s *mysqlStore) loadComment(id int64) (model.Comment, error) {
 		if err != sql.ErrNoRows {
 			return nil, lang.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrCommentNotFound)
+		return nil, lang.ErrCommentNotFound.Error()
 	}
 	return comment, nil
 }
@@ -2460,7 +2479,7 @@ func (s *mysqlStore) loadComment(id int64) (model.Comment, error) {
 func (s *mysqlStore) GetComment(commentID int64) (model.Comment, error) {
 	result := <-synchronized.Do(TbComments, func() interface{} {
 		if comment, err := s.cache.LoadComment(commentID); err != nil {
-			if err != lang.Error(lang.ErrCommentNotFound) {
+			if err != lang.ErrCommentNotFound.Error() {
 				return err
 			}
 		} else {
@@ -2717,7 +2736,7 @@ func (s *mysqlStore) GetResource(class resource.Class, resourceID int64) (model.
 		}
 		return res, nil
 	default:
-		return nil, lang.Error(lang.ErrInvalidResourceClassID)
+		return nil, lang.ErrInvalidResourceClassID.Error()
 	}
 }
 
@@ -2732,7 +2751,7 @@ func (s *mysqlStore) loadApiResource(resID int64) (model.ApiResource, error) {
 		if err != sql.ErrNoRows {
 			return nil, lang.InternalError(err)
 		}
-		return nil, lang.Error(lang.ErrApiResourceNotFound)
+		return nil, lang.ErrApiResourceNotFound.Error()
 	}
 	return apiRes, nil
 }
@@ -2751,14 +2770,14 @@ func (s *mysqlStore) GetApiResource(res interface{}) (model.ApiResource, error) 
 				if err != sql.ErrNoRows {
 					return lang.InternalError(err)
 				}
-				return lang.Error(lang.ErrApiResourceNotFound)
+				return lang.ErrApiResourceNotFound.Error()
 			}
 		default:
 			panic(errors.New("GetApiResource: unknown api resource"))
 		}
 
 		if res, err := s.cache.LoadApiResource(resID); err != nil {
-			if err != lang.Error(lang.ErrCacheNotFound) {
+			if err != lang.ErrCacheNotFound.Error() {
 				return err
 			}
 		} else {
@@ -2788,7 +2807,7 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 	option := parseOption(options...)
 
 	var (
-		fromSQL = "FROM " + TbApiResources + " WHERE title != ''"
+		fromSQL = "FROM " + TbApiResources + " WHERE 1"
 	)
 
 	var params []interface{}
@@ -2861,6 +2880,8 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 }
 
 func (s *mysqlStore) InitApiResource() error {
+	log.Println("InitApiResource...")
+
 	result := <-synchronized.Do(TbApiResources, func() interface{} {
 		err := RemoveData(s.db, TbApiResources, "1")
 		if err != nil {

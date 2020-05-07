@@ -177,7 +177,7 @@ func (o *Organization) Brief() model.Map {
 		"name":       o.name,
 		"title":      o.title,
 		"enable":     o.IsEnabled(),
-		"created_at": o.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": o.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 }
 
@@ -190,6 +190,6 @@ func (o *Organization) Detail() model.Map {
 		"name":       o.name,
 		"title":      o.title,
 		"enable":     o.IsEnabled(),
-		"created_at": o.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": o.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 }

@@ -49,7 +49,7 @@ func (adapter *Adapter) IsAlive() bool {
 
 	//log.Debugln("IsAlive:", time.Now().Sub(adapter.lastActiveTime).String())
 
-	return time.Now().Sub(adapter.lastActiveTime) < adapter.conf.Interval+30*time.Second
+	return time.Now().Sub(adapter.lastActiveTime) < adapter.conf.Interval*2
 }
 
 func (adapter *Adapter) IsDone() bool {

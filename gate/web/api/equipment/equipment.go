@@ -103,7 +103,7 @@ func List(ctx iris.Context) hero.Result {
 
 			_, total, err = s.GetLastUnconfirmedAlarm(params...)
 			if err != nil {
-				if err != lang.Error(lang.ErrAlarmNotFound) {
+				if err != lang.ErrAlarmNotFound.Error() {
 					return err
 				}
 			}
@@ -122,6 +122,10 @@ func List(ctx iris.Context) hero.Result {
 
 func Create(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
+		if !app.IsRegistered() {
+			return lang.ErrRegFirst
+		}
+
 		var form struct {
 			OrgID  int64   `json:"org"`
 			Title  string  `json:"title" valid:"required"`
@@ -223,10 +227,10 @@ func MultiStatus(ctx iris.Context) hero.Result {
 	})
 }
 
-func Detail(deviceID int64, ctx iris.Context) hero.Result {
+func Detail(equipmentID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		s := app.Store()
-		equipment, err := s.GetEquipment(deviceID)
+		equipment, err := s.GetEquipment(equipmentID)
 		if err != nil {
 			return err
 		}
@@ -236,7 +240,12 @@ func Detail(deviceID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		return equipment.Detail()
+		detail := equipment.Detail()
+		detail["perm"] = iris.Map{
+			"view": true,
+			"ctrl": app.Allow(admin, equipment, resource.Ctrl),
+		}
+		return detail
 	})
 }
 
@@ -333,5 +342,33 @@ func Delete(equipmentID int64, ctx iris.Context) hero.Result {
 			return lang.Ok
 		}
 		return result
+	})
+}
+
+func GetLastAlarm(_ int64, stateID int64, ctx iris.Context) hero.Result {
+	return response.Wrap(func() interface{} {
+		s := app.Store()
+		admin := s.MustGetUserFromContext(ctx)
+
+		state, err := app.Store().GetState(stateID)
+		if err != nil {
+			return err
+		}
+
+		if !app.Allow(admin, state, resource.View) {
+			return lang.ErrNoPermission
+		}
+
+		measure := state.Measure()
+		if measure == nil {
+			return iris.Map{}
+		}
+
+		alarm, _, err := s.GetLastAlarm(helper.Measure(measure.GetID()), helper.OrderBy("id DESC"))
+		if err != nil {
+			return err
+		}
+
+		return alarm.Detail()
 	})
 }

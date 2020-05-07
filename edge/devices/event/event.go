@@ -38,6 +38,7 @@ const (
 func isHttpTooBusy() bool {
 	return len(__httpRequestCH) > 600
 }
+
 func Init(ctx context.Context) {
 	eventsMap := map[string]interface{}{
 		DeviceStatusChanged: OnDeviceStatusChanged,

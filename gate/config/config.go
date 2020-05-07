@@ -39,7 +39,7 @@ const (
 	DefaultUserName        = "admin"
 	DefaultPageSize        = 20
 	DefaultTokenExpiration = 3600 // second
-	DefaultLogLevel        = "error"
+	DefaultLogLevel        = "info"
 	DefaultLogFileName     = "./log.data"
 )
 

@@ -2,6 +2,9 @@ package resource
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
@@ -11,8 +14,6 @@ import (
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/response"
 	"github.com/maritimusj/centrum/util"
-	"strconv"
-	"strings"
 )
 
 func GroupList() hero.Result {
@@ -109,7 +110,7 @@ func List(classID int, ctx iris.Context) hero.Result {
 
 		class := resource.Class(classID)
 		if !resource.IsValidClass(class) {
-			return lang.Error(lang.ErrInvalidResourceClassID)
+			return lang.ErrInvalidResourceClassID.Error()
 		}
 
 		if class == resource.Api {

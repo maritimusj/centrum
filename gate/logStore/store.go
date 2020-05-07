@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,7 +30,7 @@ func (entry *Entry) Marshal() ([]byte, error) {
 		"level":      entry.Level,
 		"message":    entry.Message,
 		"fields":     entry.Fields,
-		"created_at": entry.CreatedAt.Format("2006-01-02 15:04:05"),
+		"created_at": entry.CreatedAt.Format(lang.DatetimeFormatterStr.Str()),
 	})
 }
 

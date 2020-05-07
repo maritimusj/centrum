@@ -3,9 +3,10 @@ package mysql
 import (
 	"context"
 	"database/sql"
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"github.com/maritimusj/centrum/gate/web/db"
-	"time"
 )
 
 type mysqlDB struct {
@@ -28,7 +29,7 @@ func (m *mysqlDB) TransactionDo(fn func(db db.DB) interface{}) interface{} {
 
 	result := fn(tx)
 	if result != nil {
-		if errCode, ok := result.(lang.ErrorCode); ok && errCode != lang.Ok {
+		if errCode, ok := result.(lang.ErrIndex); ok && errCode != lang.Ok {
 			return lang.Error(errCode)
 		}
 		if err, ok := result.(error); ok {
@@ -57,19 +58,12 @@ func Open(ctx context.Context, option map[string]interface{}) (db.WithTransactio
 			return nil, lang.InternalError(err)
 		}
 
-		if initDB, ok := option["initDB"].(bool); ok && initDB {
-			_, err = conn.Exec(initDBSQL)
-			if err != nil {
-				return nil, lang.InternalError(err)
-			}
-		}
-
 		return &mysqlDB{
 			db:  conn,
 			ctx: ctx,
 		}, nil
 	}
-	return nil, lang.Error(lang.ErrInvalidDBConnStr)
+	return nil, lang.ErrInvalidDBConnStr.Error()
 }
 
 func (m *mysqlDB) Close() {

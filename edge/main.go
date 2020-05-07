@@ -9,6 +9,9 @@ import (
 
 	"github.com/maritimusj/centrum/edge/devices/InverseServer"
 	"github.com/maritimusj/centrum/edge/devices/event"
+
+	"github.com/maritimusj/centrum/edge/lang"
+	_ "github.com/maritimusj/centrum/edge/lang/enUS"
 	_ "github.com/maritimusj/centrum/edge/lang/zhCN"
 
 	"flag"
@@ -17,8 +20,8 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/gorilla/mux"
-	"github.com/gorilla/rpc"
-	"github.com/gorilla/rpc/json"
+	"github.com/gorilla/rpc/v2"
+	"github.com/gorilla/rpc/v2/json"
 	"github.com/maritimusj/centrum/edge/devices"
 	"github.com/maritimusj/centrum/json_rpc"
 	log "github.com/sirupsen/logrus"
@@ -29,7 +32,15 @@ import (
 func main() {
 	logLevel := flag.String("l", "", "log error level")
 	config := flag.String("config", "edge.yaml", "config file name")
+	langID := flag.Int("lang", lang.ZhCN, "language ID")
+
 	flag.Parse()
+
+	fmt.Println("edge is running..")
+
+	if *langID == lang.ZhCN || *langID == lang.EnUS {
+		lang.Active(*langID)
+	}
 
 	viper.SetConfigFile(*config)
 	viper.AddConfigPath(".")
@@ -115,11 +126,11 @@ func main() {
 	}
 
 	var (
-		pprofEnable = viper.GetBool("pprof.enable")
-		addr        = viper.GetString("pprof.addr")
-		port        = viper.GetInt("pprof.port")
+		perfEnable = viper.GetBool("perf.enable")
+		addr       = viper.GetString("perf.addr")
+		port       = viper.GetInt("perf.port")
 	)
-	if pprofEnable {
+	if perfEnable {
 		go func() {
 			_ = http.ListenAndServe(fmt.Sprintf("%s:%d", addr, port), nil)
 		}()

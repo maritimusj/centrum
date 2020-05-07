@@ -2,12 +2,46 @@ package global
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	edgeLang "github.com/maritimusj/centrum/edge/lang"
+	_ "github.com/maritimusj/centrum/edge/lang/enUS"
+	_ "github.com/maritimusj/centrum/edge/lang/zhCN"
 
 	"github.com/maritimusj/centrum/gate/web/model"
 )
+
+func AddMessage(data interface{}, fn func(string, int64) bool) {
+	Messages.Add(data, func(uid string) bool {
+		if fn != nil {
+			arr := strings.Split(uid, ":")
+			if len(arr) != 2 {
+				return false
+			}
+			userId, err := strconv.ParseInt(arr[1], 10, 0)
+			if err != nil {
+				return false
+			}
+			return fn(arr[0], userId)
+		}
+
+		return true
+	})
+}
+
+func GetAllMessage(uid string, userId int64) []*msg {
+	return Messages.GetAll(fmt.Sprintf("%s:%d", uid, userId))
+}
+
+func Create(uid string, userId int64) {
+	Messages.Create(fmt.Sprintf("%s:%d", uid, userId))
+}
+
+func Close(uid string, userId int64) {
+	Messages.Close(fmt.Sprintf("%s:%d", uid, userId))
+}
 
 func UpdateDeviceStatus(device model.Device, index int, title string) {
 	path := fmt.Sprintf("device.%d.stats", device.GetID())

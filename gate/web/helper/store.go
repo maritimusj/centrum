@@ -19,9 +19,13 @@ type Option struct {
 	EquipmentID int64
 	StateID     int64
 
+	Status *int64
+
 	Name          string
 	Keyword       string
 	DefaultEffect resource2.Effect
+
+	OrderBy string
 }
 
 type OptionFN func(*Option)
@@ -129,5 +133,17 @@ func Name(name string) OptionFN {
 func Keyword(keyword string) OptionFN {
 	return func(i *Option) {
 		i.Keyword = keyword
+	}
+}
+
+func Status(status int64) OptionFN {
+	return func(i *Option) {
+		i.Status = &status
+	}
+}
+
+func OrderBy(orderBy string) OptionFN {
+	return func(i *Option) {
+		i.OrderBy = orderBy
 	}
 }

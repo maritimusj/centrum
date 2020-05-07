@@ -76,6 +76,7 @@ type Store interface {
 	GetStateList(options ...helper.OptionFN) ([]model.State, int64, error)
 
 	GetAlarm(alarmID int64) (model.Alarm, error)
+	GetLastAlarm(options ...helper.OptionFN) (model.Alarm, int64, error)
 	CreateAlarm(device model.Device, measureID int64, data map[string]interface{}) (model.Alarm, error)
 	RemoveAlarm(alarmID int64) error
 	GetAlarmList(start, end *time.Time, options ...helper.OptionFN) ([]model.Alarm, int64, error)

@@ -1,10 +1,13 @@
 package util
 
 import (
+	"fmt"
+	"math/rand"
+	"os"
+	"time"
+
 	"github.com/maritimusj/centrum/gate/lang"
 	"golang.org/x/crypto/bcrypt"
-	"math/rand"
-	"time"
 )
 
 func If(cond bool, yes interface{}, no interface{}) interface{} {
@@ -61,4 +64,44 @@ func RandStr(size int, kind int) string {
 		result[i] = uint8(base + rand.Intn(scope))
 	}
 	return string(result)
+}
+
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+func FormatFileSize(fileSize uint64) (size string) {
+	if fileSize < 1024 {
+		//return strconv.FormatInt(fileSize, 10) + "B"
+		return fmt.Sprintf("%dB", fileSize)
+	} else if fileSize < (1024 * 1024) {
+		return fmt.Sprintf("%.2fKB", float64(fileSize)/float64(1024))
+	} else if fileSize < (1024 * 1024 * 1024) {
+		return fmt.Sprintf("%.2fMB", float64(fileSize)/float64(1024*1024))
+	} else if fileSize < (1024 * 1024 * 1024 * 1024) {
+		return fmt.Sprintf("%.2fGB", float64(fileSize)/float64(1024*1024*1024))
+	} else if fileSize < (1024 * 1024 * 1024 * 1024 * 1024) {
+		return fmt.Sprintf("%.2fTB", float64(fileSize)/float64(1024*1024*1024*1024))
+	} else { //if fileSize < (1024 * 1024 * 1024 * 1024 * 1024 * 1024)
+		return fmt.Sprintf("%.2fEB", float64(fileSize)/float64(1024*1024*1024*1024*1024))
+	}
+}
+
+//a的n次方
+func Exponent(a, n uint64) uint64 {
+	result := uint64(1)
+	for i := n; i > 0; i >>= 1 {
+		if i&1 != 0 {
+			result *= a
+		}
+		a *= a
+	}
+	return result
 }

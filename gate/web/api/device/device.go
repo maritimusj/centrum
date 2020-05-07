@@ -101,7 +101,7 @@ func List(ctx iris.Context) hero.Result {
 				"title": title,
 			}
 			if index == int(edgeLang.Connected) {
-				status["from"] = from.Format("2006-01-02 15:04:05")
+				status["from"] = from.Format(lang.DatetimeFormatterStr.Str())
 				status["duration"] = strings.ReplaceAll(durafmt.Parse(time.Now().Sub(from)).LimitFirstN(2).String(), " ", "")
 			}
 			brief["edge"] = iris.Map{
@@ -123,7 +123,7 @@ func List(ctx iris.Context) hero.Result {
 
 			_, total, err = s.GetLastUnconfirmedAlarm(params...)
 			if err != nil {
-				if err != lang.Error(lang.ErrAlarmNotFound) {
+				if err != lang.ErrAlarmNotFound.Error() {
 					return err
 				}
 			}
@@ -142,6 +142,10 @@ func List(ctx iris.Context) hero.Result {
 }
 
 func Create(ctx iris.Context) hero.Result {
+	if !app.IsRegistered() {
+		return response.Wrap(lang.ErrRegFirst)
+	}
+
 	var form struct {
 		OrgID    int64   `json:"org"`
 		Title    string  `json:"title" valid:"required"`
@@ -253,7 +257,7 @@ func MultiStatus(ctx iris.Context) hero.Result {
 				if !app.Allow(admin, device, resource.View) {
 					result = append(result, iris.Map{
 						"id":    id,
-						"error": lang.Error(lang.ErrNoPermission).Error(),
+						"error": lang.ErrNoPermission.Error(),
 					})
 				} else {
 					index, title, from := global.GetDeviceStatus(device)
@@ -263,7 +267,7 @@ func MultiStatus(ctx iris.Context) hero.Result {
 						"title": title,
 					}
 					if index == int(edgeLang.Connected) {
-						status["from"] = from.Format("2006-01-02 15:04:05")
+						status["from"] = from.Format(lang.DatetimeFormatterStr.Str())
 						status["duration"] = strings.ReplaceAll(durafmt.Parse(time.Now().Sub(from)).LimitFirstN(2).String(), " ", "")
 					}
 					status["perf"] = global.GetDevicePerf(device)
@@ -288,7 +292,12 @@ func Detail(deviceID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		return device.Detail()
+		detail := device.Detail()
+		detail["perm"] = iris.Map{
+			"view": true,
+			"ctrl": app.Allow(admin, device, resource.Ctrl),
+		}
+		return detail
 	})
 }
 
@@ -417,5 +426,28 @@ func Delete(deviceID int64, ctx iris.Context) hero.Result {
 			return lang.Ok
 		}
 		return result
+	})
+}
+
+func GetLastAlarm(_ int64, measureID int64, ctx iris.Context) hero.Result {
+	return response.Wrap(func() interface{} {
+		s := app.Store()
+		admin := s.MustGetUserFromContext(ctx)
+
+		measure, err := app.Store().GetMeasure(measureID)
+		if err != nil {
+			return err
+		}
+
+		if !app.Allow(admin, measure, resource.View) {
+			return lang.ErrNoPermission
+		}
+
+		alarm, _, err := s.GetLastAlarm(helper.Measure(measure.GetID()), helper.OrderBy("id DESC"))
+		if err != nil {
+			return err
+		}
+
+		return alarm.Detail()
 	})
 }

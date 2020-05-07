@@ -230,7 +230,7 @@ func (device *Device) GetAddr() (*Addr, error) {
 	return result.(*Addr), nil
 }
 
-func (device *Device) GetCHNum() (*CHNum.Data, error) {
+func (device *Device) GetCHNum(flush bool) (*CHNum.Data, error) {
 	if device == nil {
 		return nil, lang.Error(lang.ErrDeviceNotExists)
 	}
@@ -239,7 +239,7 @@ func (device *Device) GetCHNum() (*CHNum.Data, error) {
 	}
 
 	result := <-synchronized.Do(device, func() interface{} {
-		if device.chNum == nil {
+		if device.chNum == nil || flush {
 			chNum := CHNum.New()
 			if client, err := device.getModbusClient(); err != nil {
 				chNum.Release()
@@ -266,11 +266,12 @@ func (device *Device) GetRealTimeData() (*realtime.Data, error) {
 	if device == nil {
 		return nil, lang.Error(lang.ErrDeviceNotExists)
 	}
+
 	if !device.IsConnected() {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
 
-	chNum, err := device.GetCHNum()
+	chNum, err := device.GetCHNum(true)
 	if err != nil {
 		return nil, err
 	}
@@ -448,7 +449,7 @@ func (device *Device) GetAI(index int) (*AI, error) {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
 
-	chNum, err := device.GetCHNum()
+	chNum, err := device.GetCHNum(false)
 	if err != nil {
 		return nil, err
 	}
@@ -502,7 +503,7 @@ func (device *Device) GetAO(index int) (*AO, error) {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
 
-	chNum, err := device.GetCHNum()
+	chNum, err := device.GetCHNum(false)
 	if err != nil {
 		return nil, err
 	}
@@ -548,7 +549,7 @@ func (device *Device) GetDI(index int) (*DI, error) {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
 
-	chNum, err := device.GetCHNum()
+	chNum, err := device.GetCHNum(false)
 	if err != nil {
 		return nil, err
 	}
@@ -595,7 +596,7 @@ func (device *Device) GetDOFromTag(tag string) (*DO, error) {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
 
-	chNum, err := device.GetCHNum()
+	chNum, err := device.GetCHNum(false)
 	if err != nil {
 		return nil, err
 	}
@@ -621,7 +622,7 @@ func (device *Device) GetDO(index int) (*DO, error) {
 		return nil, lang.Error(lang.ErrDeviceNotConnected)
 	}
 
-	chNum, err := device.GetCHNum()
+	chNum, err := device.GetCHNum(false)
 	if err != nil {
 		return nil, err
 	}

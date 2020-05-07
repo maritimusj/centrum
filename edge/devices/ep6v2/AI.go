@@ -105,7 +105,7 @@ func (alarm *AIAlarmConfig) fetchData(conn modbus.Client, index int) (retErr err
 	}()
 
 	var address, quantity uint16 = uint16(index+1)*CHBlockSize + 47, 11
-	data, err := conn.ReadHoldingRegisters(address, quantity)
+	data, _, err := conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func (alarm *AIAlarmConfig) fetchData(conn modbus.Client, index int) (retErr err
 	alarm.Delay = int(binary.BigEndian.Uint16(data[20:]))
 
 	address, quantity = uint16(index+1)*CHBlockSize+80, 30
-	data, err = conn.ReadHoldingRegisters(address, quantity)
+	data, _, err = conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (ai *AI) stateExpired() bool {
 
 func (ai *AI) fetchValue() error {
 	var address, quantity uint16 = uint16(AIValueStartAddress + ai.Index*2), 2
-	data, err := ai.conn.ReadInputRegisters(address, quantity)
+	data, _, err := ai.conn.ReadInputRegisters(address, quantity)
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func (ai *AI) GetConfig() *AIConfig {
 func (ai *AI) GetAlarmState() (AlarmValue, error) {
 	if ai.stateExpired() {
 		address := uint16(AIAlarmStartAddress + ai.Index)
-		data, err := ai.conn.ReadInputRegisters(address, 1)
+		data, _, err := ai.conn.ReadInputRegisters(address, 1)
 		if err != nil {
 			return 0, err
 		}
@@ -231,19 +231,19 @@ func (ai *AI) CheckAlarm(val float32) (AlarmValue, float32) {
 		return AlarmHF, cfg.HF.Value
 	}
 
-	if val >= cfg.HiHi.Value-cfg.DeadBand && cfg.HiHi.Style == Alarm {
+	if val >= cfg.HiHi.Value && cfg.HiHi.Style == Alarm {
 		return AlarmHH, cfg.HiHi.Value
 	}
 
-	if val >= cfg.HI.Value-cfg.DeadBand && cfg.HI.Style == Alarm {
+	if val >= cfg.HI.Value && cfg.HI.Style == Alarm {
 		return AlarmHI, cfg.HI.Value
 	}
 
-	if val < cfg.LO.Value+cfg.DeadBand && cfg.LO.Style == Alarm {
+	if val < cfg.LO.Value && cfg.LO.Style == Alarm {
 		return AlarmLO, cfg.LO.Value
 	}
 
-	if val < cfg.LoLo.Value+cfg.DeadBand && cfg.LoLo.Style == Alarm {
+	if val < cfg.LoLo.Value && cfg.LoLo.Style == Alarm {
 		return AlarmLL, cfg.LoLo.Value
 	}
 
@@ -262,7 +262,7 @@ func (c *AIConfig) fetchData(conn modbus.Client, index int) (retErr error) {
 	}()
 
 	var address, quantity uint16 = uint16(index+1) * CHBlockSize, 34
-	data, err := conn.ReadHoldingRegisters(address, quantity)
+	data, _, err := conn.ReadHoldingRegisters(address, quantity)
 	if err != nil {
 		return err
 	}

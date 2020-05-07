@@ -2,22 +2,42 @@ package edge
 
 import (
 	"bytes"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/maritimusj/centrum/gate/lang"
+
 	log "github.com/sirupsen/logrus"
 
-	"github.com/gorilla/rpc/json"
+	"github.com/gorilla/rpc/v2/json"
+	jsoniter "github.com/json-iterator/go"
 	. "github.com/maritimusj/centrum/json_rpc"
 )
 
 type balanceCacheEntry struct {
 	data interface{}
 	exp  time.Time
+	sync.Mutex
+}
+
+func (e *balanceCacheEntry) CloneData() interface{} {
+	e.Lock()
+	defer e.Unlock()
+
+	v, err := jsoniter.MarshalToString(e.data)
+	if err != nil {
+		return nil
+	}
+
+	var result interface{}
+	err = jsoniter.Unmarshal([]byte(v), &result)
+	if err != nil {
+		return nil
+	}
+	return result
 }
 
 func (e *balanceCacheEntry) IsExpired() bool {
@@ -134,14 +154,14 @@ func Add(url string) {
 func Invoke(url, cmd string, request interface{}) (*Result, error) {
 	message, err := json.EncodeClientRequest(cmd, request)
 	if err != nil {
-		return nil, err
+		log.Errorln("[invoke]: ", err)
+		return nil, lang.ErrEdgeInvokeFail.Error(9)
 	}
-
-	log.Traceln("invoke: ", url, string(message))
 
 	resp, err := http.Post(url, "application/json", bytes.NewReader(message))
 	if err != nil {
-		return nil, err
+		log.Errorln("[invoke]: ", err)
+		return nil, lang.ErrEdgeInvokeFail.Error(10)
 	}
 
 	defer func() {
@@ -154,20 +174,20 @@ func Invoke(url, cmd string, request interface{}) (*Result, error) {
 		data, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Errorf("[invoke] %s, result: %s", err, string(data))
-			return nil, err
+			//return nil, lang.ErrEdgeInvokeFail, 11.Error()
 		}
-
-		log.Traceln("[invoke] ", string(data))
 
 		err = json.DecodeClientResponse(bytes.NewReader(data), &reply)
 		if err != nil {
-			return nil, err
+			log.Errorln("[invoke]: ", err)
+			//return nil, lang.ErrEdgeInvokeFail, 12.Error()
 		}
 
 	} else {
 		err = json.DecodeClientResponse(resp.Body, &reply)
 		if err != nil {
-			return nil, err
+			log.Errorln("[invoke]: ", err)
+			//return nil, lang.ErrEdgeInvokeFail, 13.Error()
 		}
 	}
 
@@ -183,7 +203,7 @@ func Restart(url string) {
 func GetBaseInfo(uid string) (map[string]interface{}, error) {
 	balance := defaultEdgesMap.GetBalanceByDeviceUID(uid)
 	if balance == nil {
-		return map[string]interface{}{}, errors.New("device not found")
+		return map[string]interface{}{}, lang.ErrDeviceNotExistsOrActive.Error()
 	}
 
 	if e := balance.Get(uid, "baseInfo"); !e.IsExpired() {
@@ -232,7 +252,7 @@ func Active(conf *Conf) error {
 		return err
 	}
 
-	return errors.New("no edge")
+	return lang.ErrNoEdgeAvailable.Error()
 }
 
 //SetValue 设置设备指定点位的值
@@ -249,7 +269,7 @@ func SetValue(uid string, tag string, val interface{}) error {
 		return err
 	}
 
-	return errors.New("device not found")
+	return lang.ErrDeviceNotExistsOrActive.Error()
 }
 
 //GetValue 获取设备指定点位的值
@@ -275,15 +295,15 @@ func GetValue(uid string, tag string) (map[string]interface{}, error) {
 		return data, nil
 	}
 
-	return map[string]interface{}{}, errors.New("device not found")
+	return map[string]interface{}{}, lang.ErrDeviceNotExistsOrActive.Error()
 }
 
 //GetRealtimeData 获取指定设备的实时数据
-func GetRealtimeData(uid string) ([]interface{}, error) {
+func GetRealtimeData(uid string) (interface{}, error) {
 	balance := defaultEdgesMap.GetBalanceByDeviceUID(uid)
 	if balance != nil {
 		if e := balance.Get(uid, "realtimeData"); !e.IsExpired() {
-			return e.data.([]interface{}), nil
+			return e.CloneData().(interface{}), nil
 		}
 
 		result, err := Invoke(balance.url, "Edge.GetRealtimeData", uid)
@@ -291,11 +311,11 @@ func GetRealtimeData(uid string) ([]interface{}, error) {
 			return nil, err
 		}
 
-		data, _ := result.Data.([]interface{})
+		data, _ := result.Data.(interface{})
 		balance.Set(uid, "realtimeData", data)
 
 		return data, nil
 	}
 
-	return []interface{}{}, errors.New("device not found")
+	return []interface{}{}, lang.ErrDeviceNotExistsOrActive.Error()
 }

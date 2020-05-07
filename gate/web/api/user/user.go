@@ -1,8 +1,6 @@
 package user
 
 import (
-	"fmt"
-
 	"github.com/asaskevich/govalidator"
 	"github.com/emirpasic/gods/sets/hashset"
 	"github.com/kataras/iris"
@@ -16,7 +14,6 @@ import (
 	"github.com/maritimusj/centrum/gate/web/response"
 	"github.com/maritimusj/centrum/gate/web/status"
 	"github.com/maritimusj/centrum/gate/web/store"
-	"github.com/maritimusj/centrum/global"
 	"github.com/maritimusj/centrum/util"
 )
 
@@ -85,6 +82,10 @@ func Create(ctx iris.Context) hero.Result {
 			return lang.ErrInvalidRequestData
 		}
 
+		if form.Username == "" {
+			return lang.ErrInvalidUserName
+		}
+
 		result := app.TransactionDo(func(s store.Store) interface{} {
 			admin := s.MustGetUserFromContext(ctx)
 			if exists, err := s.IsUserExists(form.Username); err != nil {
@@ -117,26 +118,19 @@ func Create(ctx iris.Context) hero.Result {
 				org = admin.OrganizationID()
 			}
 
-			//创建用户同名的role，并设置guest权限
+			//创建用户同名的role
 			role, err := s.CreateRole(org, form.Username, form.Username, lang.Str(lang.UserDefaultRoleDesc))
 			if err != nil {
 				return err
 			}
-			for _, res := range resource.Guest {
-				if res == resource.Unknown {
-					continue
-				}
-				res, err := s.GetApiResource(res)
-				if err != nil {
-					return err
-				}
-				_, err = role.SetPolicy(res, resource.Invoke, resource.Allow, nil)
-				if err != nil {
-					return err
-				}
+
+			//设置guest角色
+			guestRole, err := s.GetRole(lang.RoleGuestName)
+			if err != nil {
+				return err
 			}
 
-			roles = append(roles, role)
+			roles = append(roles, role, guestRole)
 			user, err := s.CreateUser(org, form.Username, []byte(form.Password), roles...)
 			if err != nil {
 				return err
@@ -310,12 +304,6 @@ func Delete(userID int64, ctx iris.Context) hero.Result {
 
 func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		key := fmt.Sprintf("UpdatePerm.%d", userID)
-		if _, ok := global.Params.Get(key); ok {
-			return lang.ErrServerIsBusy
-		}
-
-		_ = global.Params.Set(key, true)
 		result := app.TransactionDo(func(s store.Store) interface{} {
 			user, err := s.GetUser(userID)
 			if err != nil {
@@ -324,11 +312,6 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 
 			if app.IsDefaultAdminUser(user) {
 				return lang.ErrFailedEditDefaultUser
-			}
-
-			roles, err := user.GetRoles()
-			if err != nil {
-				return err
 			}
 
 			type P struct {
@@ -344,6 +327,11 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 			}
 			if err = ctx.ReadJSON(&form); err != nil {
 				return lang.ErrInvalidRequestData
+			}
+
+			roles, err := user.GetRoles()
+			if err != nil {
+				return err
 			}
 
 			newRoles := hashset.New()
@@ -369,6 +357,7 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 					}
 				}
 			}
+
 			err = user.SetRoles(newRoles.Values()...)
 			if err != nil {
 				return err
@@ -428,7 +417,6 @@ func UpdatePerm(userID int64, ctx iris.Context) hero.Result {
 			return lang.ErrRoleNotFound
 		})
 
-		global.Params.Remove(key)
 		if data, ok := result.(event.Data); ok {
 			app.Event.Publish(event.UserUpdated, data.Get("adminID"), data.Get("userID"))
 			return lang.Ok

@@ -1,27 +1,27 @@
-package bolt
+package util
 
 import (
 	"bytes"
 	"encoding/gob"
 )
 
-type gobCopier struct {
+type GobCopier struct {
 	encoder *gob.Encoder
 	decoder *gob.Decoder
 }
 
-func NewCopier() *gobCopier {
+func NewCopier() *GobCopier {
 	buffer := bytes.Buffer{}
-	return &gobCopier{
+	return &GobCopier{
 		encoder: gob.NewEncoder(&buffer),
 		decoder: gob.NewDecoder(&buffer),
 	}
 }
 
-func (c *gobCopier) encode(v interface{}) error {
+func (c *GobCopier) Encode(v interface{}) error {
 	return c.encoder.Encode(v)
 }
 
-func (c *gobCopier) decode(data interface{}) error {
+func (c *GobCopier) Decode(data interface{}) error {
 	return c.decoder.Decode(data)
 }

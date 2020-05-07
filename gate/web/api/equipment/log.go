@@ -47,7 +47,7 @@ func LogDelete(equipmentID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 
-		logStr := lang.Str(lang.DeviceLogDeletedByUser, admin.Name(), equipment.Title())
+		logStr := lang.DeviceLogDeletedByUser.Str(admin.Name(), equipment.Title())
 
 		log2.WithField("src", logStore.SystemLog).Info(logStr)
 		equipment.Logger().Infoln(logStr)

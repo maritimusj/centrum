@@ -160,7 +160,7 @@ func (g *Group) Destroy() error {
 			equipments = append(equipments, e)
 		}
 
-		err = g.RemoveDevice(equipments...)
+		err = g.RemoveEquipment(equipments...)
 		if err != nil {
 			return err
 		}
@@ -375,7 +375,7 @@ func (g *Group) RemoveEquipment(equipments ...interface{}) error {
 			return err
 		}
 
-		if err := RemoveData(g.store.db, TbDeviceGroups, "group_id=? AND equipment_id=?", g.id, equipmentID); err != nil {
+		if err := RemoveData(g.store.db, TbEquipmentGroups, "group_id=? AND equipment_id=?", g.id, equipmentID); err != nil {
 			if err != sql.ErrNoRows {
 				return lang.InternalError(err)
 			}
@@ -406,7 +406,7 @@ func (g *Group) Brief() model.Map {
 		"id":         g.id,
 		"title":      g.title,
 		"desc":       g.desc,
-		"created_at": g.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": g.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 }
 
@@ -418,7 +418,7 @@ func (g *Group) Detail() model.Map {
 		"id":         g.id,
 		"title":      g.title,
 		"desc":       g.desc,
-		"created_at": g.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": g.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 	parent := g.Parent()
 	if parent != nil {

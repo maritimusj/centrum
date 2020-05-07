@@ -32,7 +32,7 @@ type Data struct {
 
 	pool *sync.Pool
 
-	rate         int
+	timeUsed     time.Duration
 	lastReadTime time.Time
 }
 
@@ -57,7 +57,7 @@ func (r *Data) Release() {
 func (r *Data) Clone() *Data {
 	rt := New(r.chNum)
 	rt.lastReadTime = r.lastReadTime
-	rt.rate = r.rate
+	rt.timeUsed = r.timeUsed
 	rt.data.Write(r.data.Bytes())
 	rt.ready.Write(r.ready.Bytes())
 	return rt
@@ -67,8 +67,12 @@ func (r *Data) expired() bool {
 	return time.Now().Sub(r.lastReadTime) > 1*time.Second
 }
 
-func (r *Data) Rate() int {
-	return r.rate
+func (r *Data) CHNum() *CHNum.Data {
+	return r.chNum
+}
+
+func (r *Data) TimeUsed() time.Duration {
+	return r.timeUsed
 }
 
 func (r *Data) AINum() int {
@@ -92,8 +96,11 @@ func (r *Data) VONum() int {
 }
 
 func (r *Data) GetAIValue(index int, point int) (float32, bool) {
-	v, ok := r.getFloat32(index)
-	return util.ToFloat32(v, point), ok
+	if v, ready := r.getFloat32(index); ready {
+		return util.ToFloat32(v, point), true
+	}
+
+	return 0, false
 }
 
 func (r *Data) GetDIValue(index int) (bool, bool) {
@@ -136,15 +143,16 @@ func (r *Data) GetVOValue(index int) (bool, bool) {
 
 func (r *Data) getFloat32(index int) (float32, bool) {
 	pos := index * 4
-	if r.data.Len() > pos+4 && index < r.ready.Len() && r.ready.Bytes()[index] == 0 {
+	if r.data.Len() >= pos+4 && r.ready.Len() > index && r.ready.Bytes()[index] == 0 {
 		return util.ToSingle(r.data.Bytes()[pos:]), true
 	}
+
 	return 0, false
 }
 
 func (r *Data) getInt(index int) (int, bool) {
 	pos := index * 4
-	if r.data.Len() > pos+4 && index < r.ready.Len() && r.ready.Bytes()[index] == 0 {
+	if r.data.Len() >= pos+4 && index < r.ready.Len() && r.ready.Bytes()[index] == 0 {
 		return int(binary.BigEndian.Uint32(r.data.Bytes()[pos:])), true
 	}
 	return 0, false
@@ -152,7 +160,7 @@ func (r *Data) getInt(index int) (int, bool) {
 
 func (r *Data) setInt(index int, value uint32) {
 	pos := index * 4
-	if r.data.Len() > pos+4 && index < r.ready.Len() && r.ready.Bytes()[index] == 0 {
+	if r.data.Len() >= pos+4 && index < r.ready.Len() && r.ready.Bytes()[index] == 0 {
 		binary.BigEndian.PutUint32(r.data.Bytes()[pos:], value)
 	}
 }
@@ -186,16 +194,14 @@ func (r *Data) FetchData(conn modbus.Client) (retErr error) {
 		r.ready.Grow(r.chNum.Sum())
 	}
 
-	r.data.Truncate(0)
-	r.ready.Truncate(0)
+	r.timeUsed = 0
+	r.data.Reset()
+	r.ready.Reset()
 
 	var (
 		address  uint16 = realtimeDataStartAddress
 		quantity uint16
 		amount   = total
-
-		begin      = time.Now()
-		totalBytes = 0
 	)
 
 	for amount > 0 {
@@ -205,13 +211,13 @@ func (r *Data) FetchData(conn modbus.Client) (retErr error) {
 			quantity = uint16(amount)
 		}
 
-		data, err := conn.ReadInputRegisters(address, quantity)
+		data, used, err := conn.ReadInputRegisters(address, quantity)
 		if err != nil {
 			return err
 		}
 
 		r.data.Write(data)
-		totalBytes += len(data)
+		r.timeUsed = r.timeUsed + used
 
 		amount -= int(quantity)
 		address += quantity
@@ -226,10 +232,13 @@ func (r *Data) FetchData(conn modbus.Client) (retErr error) {
 		} else {
 			quantity = uint16(amount)
 		}
-		state, err := conn.ReadInputRegisters(address, quantity)
+
+		state, used, err := conn.ReadInputRegisters(address, quantity)
 		if err != nil {
 			return err
 		}
+
+		r.timeUsed = r.timeUsed + used
 
 		var i uint16
 		for i = 0; i < quantity; i++ {
@@ -237,17 +246,10 @@ func (r *Data) FetchData(conn modbus.Client) (retErr error) {
 			r.ready.Write([]byte{reading})
 		}
 
-		totalBytes += len(state)
 		amount -= int(quantity)
 		address += quantity
 	}
 
-	used := int(time.Now().Sub(begin) / time.Millisecond)
-	if used == 0 {
-		used = 1
-	}
-
-	r.rate = (totalBytes / used) * 1000 / 1024
 	r.lastReadTime = time.Now()
 	return nil
 }

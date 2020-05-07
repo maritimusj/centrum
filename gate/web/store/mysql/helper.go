@@ -18,7 +18,7 @@ func (s *mysqlStore) getConfigID(cfg interface{}) (int64, error) {
 			if err != sql.ErrNoRows {
 				return 0, lang.InternalError(err)
 			}
-			return 0, lang.Error(lang.ErrConfigNotFound)
+			return 0, lang.ErrConfigNotFound.Error()
 		} else if exists {
 			return v, nil
 		}
@@ -29,7 +29,7 @@ func (s *mysqlStore) getConfigID(cfg interface{}) (int64, error) {
 			return v.GetID(), nil
 		}
 	}
-	return 0, lang.Error(lang.ErrConfigNotFound)
+	return 0, lang.ErrConfigNotFound.Error()
 }
 
 func (s *mysqlStore) getConfigIDByName(name string) (int64, error) {
@@ -41,7 +41,7 @@ func (s *mysqlStore) getConfigIDByName(name string) (int64, error) {
 		if err != sql.ErrNoRows {
 			return 0, lang.InternalError(err)
 		}
-		return 0, lang.Error(lang.ErrConfigNotFound)
+		return 0, lang.ErrConfigNotFound.Error()
 	}
 	return cfgID, nil
 }
@@ -57,7 +57,7 @@ func (s *mysqlStore) getOrganizationID(org interface{}) (int64, error) {
 			if err != sql.ErrNoRows {
 				return 0, lang.InternalError(err)
 			}
-			return 0, lang.Error(lang.ErrOrganizationNotFound)
+			return 0, lang.ErrOrganizationNotFound.Error()
 		} else if exists {
 			return v, nil
 		}
@@ -68,7 +68,7 @@ func (s *mysqlStore) getOrganizationID(org interface{}) (int64, error) {
 			return v.GetID(), nil
 		}
 	}
-	return 0, lang.Error(lang.ErrOrganizationNotFound)
+	return 0, lang.ErrOrganizationNotFound.Error()
 }
 
 func (s *mysqlStore) getOrganizationIDByName(name string) (int64, error) {
@@ -80,7 +80,7 @@ func (s *mysqlStore) getOrganizationIDByName(name string) (int64, error) {
 		if err != sql.ErrNoRows {
 			return 0, lang.InternalError(err)
 		}
-		return 0, lang.Error(lang.ErrOrganizationNotFound)
+		return 0, lang.ErrOrganizationNotFound.Error()
 	}
 	return orgID, nil
 }
@@ -96,7 +96,7 @@ func (s *mysqlStore) getRoleID(role interface{}) (int64, error) {
 			if err != sql.ErrNoRows {
 				return 0, lang.InternalError(err)
 			}
-			return 0, lang.Error(lang.ErrRoleNotFound)
+			return 0, lang.ErrRoleNotFound.Error()
 		} else if exists {
 			return v, nil
 		}
@@ -107,7 +107,7 @@ func (s *mysqlStore) getRoleID(role interface{}) (int64, error) {
 			return v.GetID(), nil
 		}
 	}
-	return 0, lang.Error(lang.ErrRoleNotFound)
+	return 0, lang.ErrRoleNotFound.Error()
 }
 
 func (s *mysqlStore) getRoleIDByName(name string) (int64, error) {
@@ -119,7 +119,7 @@ func (s *mysqlStore) getRoleIDByName(name string) (int64, error) {
 		if err != sql.ErrNoRows {
 			return 0, lang.InternalError(err)
 		}
-		return 0, lang.Error(lang.ErrRoleNotFound)
+		return 0, lang.ErrRoleNotFound.Error()
 	}
 	return roleID, nil
 }
@@ -133,7 +133,7 @@ func (s *mysqlStore) getUserID(user interface{}) (int64, error) {
 		if exists, err := IsDataExists(s.db, TbUsers, "id=?", v); err != nil {
 			return lang.InternalError(err)
 		} else if !exists {
-			return lang.Error(lang.ErrUserNotFound)
+			return lang.ErrUserNotFound.Error()
 		}
 		return nil
 	}
@@ -155,7 +155,7 @@ func (s *mysqlStore) getUserID(user interface{}) (int64, error) {
 			return v.GetID(), nil
 		}
 	}
-	return 0, lang.Error(lang.ErrUserNotFound)
+	return 0, lang.ErrUserNotFound.Error()
 }
 
 func (s *mysqlStore) getUserIDByName(name string) (int64, error) {
@@ -167,7 +167,7 @@ func (s *mysqlStore) getUserIDByName(name string) (int64, error) {
 		if err != sql.ErrNoRows {
 			return 0, lang.InternalError(err)
 		}
-		return 0, lang.Error(lang.ErrUserNotFound)
+		return 0, lang.ErrUserNotFound.Error()
 	}
 	return userID, nil
 }
@@ -190,7 +190,7 @@ func (s *mysqlStore) getMeasureID(deviceID int64, tag interface{}) (int64, error
 			if err != sql.ErrNoRows {
 				return 0, lang.InternalError(err)
 			}
-			return 0, lang.Error(lang.ErrMeasureNotFound)
+			return 0, lang.ErrMeasureNotFound.Error()
 		} else if exists {
 			return v, nil
 		}
@@ -199,7 +199,7 @@ func (s *mysqlStore) getMeasureID(deviceID int64, tag interface{}) (int64, error
 	case model.Measure:
 		return v.GetID(), nil
 	}
-	return 0, lang.Error(lang.ErrMeasureNotFound)
+	return 0, lang.ErrMeasureNotFound.Error()
 }
 
 func (s *mysqlStore) getMeasureIDByTagName(deviceID int64, tagName string) (int64, error) {
@@ -211,7 +211,7 @@ func (s *mysqlStore) getMeasureIDByTagName(deviceID int64, tagName string) (int6
 		if err != sql.ErrNoRows {
 			return 0, lang.InternalError(err)
 		}
-		return 0, lang.Error(lang.ErrMeasureNotFound)
+		return 0, lang.ErrMeasureNotFound.Error()
 	}
 	return measureID, nil
 }

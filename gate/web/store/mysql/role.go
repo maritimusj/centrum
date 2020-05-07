@@ -135,14 +135,14 @@ func (r *Role) GetUserList(options ...helper.OptionFN) ([]model.User, int64, err
 func (r *Role) SetPolicy(res model.Resource, action resource.Action, effect resource.Effect, recursiveMap map[model.Resource]struct{}) (model.Policy, error) {
 	if recursiveMap != nil {
 		if _, ok := recursiveMap[res]; ok {
-			return nil, lang.Error(lang.ErrRecursiveDetected)
+			return nil, lang.ErrRecursiveDetected.Error()
 		}
 		recursiveMap[res] = struct{}{}
 	}
 
 	policy, err := r.store.GetPolicyFrom(r.id, res, action)
 	if err != nil {
-		if err != lang.Error(lang.ErrPolicyNotFound) {
+		if err != lang.ErrPolicyNotFound.Error() {
 			return nil, err
 		}
 
@@ -211,10 +211,10 @@ func (r *Role) IsAllow(res model.Resource, action resource.Action) (bool, error)
 		if v.Effect() == resource.Allow {
 			return true, nil
 		}
-		return false, lang.Error(lang.ErrNoPermission)
+		return false, lang.ErrNoPermission.Error()
 	}
 
-	return false, lang.Error(lang.ErrPolicyNotFound)
+	return false, lang.ErrPolicyNotFound.Error()
 }
 
 func (r *Role) Simple() model.Map {
@@ -239,7 +239,7 @@ func (r *Role) Brief() model.Map {
 		"name":       r.name,
 		"title":      r.title,
 		"desc":       r.desc,
-		"created_at": r.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": r.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 }
 
@@ -253,6 +253,6 @@ func (r *Role) Detail() model.Map {
 		"name":       r.name,
 		"title":      r.title,
 		"desc":       r.desc,
-		"created_at": r.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": r.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 }

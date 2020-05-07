@@ -104,7 +104,7 @@ func (e *Equipment) Save() error {
 		}
 		return nil
 	}
-	return lang.Error(lang.ErrEquipmentNotFound)
+	return lang.ErrEquipmentNotFound.Error()
 }
 
 func (e *Equipment) Destroy() error {
@@ -263,7 +263,7 @@ func (e *Equipment) Brief() model.Map {
 		"enable":     e.IsEnabled(),
 		"title":      e.title,
 		"desc":       e.desc,
-		"created_at": e.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": e.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 }
 
@@ -276,7 +276,7 @@ func (e *Equipment) Detail() model.Map {
 		"enable":     e.IsEnabled(),
 		"title":      e.title,
 		"desc":       e.desc,
-		"created_at": e.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": e.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 
 	groups, _ := e.Groups()

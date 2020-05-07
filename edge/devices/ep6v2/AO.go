@@ -63,7 +63,7 @@ func (c *AOConfig) fetchData(conn modbus.Client, index int) (retErr error) {
 	}()
 
 	start := AOCHStartAddress + uint16(index)*CHBlockSize
-	data, err := conn.ReadHoldingRegisters(start, 16)
+	data, _, err := conn.ReadHoldingRegisters(start, 16)
 	if err != nil {
 		return err
 	}
@@ -74,14 +74,14 @@ func (c *AOConfig) fetchData(conn modbus.Client, index int) (retErr error) {
 	c.Uint = "mA"
 	c.Point = 3
 
-	data, err = conn.ReadHoldingRegisters(start+32, 1)
+	data, _, err = conn.ReadHoldingRegisters(start+32, 1)
 	if err != nil {
 		return err
 	}
 
 	c.Enabled = data[1] > 0
 
-	data, err = conn.ReadHoldingRegisters(start+42, 9)
+	data, _, err = conn.ReadHoldingRegisters(start+42, 9)
 	if err != nil {
 		return err
 	}

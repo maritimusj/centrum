@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/influxdata/influxdb1-client/models"
+
 	"github.com/maritimusj/centrum/gate/web/app"
 
 	"github.com/kataras/iris"
@@ -186,21 +188,21 @@ func Confirm(alarmID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 
-		if !app.Allow(admin, measure, resource.Ctrl) {
-			return lang.ErrNoPermission
+		if app.Allow(admin, measure, resource.View) || app.Allow(admin, measure, resource.Ctrl) {
+			err = alarm.Confirm(map[string]interface{}{
+				"admin": admin.Brief(),
+				"time":  time.Now().Format(lang.DatetimeFormatterStr.Str()),
+				"ip":    ctx.RemoteAddr(),
+				"desc":  form.Desc,
+			})
+			if err != nil {
+				return err
+			}
+
+			return lang.Ok
 		}
 
-		err = alarm.Confirm(map[string]interface{}{
-			"admin": admin.Brief(),
-			"time":  time.Now().Format("2006-01-02 15:04:05"),
-			"ip":    ctx.RemoteAddr(),
-			"desc":  form.Desc,
-		})
-		if err != nil {
-			return err
-		}
-
-		return lang.Ok
+		return lang.ErrNoPermission
 	})
 }
 
@@ -230,6 +232,71 @@ func Delete(alarmID int64, ctx iris.Context) hero.Result {
 			return err
 		}
 		return lang.Ok
+	})
+}
+
+func Statistics(alarmID int64, ctx iris.Context) hero.Result {
+	return response.Wrap(func() interface{} {
+		var (
+			s     = app.Store()
+			admin = s.MustGetUserFromContext(ctx)
+		)
+
+		alarm, err := s.GetAlarm(alarmID)
+		if err != nil {
+			return err
+		}
+
+		measure, err := alarm.Measure()
+		if err != nil {
+			return err
+		}
+
+		device := measure.Device()
+		if device == nil {
+			return lang.ErrDeviceNotFound
+		}
+
+		org, _ := device.Organization()
+
+		if !app.Allow(admin, measure, resource.View) {
+			return lang.ErrNoPermission
+		}
+
+		start := alarm.CreatedAt()
+		end := alarm.UpdatedAt()
+
+		//最多取20000个点位数据
+		interval := int64(end.Sub(start).Seconds() / 20000)
+		if interval < 1 {
+			interval = 1
+		}
+
+		//前后各增加100个点位需要的时间
+		start = start.Add(-1 * time.Duration(interval*100) * time.Second)
+		end = end.Add(time.Duration(interval*100) * time.Second)
+		if end.After(time.Now()) {
+			end = time.Now()
+		}
+
+		var (
+			result *models.Row
+		)
+
+		//如果间隔小于设定的读取间隔，则使用读取间隔
+		if interval < device.GetOption("params.interval").Int() {
+			result, err = app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, &end, nil)
+			if err != nil {
+				return lang.InternalError(err)
+			}
+		} else {
+			result, err = app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, &end, time.Duration(interval)*time.Second)
+			if err != nil {
+				return lang.InternalError(err)
+			}
+		}
+
+		return result
 	})
 }
 
@@ -318,7 +385,20 @@ func Export(ctx iris.Context) {
 		}
 
 		seg := make([]string, 0, 10)
-		_, _ = csvFile.WriteString("#,device,point,val,threshold,alarm,created,updated,user,confirm\r\n")
+
+		_, _ = csvFile.WriteString(strings.Join([]string{
+			"#",
+			lang.CVSHeaderDevice.Str(),
+			lang.CVSHeaderPoint.Str(),
+			lang.CVSHeaderVal.Str(),
+			lang.CVSHeaderThreshold.Str(),
+			lang.CVSHeaderAlarm.Str(),
+			lang.CVSHeaderCreatedAt.Str(),
+			lang.CVSHeaderUpdatedAt.Str(),
+			lang.CVSHeaderUser.Str(),
+			lang.CVSHeaderConfirmedBy.Str() + "\r\n",
+		}, ","))
+
 		for index, alarm := range alarms {
 			seg = append(seg, strconv.FormatInt(int64(index+1), 10))
 
@@ -334,8 +414,8 @@ func Export(ctx iris.Context) {
 				alarm.GetOption("fields.val").String(),
 				alarm.GetOption("fields.threshold").String(),
 				alarm.GetOption("tags.alarm").String(),
-				alarm.CreatedAt().Format("2006-01-02 15:04:05"),
-				alarm.UpdatedAt().Format("2006-01-02 15:04:05"),
+				alarm.CreatedAt().Format(lang.DatetimeFormatterStr.Str()),
+				alarm.UpdatedAt().Format(lang.DatetimeFormatterStr.Str()),
 				alarm.GetOption("confirm.admin.name").String(),
 				alarm.GetOption("confirm.time").String())
 

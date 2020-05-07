@@ -3,6 +3,8 @@ package comment
 import (
 	"fmt"
 
+	"github.com/maritimusj/centrum/gate/web/resource"
+
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
@@ -82,14 +84,30 @@ func Create(ctx iris.Context) hero.Result {
 			parentID = *form.ParentID
 		}
 
-		comment, err := s.CreateComment(admin.GetID(), form.AlarmID, parentID, iris.Map{
-			"content": form.Content,
-			"ip":      ctx.RemoteAddr(),
-		})
+		alarm, err := s.GetAlarm(form.AlarmID)
 		if err != nil {
 			return err
 		}
-		return comment.Brief()
+
+		device, err := alarm.Device()
+		if err != nil {
+			return err
+		}
+
+		if app.Allow(admin, device, resource.View) || app.Allow(admin, device, resource.Ctrl) {
+			comment, err := s.CreateComment(admin.GetID(), form.AlarmID, parentID, iris.Map{
+				"content": form.Content,
+				"ip":      ctx.RemoteAddr(),
+			})
+
+			if err != nil {
+				return err
+			}
+
+			return comment.Brief()
+		}
+
+		return lang.ErrNoPermission
 	})
 }
 

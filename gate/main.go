@@ -6,7 +6,12 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
+
+	edgeLang "github.com/maritimusj/centrum/edge/lang"
+
+	"github.com/maritimusj/durafmt"
 
 	"github.com/maritimusj/centrum/gate/web/edge"
 
@@ -17,6 +22,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/maritimusj/centrum/gate/lang"
+	_ "github.com/maritimusj/centrum/gate/lang/enUS"
 	_ "github.com/maritimusj/centrum/gate/lang/zhCN"
 
 	webAPI "github.com/maritimusj/centrum/gate/web/api"
@@ -37,8 +43,35 @@ func main() {
 	logLevel := flag.String("l", "", "log level, [trace,debug,info,warn,error,fatal]")
 	resetDefaultUserPassword := flag.Bool("reset", false, "reset default user password")
 	flushDB := flag.Bool("flush", false, "erase all data in database")
+	langID := flag.Int("lang", lang.ZhCN, "lang ID")
+	webDir := flag.String("web", "./public", "directory of static web files")
 
 	flag.Parse()
+
+	fmt.Println("gate is running...")
+
+	if *langID == lang.ZhCN || *langID == lang.EnUS {
+		lang.Active(*langID)
+		edgeLang.Active(*langID)
+	}
+
+	durafmt.SetAlias("years", lang.Str(lang.Years))
+	durafmt.SetAlias("weeks", lang.Str(lang.Weeks))
+	durafmt.SetAlias("days", lang.Str(lang.Days))
+	durafmt.SetAlias("hours", lang.Str(lang.Hours))
+	durafmt.SetAlias("minutes", lang.Str(lang.Minutes))
+	durafmt.SetAlias("seconds", lang.Str(lang.Seconds))
+	durafmt.SetAlias("milliseconds", lang.Str(lang.Milliseconds))
+	durafmt.SetAlias("microseconds", "'")
+
+	if *webDir == "" {
+		*webDir = "./public"
+	}
+
+	langWebDir := *webDir + "/" + strconv.FormatInt(int64(*langID), 10)
+	if exists, _ := util.PathExists(langWebDir); exists {
+		*webDir = langWebDir
+	}
 
 	viper.SetConfigFile(*config)
 	viper.SetConfigType("yaml")
@@ -68,15 +101,16 @@ func main() {
 	if err := webApp.Start(ctx, *logLevel); err != nil {
 		log.Fatal(err)
 	}
+	defer webApp.Close()
 
 	if *flushDB {
 		code := util.RandStr(4, util.RandNum)
-		fmt.Print(lang.Str(lang.ConfirmAdminPassword, code))
+		fmt.Print(lang.ConfirmAdminPassword.Str(code))
 
 		var confirm string
 		_, _ = fmt.Scanln(&confirm)
 		if confirm != code {
-			log.Fatal(lang.Error(lang.ErrConfirmCodeWrong))
+			log.Fatal(lang.ErrConfirmCodeWrong.Error())
 		} else {
 			err := webApp.FlushDB()
 			if err != nil {
@@ -84,9 +118,10 @@ func main() {
 			} else {
 				fmt.Printf(lang.Str(lang.FlushDBOk))
 				log.WithField("src", logStore.SystemLog).Warningln(lang.Str(lang.FlushDBOk))
-				os.Exit(0)
+				return
 			}
 		}
+		return
 	}
 
 	if *resetDefaultUserPassword {
@@ -95,11 +130,13 @@ func main() {
 			log.Fatal(err)
 		}
 		log.WithField("src", logStore.SystemLog).Warnln(lang.Str(lang.DefaultUserPasswordResetOk))
+		return
 	}
 
 	//API服务
 
-	webAPI.Start(ctx, webApp.Config)
+	webAPI.Start(ctx, *webDir, webApp.Config)
+	defer webAPI.Wait()
 
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -108,7 +145,4 @@ func main() {
 	fmt.Println("exit...")
 
 	cancel()
-
-	webAPI.Wait()
-	webApp.Close()
 }

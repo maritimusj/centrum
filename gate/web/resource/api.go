@@ -214,6 +214,11 @@ var (
 		DeviceCtrl,
 		DeviceCHValue,
 
+		DeviceLogList,
+		DeviceLogDelete,
+
+		AlarmList,
+
 		EquipmentStatus,
 		EquipmentData,
 		EquipmentCtrl,

@@ -2,9 +2,23 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"os"
 	"time"
+
+	"github.com/kataras/iris"
+
+	"github.com/maritimusj/centrum/gate/web/SysInfo"
+
+	"github.com/shirou/gopsutil/host"
+
+	"github.com/shirou/gopsutil/mem"
+
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+
+	"github.com/maritimusj/centrum/util"
 
 	"github.com/spf13/viper"
 
@@ -22,6 +36,7 @@ import (
 	"github.com/maritimusj/centrum/gate/web/store"
 	mysqlStore "github.com/maritimusj/centrum/gate/web/store/mysql"
 	"github.com/maritimusj/centrum/global"
+	"github.com/maritimusj/centrum/register"
 	log "github.com/sirupsen/logrus"
 
 	edgeLang "github.com/maritimusj/centrum/edge/lang"
@@ -40,6 +55,18 @@ var (
 	StatsDB    = statistics.New()
 )
 
+var (
+	__hostInfo SysInfo.Info
+
+	__cpuInfo SysInfo.Info
+
+	__cpuTimes SysInfo.Info
+
+	__diskInfo SysInfo.Info
+
+	__memInfo SysInfo.Info
+)
+
 func IsDefaultAdminUser(user model.User) bool {
 	return user.Name() == Config.DefaultUserName()
 }
@@ -50,7 +77,7 @@ func Allow(user model.User, res model.Resource, action resource.Action) bool {
 	}
 
 	allow, err := user.IsAllow(res, action)
-	if err != nil && err == lang.Error(lang.ErrPolicyNotFound) {
+	if err != nil && err == lang.ErrPolicyNotFound.Error() {
 		return Config.DefaultEffect() == resource.Allow
 	}
 	return allow
@@ -79,6 +106,13 @@ func InitDB(params map[string]interface{}) error {
 	conn, err := mysql.Open(Ctx, params)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if initDB, ok := params["initDB"].(bool); ok && initDB {
+		_, err = conn.Exec(initDBSQL)
+		if err != nil {
+			return lang.InternalError(err)
+		}
 	}
 
 	DB = conn
@@ -113,18 +147,159 @@ func InitLog(levelStr string) error {
 	return nil
 }
 
+func HostInfo() interface{} {
+	if !__hostInfo.Have() {
+		__hostInfo.Fetch(func() (interface{}, error) {
+			data, err := host.Info()
+			if err != nil {
+				log.Warn(err)
+				return map[string]interface{}{}, nil
+			}
+			bootTime := time.Unix(int64(data.BootTime), 0)
+			return map[string]interface{}{
+				"hostname":        data.Hostname,
+				"uptime":          data.Uptime,
+				"bootTime":        bootTime.Format(lang.DatetimeFormatterStr.Str()),
+				"os":              data.OS,
+				"platform":        data.Platform,
+				"platformVersion": data.PlatformVersion,
+				"kernelArch":      data.KernelArch,
+			}, nil
+		})
+	}
+	res := __hostInfo.Data()
+	if res == nil {
+		return iris.Map{}
+	}
+	return res
+}
+
+func CpuInfo() interface{} {
+	if !__cpuInfo.Have() {
+		__cpuInfo.Fetch(func() (interface{}, error) {
+			var err error
+			info, err := cpu.Info()
+			if err != nil {
+				log.Warningln(err)
+			}
+
+			xx := make([]interface{}, 0, len(info))
+			for _, x := range info {
+				xx = append(xx, map[string]interface{}{
+					"cores":     x.Cores,
+					"mhz":       x.Mhz,
+					"modelName": x.ModelName,
+				})
+			}
+			return xx, nil
+		})
+	}
+
+	res := __cpuInfo.Data()
+	if res == nil {
+		return iris.Map{}
+	}
+	return res
+}
+
+func CpuTimes() interface{} {
+	if __cpuTimes.Expired(1 * time.Second) {
+		__cpuTimes.Fetch(func() (interface{}, error) {
+			percent, err := cpu.Percent(1*time.Second, false)
+			if err != nil {
+				log.Warningln(err)
+				return nil, err
+			}
+			return fmt.Sprintf("%.2f", percent[0]), nil
+		})
+	}
+
+	res := __cpuTimes.Data()
+	if res == nil {
+		return ""
+	}
+	return res
+}
+
+func MemoryStatus() interface{} {
+	if __memInfo.Expired(1 * time.Second) {
+		__memInfo.Fetch(func() (interface{}, error) {
+			m, err := mem.VirtualMemory()
+			if err != nil {
+				return nil, err
+			}
+
+			return map[string]interface{}{
+				"total":       util.FormatFileSize(m.Total),
+				"available":   util.FormatFileSize(m.Available),
+				"used":        util.FormatFileSize(m.Used),
+				"usedPercent": fmt.Sprintf("%.2f", m.UsedPercent),
+			}, nil
+		})
+	}
+
+	res := __memInfo.Data()
+	if res == nil {
+		return iris.Map{}
+	}
+	return res
+}
+
+func DiskStatus() interface{} {
+	if __diskInfo.Expired(1 * time.Minute) {
+		__diskInfo.Fetch(func() (interface{}, error) {
+			ps, err := disk.Partitions(true)
+			if err != nil {
+				return nil, err
+			}
+			x := make([]map[string]interface{}, 0, len(ps))
+			for _, p := range ps {
+				v, _ := disk.Usage(p.Device)
+				x = append(x, map[string]interface{}{
+					"path":        v.Path,
+					"total":       util.FormatFileSize(v.Total),
+					"used":        util.FormatFileSize(v.Used),
+					"usedPercent": fmt.Sprintf("%.2f", v.UsedPercent),
+				})
+			}
+			return x, nil
+		})
+	}
+
+	res := __diskInfo.Data()
+	if res == nil {
+		return iris.Map{}
+	}
+	return res
+}
+
+func SysStatus() interface{} {
+	return map[string]interface{}{
+		"host": HostInfo(),
+		"mem":  MemoryStatus(),
+		"disk": DiskStatus(),
+		"cpu": map[string]interface{}{
+			"cpus":        CpuInfo(),
+			"usedPercent": CpuTimes(),
+		},
+	}
+}
+
 func Start(ctx context.Context, logLevel string) error {
 	Ctx, cancel = context.WithCancel(ctx)
 
 	const dbFile = "./chuanyan.db"
 	var initDB bool
+
 	if _, err := os.Stat(dbFile); err != nil {
 		if os.IsNotExist(err) {
 			f, err := os.Create(dbFile)
 			if err != nil {
 				return lang.InternalError(err)
 			}
+
 			_ = f.Close()
+
 			initDB = true
 		}
 	}
@@ -180,7 +355,7 @@ func Start(ctx context.Context, logLevel string) error {
 		defaultOrg := Config.DefaultOrganization()
 		org, err := s.GetOrganization(defaultOrg)
 		if err != nil {
-			if err != lang.Error(lang.ErrOrganizationNotFound) {
+			if err != lang.ErrOrganizationNotFound.Error() {
 				return err
 			}
 			org, err = s.CreateOrganization(defaultOrg, defaultOrg)
@@ -188,7 +363,7 @@ func Start(ctx context.Context, logLevel string) error {
 				return err
 			}
 
-			_, err = s.CreateGroup(org, lang.Str(lang.DefaultGroupTitle), lang.Str(lang.DefaultGroupDesc), 0)
+			_, err = s.CreateGroup(org, lang.DefaultGroupTitle.Str(), lang.DefaultGroupDesc.Str(), 0)
 			if err != nil {
 				return err
 			}
@@ -202,7 +377,7 @@ func Start(ctx context.Context, logLevel string) error {
 		//初始化系统角色
 		_, err = s.GetRole(lang.RoleSystemAdminName)
 		if err != nil {
-			if err != lang.Error(lang.ErrRoleNotFound) {
+			if err != lang.ErrRoleNotFound.Error() {
 				return err
 			}
 			err = s.InitDefaultRoles(defaultOrg)
@@ -215,7 +390,7 @@ func Start(ctx context.Context, logLevel string) error {
 		defaultUserName := Config.DefaultUserName()
 		_, err = s.GetUser(defaultUserName)
 		if err != nil {
-			if err != lang.Error(lang.ErrUserNotFound) {
+			if err != lang.ErrUserNotFound.Error() {
 				return err
 			}
 			_, err = s.CreateUser(defaultOrg, defaultUserName, []byte(defaultUserName), lang.RoleSystemAdminName)
@@ -239,7 +414,33 @@ func Start(ctx context.Context, logLevel string) error {
 	return nil
 }
 
+func Fingerprints() string {
+	return register.Fingerprints()
+}
+
+func IsRegistered() bool {
+	return register.Verify(Config.RegOwner(), Config.RegCode())
+}
+
+func SaveRegisterInfo(owner, code string) error {
+	if !register.Verify(owner, code) {
+		return lang.ErrInvalidRegCode.Error()
+	}
+
+	_ = Config.BaseConfig.SetOption(config.SysRegOwnerPath, owner)
+	_ = Config.BaseConfig.SetOption(config.SysRegCodePath, code)
+
+	if err := Config.BaseConfig.Save(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func BootAllDevices() {
+	if !IsRegistered() {
+		return
+	}
+
 	select {
 	case <-Ctx.Done():
 		return

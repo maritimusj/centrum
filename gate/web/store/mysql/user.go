@@ -65,7 +65,7 @@ func (u *User) Organization() (model.Organization, error) {
 	if u != nil {
 		return u.store.GetOrganization(u.orgID)
 	}
-	return nil, lang.Error(lang.ErrUserNotFound)
+	return nil, lang.ErrUserNotFound.Error()
 }
 
 func (u *User) GetID() int64 {
@@ -186,7 +186,7 @@ func (u *User) Update(profile model.Map) {
 
 func (u *User) SetRoles(roles ...interface{}) error {
 	if u == nil {
-		return lang.Error(lang.ErrUserNotFound)
+		return lang.ErrUserNotFound.Error()
 	}
 
 	err := RemoveData(u.store.db, TbUserRoles, "user_id=?", u.id)
@@ -215,7 +215,7 @@ func (u *User) SetRoles(roles ...interface{}) error {
 
 func (u *User) GetRoles() ([]model.Role, error) {
 	if u == nil {
-		return nil, lang.Error(lang.ErrUserNotFound)
+		return nil, lang.ErrUserNotFound.Error()
 	}
 
 	roles, _, err := u.store.GetRoleList(helper.User(u.id))
@@ -227,7 +227,7 @@ func (u *User) GetRoles() ([]model.Role, error) {
 
 func (u *User) Is(role interface{}) (bool, error) {
 	if u == nil {
-		return false, lang.Error(lang.ErrUserNotFound)
+		return false, lang.ErrUserNotFound.Error()
 	}
 
 	roles, err := u.GetRoles()
@@ -264,12 +264,12 @@ func (u *User) Destroy() error {
 		return u.store.RemoveUser(u.id)
 	}
 
-	return lang.Error(lang.ErrUserNotFound)
+	return lang.ErrUserNotFound.Error()
 }
 
 func (u *User) Save() error {
 	if u == nil {
-		return lang.Error(lang.ErrUserNotFound)
+		return lang.ErrUserNotFound.Error()
 	}
 
 	if u.dirty.Any() {
@@ -283,7 +283,7 @@ func (u *User) Save() error {
 
 func (u *User) RemovePolicies(res model.Resource) error {
 	if u == nil {
-		return lang.Error(lang.ErrUserNotFound)
+		return lang.ErrUserNotFound.Error()
 	}
 
 	roles, err := u.GetRoles()
@@ -302,7 +302,7 @@ func (u *User) RemovePolicies(res model.Resource) error {
 
 func (u *User) SetDeny(res model.Resource, actions ...resource.Action) error {
 	if u == nil {
-		return lang.Error(lang.ErrUserNotFound)
+		return lang.ErrUserNotFound.Error()
 	}
 
 	role, err := u.store.GetRole(u.Name())
@@ -321,7 +321,7 @@ func (u *User) SetDeny(res model.Resource, actions ...resource.Action) error {
 
 func (u *User) SetAllow(res model.Resource, actions ...resource.Action) error {
 	if u == nil {
-		return lang.Error(lang.ErrUserNotFound)
+		return lang.ErrUserNotFound.Error()
 	}
 
 	role, err := u.store.GetRole(u.Name())
@@ -340,11 +340,11 @@ func (u *User) SetAllow(res model.Resource, actions ...resource.Action) error {
 
 func (u *User) IsAllow(res model.Resource, action resource.Action) (bool, error) {
 	if u == nil {
-		return false, lang.Error(lang.ErrUserNotFound)
+		return false, lang.ErrUserNotFound.Error()
 	}
 
 	if res.OrganizationID() > 0 && res.OrganizationID() != u.OrganizationID() {
-		return false, lang.Error(lang.ErrOrganizationDifferent)
+		return false, lang.ErrOrganizationDifferent.Error()
 	}
 
 	roles, err := u.GetRoles()
@@ -357,17 +357,17 @@ func (u *User) IsAllow(res model.Resource, action resource.Action) (bool, error)
 		if allowed, err := role.IsAllow(res, action); allowed {
 			return allowed, err
 		} else {
-			if err == lang.Error(lang.ErrNoPermission) {
+			if err == lang.ErrNoPermission.Error() {
 				denied = true
 			}
 		}
 	}
 
 	if denied {
-		return false, lang.Error(lang.ErrNoPermission)
+		return false, lang.ErrNoPermission.Error()
 	}
 
-	return false, lang.Error(lang.ErrPolicyNotFound)
+	return false, lang.ErrPolicyNotFound.Error()
 }
 
 func (u *User) Simple() model.Map {
@@ -392,7 +392,7 @@ func (u *User) Brief() model.Map {
 		"title":      u.title,
 		"mobile":     u.mobile,
 		"email":      u.email,
-		"created_at": u.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": u.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 }
 
@@ -407,7 +407,7 @@ func (u *User) Detail() model.Map {
 		"title":      u.title,
 		"mobile":     u.mobile,
 		"email":      u.email,
-		"created_at": u.createdAt.Format("2006-01-02 15:04:05"),
+		"created_at": u.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 	}
 	rolesData := make(map[string]model.Map, 0)
 	roles, _ := u.GetRoles()

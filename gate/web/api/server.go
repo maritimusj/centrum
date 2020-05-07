@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"sync"
 	"time"
 
-	"github.com/maritimusj/durafmt"
+	_ "net/http/pprof"
 
 	"github.com/iris-contrib/middleware/cors"
 	"github.com/kataras/iris"
@@ -43,8 +44,8 @@ var (
 	defaultAPIServer = New()
 )
 
-func Start(ctx context.Context, cfg *cfg.Config) {
-	defaultAPIServer.Start(ctx, cfg)
+func Start(ctx context.Context, webDir string, cfg *cfg.Config) {
+	defaultAPIServer.Start(ctx, webDir, cfg)
 }
 
 func Wait() {
@@ -53,7 +54,7 @@ func Wait() {
 
 type Server interface {
 	Register(values ...interface{})
-	Start(ctx context.Context, cfg *cfg.Config)
+	Start(ctx context.Context, webDir string, cfg *cfg.Config)
 	Wait()
 }
 
@@ -76,18 +77,9 @@ func (server *server) Wait() {
 	server.wg.Wait()
 }
 
-func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
+func (server *server) Start(ctx context.Context, webDir string, cfg *cfg.Config) {
 	//server.app.Logger().SetLevel(cfg.LogLevel())
 	server.app.Logger().SetOutput(ioutil.Discard)
-
-	durafmt.SetAlias("years", "年")
-	durafmt.SetAlias("weeks", "星期")
-	durafmt.SetAlias("days", "天")
-	durafmt.SetAlias("hours", "小时")
-	durafmt.SetAlias("minutes", "分钟")
-	durafmt.SetAlias("seconds", "秒")
-	durafmt.SetAlias("milliseconds", "毫秒")
-	durafmt.SetAlias("microseconds", "微秒")
 
 	crs := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"}, // allows everything, use that to change the hosts.
@@ -97,7 +89,7 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 	})
 
 	//后台
-	server.app.StaticWeb("/", "./public")
+	server.app.StaticWeb("/", webDir)
 
 	//v1
 	v1 := server.app.Party("/v1", crs).AllowMethods(iris.MethodOptions)
@@ -207,6 +199,9 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 				p.Get("/{id:int64}/log", hero.Handler(device.LogList)).Name = resourceDef.DeviceLogList
 				p.Delete("/{id:int64}/log", hero.Handler(device.LogDelete)).Name = resourceDef.DeviceLogDelete
 
+				//取最后一个警报
+				p.Get("/{id:int64}/{measureID:int64}/alarm", hero.Handler(device.GetLastAlarm)).Name = resourceDef.DeviceStatus
+
 				//实时状态
 				p.Get("/{id:int64}/reset", hero.Handler(device.Reset)).Name = resourceDef.DeviceStatus
 				p.Get("/{id:int64}/status", hero.Handler(device.Status)).Name = resourceDef.DeviceStatus
@@ -215,8 +210,8 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 				p.Get("/{id:int64}/{tagName:string}", hero.Handler(device.GetCHValue)).Name = resourceDef.DeviceCHValue
 
 				//导出报表
-				p.Get("/export/{uid:string}/stats", hero.Handler(statistics.ExportStats))
-				p.Get("/export/{uid:string}/download", hero.Handler(statistics.ExportDownload))
+				p.Get("/export/{uid:string}/stats", hero.Handler(statistics.ExportStats)).Name = resourceDef.DataExport
+				p.Get("/export/{uid:string}/download", hero.Handler(statistics.ExportDownload)).Name = resourceDef.DataExport
 				p.Post("/export", hero.Handler(statistics.Export)).Name = resourceDef.DataExport
 			})
 			//物理点位
@@ -245,6 +240,9 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 				p.Get("/{id:int64}/log", hero.Handler(equipment.LogList)).Name = resourceDef.EquipmentLogList
 				p.Delete("/{id:int64}/log", hero.Handler(equipment.LogDelete)).Name = resourceDef.EquipmentLogDelete
 
+				//取最后一个警报
+				p.Get("/{id:int64}/{stateID:int64}/alarm", hero.Handler(equipment.GetLastAlarm)).Name = resourceDef.EquipmentStatus
+
 				//实时状态
 				p.Get("/{id:int64}/status", hero.Handler(equipment.Status)).Name = resourceDef.EquipmentStatus
 				p.Get("/{id:int64}/data", hero.Handler(equipment.Data)).Name = resourceDef.EquipmentData
@@ -269,13 +267,16 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 				p.Get("/{id:int64}", hero.Handler(alarm.Detail)).Name = resourceDef.AlarmDetail
 				p.Delete("/{id:int64}", hero.Handler(alarm.Delete)).Name = resourceDef.AlarmDelete
 
+				//警报当时的趋势数据
+				p.Get("/{alarm:int64}/statistics", hero.Handler(alarm.Statistics)).Name = resourceDef.AlarmDetail
+
 				p.Get("/{alarm:int64}/comments", hero.Handler(comment.List)).Name = resourceDef.CommentList
 
 				//历史趋势
-				p.Post("/statistics", hero.Handler(statistics.Alarm))
+				p.Post("/statistics", hero.Handler(statistics.Alarm)).Name = resourceDef.AlarmList
 
 				//导出报表
-				p.Get("/export", hero.Handler(alarm.Export))
+				p.Get("/export", hero.Handler(alarm.Export)).Name = resourceDef.AlarmList
 			})
 
 			//警报备注
@@ -321,6 +322,10 @@ func (server *server) Start(ctx context.Context, cfg *cfg.Config) {
 				log.Tracef("http server shutdown.")
 			}
 		}
+	}()
+
+	go func() {
+		_ = http.ListenAndServe(fmt.Sprintf("%s:%d", app.Config.APIAddr(), 9091), nil)
 	}()
 
 	time.AfterFunc(3*time.Second, func() {

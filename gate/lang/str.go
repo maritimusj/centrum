@@ -7,8 +7,16 @@ import (
 	"github.com/maritimusj/centrum/gate/web/status"
 )
 
+type StrIndex int
+
+func (index StrIndex) Str(params ...interface{}) string {
+	return Str(index, params...)
+}
+
 const (
-	_ = iota
+	_ StrIndex = iota
+
+	DatetimeFormatterStr
 
 	DefaultGroupTitle
 	DefaultGroupDesc
@@ -24,10 +32,18 @@ const (
 	LogTrace
 	LogDebug
 	LogInfo
-	LogWarn
+	LogWarning
 	LogError
 	LogFatal
 	LogPanic
+
+	Years
+	Weeks
+	Days
+	Hours
+	Minutes
+	Seconds
+	Milliseconds
 
 	UserDefaultRoleDesc
 
@@ -263,6 +279,18 @@ const (
 	ArrangingData
 	WritingData
 	ExportReady
+
+	CVSHeaderDevice
+	CVSHeaderPoint
+	CVSHeaderVal
+	CVSHeaderThreshold
+	CVSHeaderAlarm
+	CVSHeaderCreatedAt
+	CVSHeaderUpdatedAt
+	CVSHeaderUser
+	CVSHeaderConfirmedBy
+
+	DeviceConnected
 )
 
 var (

@@ -3,6 +3,8 @@ package statistics
 import (
 	"time"
 
+	"github.com/influxdata/influxdb1-client/models"
+
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
@@ -14,9 +16,8 @@ import (
 func Measure(measureID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
-			Start    *time.Time    `json:"start"`
-			End      *time.Time    `json:"end"`
-			Interval time.Duration `json:"interval"`
+			Start *time.Time `json:"start"`
+			End   *time.Time `json:"end"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
@@ -41,15 +42,39 @@ func Measure(measureID int64, ctx iris.Context) hero.Result {
 
 		org, _ := device.Organization()
 
-		var start time.Time
+		var (
+			start time.Time
+			end   time.Time
+		)
+
 		if form.Start != nil {
 			start = *form.Start
 		} else {
 			start = time.Now().Add(-time.Hour * 1)
-			form.Interval = 15
 		}
 
-		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, form.Interval*time.Second)
+		if form.End != nil {
+			end = *form.End
+		} else {
+			end = time.Now()
+		}
+
+		//最多取10000个点位数据
+		interval := int64(end.Sub(start).Seconds() / 10000)
+		if interval < 1 {
+			interval = 1
+		}
+
+		var (
+			result *models.Row
+		)
+		//如果间隔小于设定的读取间隔，则使用读取间隔
+		if interval < device.GetOption("params.interval").Int() {
+			result, err = app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, nil)
+		} else {
+			result, err = app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, time.Duration(interval)*time.Second)
+		}
+
 		if err != nil {
 			return iris.Map{}
 		}
@@ -61,9 +86,8 @@ func Measure(measureID int64, ctx iris.Context) hero.Result {
 func State(stateID int64, ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
-			Start    *time.Time    `json:"start"`
-			End      *time.Time    `json:"end"`
-			Interval time.Duration `json:"interval"`
+			Start *time.Time `json:"start"`
+			End   *time.Time `json:"end"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
@@ -94,14 +118,34 @@ func State(stateID int64, ctx iris.Context) hero.Result {
 		org, _ := device.Organization()
 
 		var start time.Time
+		var end time.Time
 		if form.Start != nil {
 			start = *form.Start
 		} else {
 			start = time.Now().Add(-time.Hour * 1)
-			form.Interval = 15
+		}
+		if form.End != nil {
+			end = *form.End
+		} else {
+			end = time.Now()
 		}
 
-		result, err := app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, form.Interval*time.Second)
+		//最多取10000个点位数据
+		interval := int64(end.Sub(start).Seconds() / 10000)
+		if interval < 1 {
+			interval = 1
+		}
+
+		var (
+			result *models.Row
+		)
+		//如果间隔小于设定的读取间隔，则使用读取间隔
+		if interval < device.GetOption("params.interval").Int() {
+			result, err = app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, nil)
+		} else {
+			result, err = app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, form.End, time.Duration(interval)*time.Second)
+		}
+
 		if err != nil {
 			return lang.InternalError(err)
 		}

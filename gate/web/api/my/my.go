@@ -62,7 +62,7 @@ func Update(ctx iris.Context) hero.Result {
 				return err
 			}
 
-			log.WithField("src", logStore.SystemLog).Infoln(lang.Str(lang.UserProfileUpdateOk, my.Name()))
+			log.WithField("src", logStore.SystemLog).Infoln(lang.UserProfileUpdateOk.Str(my.Name()))
 			return lang.Ok
 		})
 	})
@@ -83,7 +83,7 @@ func Perm(class string, ctx iris.Context) hero.Result {
 			if id != "" {
 				res, err = s.GetApiResource(id)
 			} else {
-				err = lang.Error(lang.ErrInvalidRequestData)
+				err = lang.ErrInvalidRequestData.Error()
 			}
 		case "group":
 			res, err = s.GetResource(resource.Group, ctx.URLParamInt64Default("id", 0))
@@ -96,7 +96,7 @@ func Perm(class string, ctx iris.Context) hero.Result {
 		case "state":
 			res, err = s.GetResource(resource.State, ctx.URLParamInt64Default("id", 0))
 		default:
-			err = lang.Error(lang.ErrInvalidRequestData)
+			err = lang.ErrInvalidRequestData.Error()
 		}
 
 		if err != nil {

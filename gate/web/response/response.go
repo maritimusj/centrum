@@ -17,7 +17,7 @@ func (data *responseData) Dispatch(c iris.Context) {
 
 func Wrap(data interface{}) hero.Result {
 	switch v := data.(type) {
-	case lang.ErrorCode:
+	case lang.ErrIndex:
 		return &responseData{
 			Status: v == lang.Ok,
 			Data: map[string]interface{}{

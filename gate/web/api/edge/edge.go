@@ -1,8 +1,11 @@
 package edge
 
 import (
+	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/maritimusj/centrum/gate/web/model"
 
 	"github.com/maritimusj/centrum/gate/web/app"
 
@@ -42,13 +45,26 @@ type Alarm struct {
 }
 
 type Perf struct {
-	Rate int `json:"rate"`
+	Delay int `json:"delay"`
+}
+
+func createMsg(res model.Resource, data interface{}) {
+	store := app.Store()
+	global.AddMessage(data, func(uid string, userId int64) bool {
+		user, err := store.GetUser(userId)
+		if err != nil {
+			global.Close(uid, userId)
+			return false
+		}
+
+		return app.Allow(user, res, resource.View)
+	})
 }
 
 func Feedback(deviceID int64, ctx iris.Context) {
 	device, err := app.Store().GetDevice(deviceID)
 	if err != nil {
-		if err != lang.Error(lang.ErrDeviceNotFound) {
+		if err != lang.ErrDeviceNotFound.Error() {
 			log.Debugln("[Feedback 1]", err)
 		} else {
 			edge.Remove(strconv.FormatInt(deviceID, 10))
@@ -70,12 +86,27 @@ func Feedback(deviceID int64, ctx iris.Context) {
 	}
 
 	if form.Status != nil {
+		org, _, _ := global.GetDeviceStatus(device)
+
 		if form.Status.Index == int(edgeLang.Disconnected) {
 			global.UpdateDevicePerf(device, iris.Map{})
-
-			org, _, _ := global.GetDeviceStatus(device)
 			if org == int(edgeLang.Connected) {
-				device.Logger().Warningln(lang.Error(lang.ErrDeviceDisconnected))
+				createMsg(device, iris.Map{
+					"level":      "warning",
+					"title":      device.Title(),
+					"message":    lang.ErrDeviceDisconnected.Str(),
+					"created_at": time.Now().Format(lang.DatetimeFormatterStr.Str()),
+				})
+				device.Logger().Warningln(lang.ErrDeviceDisconnected.Str())
+			}
+		} else if form.Status.Index == int(edgeLang.Connected) {
+			if org != int(edgeLang.Connected) {
+				createMsg(device, iris.Map{
+					"level":      "success",
+					"title":      device.Title(),
+					"message":    lang.DeviceConnected.Str(),
+					"created_at": time.Now().Format(lang.DatetimeFormatterStr.Str()),
+				})
 			}
 		}
 		global.UpdateDeviceStatus(device, form.Status.Index, form.Status.Title)
@@ -84,13 +115,13 @@ func Feedback(deviceID int64, ctx iris.Context) {
 	if form.Measure != nil {
 		measure, err := app.Store().GetMeasureFromTagName(device.GetID(), form.Measure.TagName)
 		if err != nil {
-			if err != lang.Error(lang.ErrMeasureNotFound) {
+			if err != lang.ErrMeasureNotFound.Error() {
 				log.Debugln("[Feedback 4]", err)
 				return
 			}
 			kind := resource.ParseMeasureKind(form.Measure.TagName)
 			if kind == resource.UnknownKind {
-				log.Debugln("[Feedback 5]", lang.Error(lang.ErrMeasureNotFound))
+				log.Debugln("[Feedback 5]", lang.ErrMeasureNotFound.Str())
 				return
 			}
 			measure, err = app.Store().CreateMeasure(device.GetID(), form.Measure.Title, form.Measure.TagName, kind)
@@ -118,7 +149,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 
 		alarm, _, err := app.Store().GetLastUnconfirmedAlarm(helper.Device(device.GetID()), helper.Measure(measure.GetID()))
 		if err != nil {
-			if err != lang.Error(lang.ErrAlarmNotFound) {
+			if err != lang.ErrAlarmNotFound.Error() {
 				log.Debugln("[Feedback 9]", err)
 				return
 			}
@@ -140,9 +171,26 @@ func Feedback(deviceID int64, ctx iris.Context) {
 	}
 
 	if form.Perf != nil {
-		global.UpdateDevicePerf(device, iris.Map{
-			"rate": strconv.FormatInt(int64((*form.Perf).Rate), 10) + "kb/s",
-		})
+		delay := time.Duration((*form.Perf).Delay) / time.Millisecond
+		data := iris.Map{
+			"rate": fmt.Sprintf("%dms", delay),
+		}
+		level := 1
+		if delay == -1 {
+			level = 1
+		} else if delay < 20 {
+			level = 5
+		} else if delay < 100 {
+			level = 4
+		} else if delay < 300 {
+			level = 3
+		} else if delay < 600 {
+			level = 2
+		} else {
+			level = 1
+		}
+		data["level"] = level
+		global.UpdateDevicePerf(device, data)
 	}
 
 	if form.Log != nil {

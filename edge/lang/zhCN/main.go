@@ -17,7 +17,7 @@ var (
 		lang.InfluxDBError:       "数据库错误",
 	}
 
-	errStrMap = map[lang.ErrorCode]string{
+	errStrMap = map[lang.ErrIndex]string{
 		lang.Ok:                    "成功！",
 		lang.ErrDeviceNotExists:    "设备不存在！",
 		lang.ErrDeviceNotConnected: "设备没有连接！",

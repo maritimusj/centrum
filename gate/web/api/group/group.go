@@ -1,7 +1,6 @@
 package group
 
 import (
-	"github.com/asaskevich/govalidator"
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/hero"
 	"github.com/maritimusj/centrum/gate/lang"
@@ -87,16 +86,16 @@ func Create(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
 			OrgID         int64  `json:"org"`
-			Title         string `json:"title" valid:"required"`
+			Title         string `json:"title"`
 			Desc          string `json:"desc"`
-			ParentGroupID int64  `json:"parent" valid:"range(0|)"`
+			ParentGroupID int64  `json:"parent"`
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
 			return lang.ErrInvalidRequestData
 		}
 
-		if _, err := govalidator.ValidateStruct(&form); err != nil {
+		if form.Title == "" {
 			return lang.ErrInvalidRequestData
 		}
 
@@ -149,7 +148,12 @@ func Detail(groupID int64, ctx iris.Context) hero.Result {
 			return lang.ErrNoPermission
 		}
 
-		return group.Detail()
+		detail := group.Detail()
+		detail["perm"] = iris.Map{
+			"view": true,
+			"ctrl": app.Allow(admin, group, resource.Ctrl),
+		}
+		return detail
 	})
 }
 
