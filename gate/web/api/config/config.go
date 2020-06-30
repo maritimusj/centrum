@@ -51,7 +51,7 @@ type Stream struct {
 }
 
 func WebView() hero.Result {
-	return response.Wrap(app.Config.ExtraConfig)
+	return response.Wrap(app.Config.WebViewUrls())
 }
 
 func UpdateWebView(ctx iris.Context) hero.Result {
