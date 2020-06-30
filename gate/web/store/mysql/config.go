@@ -65,7 +65,7 @@ func (config *Config) SetOption(key string, value interface{}) error {
 
 		return nil
 	}
-	return lang.ErrDeviceNotFound.Error()
+	return lang.ErrConfigNotFound.Error()
 }
 
 func (config *Config) CreatedAt() time.Time {

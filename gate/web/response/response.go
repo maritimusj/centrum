@@ -25,12 +25,6 @@ func Wrap(data interface{}) hero.Result {
 			},
 		}
 	case error:
-		if v == nil {
-			return &responseData{
-				Status: true,
-				Data:   lang.ErrorStr(lang.Ok),
-			}
-		}
 		return &responseData{
 			Status: false,
 			Data: map[string]interface{}{
@@ -47,6 +41,9 @@ func Wrap(data interface{}) hero.Result {
 	case func() interface{}:
 		return Wrap(v())
 	default:
+		if v == nil {
+			return Wrap(lang.Ok)
+		}
 		return &responseData{
 			Status: true,
 			Data:   v,

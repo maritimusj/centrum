@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kataras/iris"
+
 	"github.com/maritimusj/centrum/gate/web/model"
 	"github.com/maritimusj/centrum/gate/web/resource"
 	"github.com/maritimusj/centrum/gate/web/store"
@@ -75,7 +77,7 @@ func (c *Config) Load() error {
 
 	stream, err := c.store.GetConfig(streamConfigPath)
 	if err != nil {
-		stream, err = c.store.CreateConfig(streamConfigPath, []string{})
+		stream, err = c.store.CreateConfig(streamConfigPath, nil)
 		if err != nil {
 			return err
 		}
@@ -97,11 +99,15 @@ func (c *Config) StreamURLs() interface{} {
 	if stream.Exists() {
 		return stream.Value()
 	}
-	return []string{}
+	return iris.Map{}
 }
 
-func (c *Config) SetStreamURLs(urls interface{}) {
-	_ = c.ExtraConfig.SetOption(StreamURLsPath, urls)
+func (c *Config) SaveStreamURLs(streams interface{}) error {
+	err := c.ExtraConfig.SetOption(StreamURLsPath, streams)
+	if err != nil {
+		return err
+	}
+	return c.ExtraConfig.Save()
 }
 
 func (c *Config) WebViewUrls() interface{} {
@@ -112,8 +118,12 @@ func (c *Config) WebViewUrls() interface{} {
 	return []string{}
 }
 
-func (c *Config) SetWebViewUrls(urls interface{}) {
-	_ = c.ExtraConfig.SetOption(WebViewURLsPath, urls)
+func (c *Config) SaveWebViewUrls(urls interface{}) error {
+	err := c.ExtraConfig.SetOption(WebViewURLsPath, urls)
+	if err != nil {
+		return err
+	}
+	return c.ExtraConfig.Save()
 }
 
 func (c *Config) RegCode() string {

@@ -45,6 +45,11 @@ type Form struct {
 	Inverse *InverseConfig `json:"inverse"`
 }
 
+type Stream struct {
+	Title string `json:"title"`
+	Url   string `json:"url"`
+}
+
 func WebView() hero.Result {
 	return response.Wrap(app.Config.ExtraConfig)
 }
@@ -57,8 +62,7 @@ func UpdateWebView(ctx iris.Context) hero.Result {
 		if err := ctx.ReadJSON(&form); err != nil {
 			return lang.ErrInvalidRequestData
 		}
-		app.Config.SetWebViewUrls(form.Urls)
-		return app.Config.ExtraConfig.Save()
+		return app.Config.SaveWebViewUrls(form.Urls)
 	})
 }
 
@@ -69,13 +73,12 @@ func StreamView() hero.Result {
 func UpdateStreamView(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
 		var form struct {
-			Urls []string `json:"urls"`
+			Streams []*Stream `json:"stream"`
 		}
 		if err := ctx.ReadJSON(&form); err != nil {
 			return lang.ErrInvalidRequestData
 		}
-		app.Config.SetStreamURLs(form.Urls)
-		return app.Config.ExtraConfig.Save()
+		return app.Config.SaveStreamURLs(form.Streams)
 	})
 }
 
