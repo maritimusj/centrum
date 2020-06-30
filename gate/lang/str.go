@@ -59,6 +59,8 @@ const (
 	MenuRoleUsersTitle
 	MenuRoleSystemSettingsTitle
 	MenuRoleSysLogsTitle
+	MenuWebViewTitle
+	MenuStreamViewTitle
 
 	RoleSystemAdminDesc
 	RoleOrganizationAdminDesc
@@ -71,12 +73,26 @@ const (
 	MenuRoleUsersDesc
 	MenuRoleSystemSettingsDesc
 	MenuRoleSysLogsDesc
+	MenuWebViewDesc
+	MenuStreamViewDesc
 
 	ResourceConfigBaseDetailTitle
 	ResourceConfigBaseDetailDesc
 
 	ResourceConfigBaseUpdateTitle
 	ResourceConfigBaseUpdateDesc
+
+	ResourceConfigWebDetailTitle
+	ResourceConfigWebDetailDesc
+
+	ResourceConfigWebUpdateTitle
+	ResourceConfigWebUpdateDesc
+
+	ResourceConfigStreamDetailTitle
+	ResourceConfigStreamDetailDesc
+
+	ResourceConfigStreamUpdateTitle
+	ResourceConfigStreamUpdateDesc
 
 	ResourceOrganizationCreateTitle
 	ResourceOrganizationListTitle
@@ -323,13 +339,15 @@ var (
 
 //后台菜单对应的角色
 var (
-	MenuRoleGallery = "__menu_gallery__"  //设备总览
-	MenuRoleDevices = "__menu_devices__"  //设备管理
-	MenuRoleAlert   = "__menu_alert__"    //报警查询
-	MenuRoleStats   = "__menu_stats__"    //趋势图
-	MenuRoleExport  = "__menu_export__"   //导出报表
-	MenuRoleUsers   = "__menu_users__"    //用户、权限管理
-	MenuRoleSysLogs = "__menu_sys_logs__" //系统日志
+	MenuRoleGallery = "__menu_gallery__"     //设备总览
+	MenuRoleDevices = "__menu_devices__"     //设备管理
+	MenuRoleAlert   = "__menu_alert__"       //报警查询
+	MenuRoleStats   = "__menu_stats__"       //趋势图
+	MenuRoleExport  = "__menu_export__"      //导出报表
+	MenuRoleUsers   = "__menu_users__"       //用户、权限管理
+	MenuRoleSysLogs = "__menu_sys_logs__"    //系统日志
+	MenuWebView     = "__menu_web_view__"    //云视图
+	MenuStreamView  = "__menu_stream_view__" //云监控
 )
 
 //默认角色，名称，说明及权限集合
@@ -347,6 +365,8 @@ func DefaultRoles() map[[3]string][]string {
 		{MenuRoleUsers, Str(MenuRoleUsersTitle), Str(MenuRoleUsersDesc)}:       resource.MenuRoleUsers,
 		{MenuRoleExport, Str(MenuRoleExportTitle), Str(MenuRoleExportDesc)}:    resource.MenuRoleExport,
 		{MenuRoleSysLogs, Str(MenuRoleSysLogsTitle), Str(MenuRoleSysLogsDesc)}: resource.MenuRoleSysLogs,
+		{MenuWebView, Str(MenuWebViewTitle), Str(MenuWebViewDesc)}:             resource.MenuWebView,
+		{MenuStreamView, Str(MenuStreamViewTitle), Str(MenuStreamViewDesc)}:    resource.MenuStreamView,
 	}
 }
 
@@ -356,6 +376,12 @@ func ApiResourcesMap() [][3]string {
 
 		{resource.ConfigBaseDetail, Str(ResourceConfigBaseDetailTitle), Str(ResourceConfigBaseDetailDesc)},
 		{resource.ConfigBaseUpdate, Str(ResourceConfigBaseUpdateTitle), Str(ResourceConfigBaseUpdateDesc)},
+
+		{resource.ConfigWebDetail, Str(ResourceConfigWebDetailTitle), Str(ResourceConfigWebDetailDesc)},
+		{resource.ConfigWebUpdate, Str(ResourceConfigWebUpdateTitle), Str(ResourceConfigWebUpdateDesc)},
+
+		{resource.ConfigStreamDetail, Str(ResourceConfigStreamDetailTitle), Str(ResourceConfigStreamDetailDesc)},
+		{resource.ConfigStreamUpdate, Str(ResourceConfigStreamUpdateTitle), Str(ResourceConfigStreamUpdateDesc)},
 
 		{resource.OrganizationCreate, Str(ResourceOrganizationCreateTitle), Str(OrganizationCreateDesc)},
 		{resource.OrganizationList, Str(ResourceOrganizationListTitle), Str(OrganizationListDesc)},

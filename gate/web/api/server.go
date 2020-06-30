@@ -77,7 +77,7 @@ func (server *server) Wait() {
 	server.wg.Wait()
 }
 
-func (server *server) Start(ctx context.Context, webDir string, cfg *cfg.Config) {
+func (server *server) Start(ctx context.Context, webDir string, _ *cfg.Config) {
 	//server.app.Logger().SetLevel(cfg.LogLevel())
 	server.app.Logger().SetOutput(ioutil.Discard)
 
@@ -114,6 +114,10 @@ func (server *server) Start(ctx context.Context, webDir string, cfg *cfg.Config)
 			p.PartyFunc("/config", func(p router.Party) {
 				p.Get("/base", hero.Handler(config.Base)).Name = resourceDef.ConfigBaseDetail
 				p.Put("/base", hero.Handler(config.UpdateBase)).Name = resourceDef.ConfigBaseUpdate
+				p.Get("/webview", hero.Handler(config.WebView)).Name = resourceDef.ConfigWebDetail
+				p.Put("/webview", hero.Handler(config.UpdateWebView)).Name = resourceDef.ConfigWebUpdate
+				p.Get("/stream", hero.Handler(config.StreamView)).Name = resourceDef.ConfigStreamDetail
+				p.Put("/stream", hero.Handler(config.UpdateStreamView)).Name = resourceDef.ConfigStreamUpdate
 			})
 
 			//我的

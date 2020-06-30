@@ -45,30 +45,62 @@ type Form struct {
 	Inverse *InverseConfig `json:"inverse"`
 }
 
-func Base() hero.Result {
+func WebView() hero.Result {
+	return response.Wrap(app.Config.ExtraConfig)
+}
+
+func UpdateWebView(ctx iris.Context) hero.Result {
 	return response.Wrap(func() interface{} {
-		return &Form{
-			Sys: &SysConfig{
-				Title:    app.Config.SysTitle(),
-				RegOwner: app.Config.RegOwner(),
-				//RegCode:  app.Config.RegCode(),
-			},
-			Api: &APIConfig{
-				Addr: app.Config.APIAddr(),
-				Port: app.Config.APIPort(),
-			},
-			Def: &DefaultConfig{
-				Username:        app.Config.DefaultUserName(),
-				Organization:    app.Config.DefaultOrganization(),
-				Effect:          int(app.Config.DefaultEffect()),
-				PageSize:        app.Config.DefaultPageSize(),
-				TokenExpiration: int64(app.Config.DefaultTokenExpiration().Seconds()),
-			},
-			Log: &LogConfig{
-				Level:    app.Config.LogLevel(),
-				FileName: app.Config.LogFileName(),
-			},
+		var form struct {
+			Urls []string `json:"urls"`
 		}
+		if err := ctx.ReadJSON(&form); err != nil {
+			return lang.ErrInvalidRequestData
+		}
+		app.Config.SetWebViewUrls(form.Urls)
+		return app.Config.ExtraConfig.Save()
+	})
+}
+
+func StreamView() hero.Result {
+	return response.Wrap(app.Config.StreamURLs())
+}
+
+func UpdateStreamView(ctx iris.Context) hero.Result {
+	return response.Wrap(func() interface{} {
+		var form struct {
+			Urls []string `json:"urls"`
+		}
+		if err := ctx.ReadJSON(&form); err != nil {
+			return lang.ErrInvalidRequestData
+		}
+		app.Config.SetStreamURLs(form.Urls)
+		return app.Config.ExtraConfig.Save()
+	})
+}
+
+func Base() hero.Result {
+	return response.Wrap(&Form{
+		Sys: &SysConfig{
+			Title:    app.Config.SysTitle(),
+			RegOwner: app.Config.RegOwner(),
+			//RegCode:  app.Config.RegCode(),
+		},
+		Api: &APIConfig{
+			Addr: app.Config.APIAddr(),
+			Port: app.Config.APIPort(),
+		},
+		Def: &DefaultConfig{
+			Username:        app.Config.DefaultUserName(),
+			Organization:    app.Config.DefaultOrganization(),
+			Effect:          int(app.Config.DefaultEffect()),
+			PageSize:        app.Config.DefaultPageSize(),
+			TokenExpiration: int64(app.Config.DefaultTokenExpiration().Seconds()),
+		},
+		Log: &LogConfig{
+			Level:    app.Config.LogLevel(),
+			FileName: app.Config.LogFileName(),
+		},
 	})
 }
 

@@ -53,6 +53,10 @@ var (
 		lang.MenuRoleExportTitle:         "导出报表",
 		lang.MenuRoleSystemSettingsTitle: "系统设定",
 		lang.MenuRoleSysLogsTitle:        "系统日志",
+		lang.MenuWebViewTitle:            "云视图",
+		lang.MenuStreamViewTitle:         "云监控",
+		lang.MenuWebViewDesc:             "查看、设定加载特定的网页",
+		lang.MenuStreamViewDesc:          "查看、编辑远程监控视频",
 
 		lang.UserDefaultRoleDesc: "",
 
@@ -74,6 +78,18 @@ var (
 
 		lang.ResourceConfigBaseUpdateTitle: "",
 		lang.ResourceConfigBaseUpdateDesc:  "",
+
+		lang.ResourceConfigWebDetailTitle: "",
+		lang.ResourceConfigWebDetailDesc:  "",
+
+		lang.ResourceConfigWebUpdateTitle: "",
+		lang.ResourceConfigWebUpdateDesc:  "",
+
+		lang.ResourceConfigStreamDetailTitle: "",
+		lang.ResourceConfigStreamDetailDesc:  "",
+
+		lang.ResourceConfigStreamUpdateTitle: "",
+		lang.ResourceConfigStreamUpdateDesc:  "",
 
 		lang.ResourceOrganizationCreateTitle: "",
 		lang.ResourceOrganizationListTitle:   "",

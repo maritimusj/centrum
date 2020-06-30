@@ -81,7 +81,7 @@ func main() {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Error(err)
+		fmt.Println(err)
 	}
 
 	var edges []string

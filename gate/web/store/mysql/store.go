@@ -2880,7 +2880,7 @@ func (s *mysqlStore) GetApiResourceList(options ...helper.OptionFN) ([]model.Api
 }
 
 func (s *mysqlStore) InitApiResource() error {
-	log.Println("InitApiResource...")
+	fmt.Println("InitApiResource...")
 
 	result := <-synchronized.Do(TbApiResources, func() interface{} {
 		err := RemoveData(s.db, TbApiResources, "1")

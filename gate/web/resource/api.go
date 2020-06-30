@@ -6,6 +6,12 @@ const (
 	ConfigBaseDetail = "config.detail"
 	ConfigBaseUpdate = "config.update"
 
+	ConfigWebDetail = "config.web.detail"
+	ConfigWebUpdate = "config.web.update"
+
+	ConfigStreamDetail = "config.stream.detail"
+	ConfigStreamUpdate = "config.stream.update"
+
 	OrganizationCreate = "org.create"
 	OrganizationList   = "org.list"
 	OrganizationDetail = "org.detail"
@@ -111,6 +117,14 @@ var (
 	}
 
 	OrganizationAdmin = append(Guest,
+		ConfigBaseUpdate,
+
+		ConfigWebDetail,
+		ConfigWebUpdate,
+
+		ConfigStreamDetail,
+		ConfigStreamUpdate,
+
 		UserLogList,
 		UserLogDelete,
 		DeviceLogList,
@@ -325,5 +339,17 @@ var (
 	MenuRoleSysLogs = []string{
 		LogList,
 		LogDelete,
+	}
+
+	//云视图
+	MenuWebView = []string{
+		ConfigWebDetail,
+		ConfigWebUpdate,
+	}
+
+	//云监控
+	MenuStreamView = []string{
+		ConfigStreamDetail,
+		ConfigStreamUpdate,
 	}
 )

@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	baseConfigPath = "__base"
+	baseConfigPath   = "__base"
+	streamConfigPath = "__stream"
 
 	SysRegCodePath             = "sys.reg.code"
 	SysRegOwnerPath            = "sys.reg.owner"
@@ -26,6 +27,8 @@ const (
 	DefaultTokenExpirationPath = "default.token.expiration"
 	LogLevelPath               = "log.level"
 	LogFileNamePath            = "log.filename"
+	StreamURLsPath             = "stream.urls"
+	WebViewURLsPath            = "web.urls"
 
 	InfluxDBUrl      = "influxdb.url"
 	InfluxDBUserName = "influxdb.username"
@@ -46,8 +49,10 @@ const (
 type Config struct {
 	store store.Store
 
-	BaseConfig model.Config
-	Status     sync.Map
+	BaseConfig  model.Config
+	ExtraConfig model.Config
+
+	Status sync.Map
 }
 
 func New(store store.Store) *Config {
@@ -67,6 +72,16 @@ func (c *Config) Load() error {
 	}
 
 	c.BaseConfig = base
+
+	stream, err := c.store.GetConfig(streamConfigPath)
+	if err != nil {
+		stream, err = c.store.CreateConfig(streamConfigPath, []string{})
+		if err != nil {
+			return err
+		}
+	}
+
+	c.ExtraConfig = stream
 	return nil
 }
 
@@ -75,6 +90,30 @@ func (c *Config) Save() error {
 		return c.BaseConfig.Save()
 	}
 	return nil
+}
+
+func (c *Config) StreamURLs() interface{} {
+	stream := c.ExtraConfig.GetOption(StreamURLsPath)
+	if stream.Exists() {
+		return stream.Value()
+	}
+	return []string{}
+}
+
+func (c *Config) SetStreamURLs(urls interface{}) {
+	_ = c.ExtraConfig.SetOption(StreamURLsPath, urls)
+}
+
+func (c *Config) WebViewUrls() interface{} {
+	stream := c.ExtraConfig.GetOption(WebViewURLsPath)
+	if stream.Exists() {
+		return stream.Value()
+	}
+	return []string{}
+}
+
+func (c *Config) SetWebViewUrls(urls interface{}) {
+	_ = c.ExtraConfig.SetOption(WebViewURLsPath, urls)
 }
 
 func (c *Config) RegCode() string {
