@@ -170,7 +170,7 @@ func Create(ctx iris.Context) hero.Result {
 		form.ConnStr = strings.ToLower(form.ConnStr)
 	}
 
-	if form.Interval <= 0 {
+	if form.Interval < 1 {
 		form.Interval = 1
 	}
 
@@ -353,6 +353,9 @@ func Update(deviceID int64, ctx iris.Context) hero.Result {
 			}
 
 			if form.Interval != nil {
+				if *form.Interval < 1 {
+					*form.Interval = 1
+				}
 				err = device.SetOption("params.interval", form.Interval)
 				if err != nil {
 					return err
