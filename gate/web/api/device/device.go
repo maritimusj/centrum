@@ -170,6 +170,10 @@ func Create(ctx iris.Context) hero.Result {
 		form.ConnStr = strings.ToLower(form.ConnStr)
 	}
 
+	if form.Interval <= 0 {
+		form.Interval = 1
+	}
+
 	fn := func() interface{} {
 		result := app.TransactionDo(func(s store.Store) interface{} {
 			var org interface{}
