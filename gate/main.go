@@ -54,7 +54,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		return
+		os.Exit(0)
 	}
 
 	//重置密码
@@ -64,7 +64,7 @@ func main() {
 			log.Fatal(err)
 		}
 		log.WithField("src", logStore.SystemLog).Warnln(lang.Str(lang.DefaultUserPasswordResetOk))
-		return
+		os.Exit(0)
 	}
 
 	if *langID == lang.ZhCN || *langID == lang.EnUS {
