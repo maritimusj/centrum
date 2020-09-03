@@ -48,8 +48,6 @@ func main() {
 
 	flag.Parse()
 
-	fmt.Println("gate is running...")
-
 	if *langID == lang.ZhCN || *langID == lang.EnUS {
 		lang.Active(*langID)
 		edgeLang.Active(*langID)
@@ -137,6 +135,8 @@ func main() {
 
 	webAPI.Start(ctx, *webDir, webApp.Config)
 	defer webAPI.Wait()
+
+	fmt.Println("gate is running...")
 
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
