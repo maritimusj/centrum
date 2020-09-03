@@ -48,6 +48,25 @@ func main() {
 
 	flag.Parse()
 
+	//重置数据库
+	if *flushDB {
+		err := doFlushDB()
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
+	//重置密码
+	if *resetDefaultUserPassword {
+		err := webApp.ResetDefaultAdminUser()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.WithField("src", logStore.SystemLog).Warnln(lang.Str(lang.DefaultUserPasswordResetOk))
+		return
+	}
+
 	if *langID == lang.ZhCN || *langID == lang.EnUS {
 		lang.Active(*langID)
 		edgeLang.Active(*langID)
@@ -101,38 +120,7 @@ func main() {
 	}
 	defer webApp.Close()
 
-	if *flushDB {
-		code := util.RandStr(4, util.RandNum)
-		fmt.Print(lang.ConfirmAdminPassword.Str(code))
-
-		var confirm string
-		_, _ = fmt.Scanln(&confirm)
-		if confirm != code {
-			log.Fatal(lang.ErrConfirmCodeWrong.Error())
-		} else {
-			err := webApp.FlushDB()
-			if err != nil {
-				log.Fatal(err)
-			} else {
-				fmt.Printf(lang.Str(lang.FlushDBOk))
-				log.WithField("src", logStore.SystemLog).Warningln(lang.Str(lang.FlushDBOk))
-				return
-			}
-		}
-		return
-	}
-
-	if *resetDefaultUserPassword {
-		err := webApp.ResetDefaultAdminUser()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.WithField("src", logStore.SystemLog).Warnln(lang.Str(lang.DefaultUserPasswordResetOk))
-		return
-	}
-
 	//API服务
-
 	webAPI.Start(ctx, *webDir, webApp.Config)
 	defer webAPI.Wait()
 
@@ -145,4 +133,24 @@ func main() {
 	fmt.Println("exit...")
 
 	cancel()
+}
+
+func doFlushDB() error {
+	code := util.RandStr(4, util.RandNum)
+	fmt.Print(lang.ConfirmAdminPassword.Str(code))
+
+	var confirm string
+	_, _ = fmt.Scanln(&confirm)
+	if confirm != code {
+		return lang.ErrConfirmCodeWrong.Error()
+	} else {
+		err := webApp.FlushDB()
+		if err != nil {
+			return err
+		} else {
+			fmt.Printf(lang.Str(lang.FlushDBOk))
+			log.WithField("src", logStore.SystemLog).Warningln(lang.Str(lang.FlushDBOk))
+		}
+	}
+	return nil
 }
