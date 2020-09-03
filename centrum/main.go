@@ -23,6 +23,8 @@ type Entry struct {
 	Args []string
 	Env  []string
 
+	Delay int
+
 	Stderr string
 	Stdout string
 
@@ -46,7 +48,7 @@ type program struct {
 	config *Config
 }
 
-func (p *program) Start(s service.Service) error {
+func (p *program) Start(_ service.Service) error {
 	// Look for exec.
 	// Verify home directory.
 	var err error
@@ -92,7 +94,7 @@ func (p *program) exec(entry *Entry) {
 
 	err := entry.cmd.Run()
 	if err != nil {
-		_ = logger.Warningf("Error running: %v", err)
+		_ = logger.Warningf("Error running %s: %s", entry.fullExec, err.Error())
 	}
 }
 
@@ -112,6 +114,7 @@ func (p *program) run() {
 		wg.Add(1)
 		go func(entry *Entry) {
 			defer wg.Done()
+			time.Sleep(time.Duration(entry.Delay) * time.Second)
 			for {
 				select {
 				case <-p.exit:
@@ -126,7 +129,7 @@ func (p *program) run() {
 	wg.Wait()
 }
 
-func (p *program) Stop(s service.Service) error {
+func (p *program) Stop(_ service.Service) error {
 	close(p.exit)
 
 	_ = logger.Info("Stopping ", p.config.Title)
@@ -179,7 +182,7 @@ func getConfig(path string) (*Config, error) {
 }
 
 func main() {
-	logLevel := flag.String("l", "error", "error level.")
+	logLevel := flag.String("l", "info", "error level.")
 	serviceFlag := flag.String("service", "", "Control the system service.")
 
 	flag.Parse()
