@@ -61,6 +61,32 @@ func createMsg(res model.Resource, data interface{}) {
 	})
 }
 
+//将新创建的点位授权给对设备有相应权限的用户
+func AssignPermissionsToUsers(device model.Device, measure model.Measure) error {
+	if app.Config.DefaultEffect() == resource.Allow {
+		return nil
+	}
+
+	users, _, err := app.Store().GetUserList()
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		if app.IsDefaultAdminUser(user) {
+			continue
+		}
+
+		if app.Allow(user, device, resource.Ctrl) {
+			_ = app.SetAllow(user, measure, resource.View, resource.Ctrl)
+		} else if app.Allow(user, device, resource.View) {
+			_ = app.SetAllow(user, measure, resource.View)
+		}
+	}
+
+	return nil
+}
+
 func Feedback(deviceID int64, ctx iris.Context) {
 	device, err := app.Store().GetDevice(deviceID)
 	if err != nil {
@@ -119,21 +145,30 @@ func Feedback(deviceID int64, ctx iris.Context) {
 				log.Debugln("[Feedback 4]", err)
 				return
 			}
+
 			kind := resource.ParseMeasureKind(form.Measure.TagName)
 			if kind == resource.UnknownKind {
 				log.Debugln("[Feedback 5]", lang.ErrMeasureNotFound.Str())
 				return
 			}
+
 			measure, err = app.Store().CreateMeasure(device.GetID(), form.Measure.Title, form.Measure.TagName, kind)
 			if err != nil {
 				log.Debugln("[Feedback 6]", err)
 				return
 			}
+
+			//将新创建的点位授权给对设备有相应权限的用户
+			err = AssignPermissionsToUsers(device, measure)
+			if err != nil {
+				log.Debugln("[Feedback 7]", err)
+			}
+
 		} else {
 			measure.SetTitle(form.Measure.Title)
 			err = measure.Save()
 			if err != nil {
-				log.Debugln("[Feedback 7]", err)
+				log.Debugln("[Feedback 8]", err)
 			}
 		}
 	}

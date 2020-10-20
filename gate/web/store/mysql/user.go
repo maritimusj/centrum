@@ -340,7 +340,7 @@ func (u *User) SetAllow(res model.Resource, actions ...resource.Action) error {
 
 func (u *User) IsAllow(res model.Resource, action resource.Action) (bool, error) {
 	if u == nil {
-		return false, lang.ErrUserNotFound.Error()
+		return false, lang.ErrNoPermission.Error()
 	}
 
 	if res.OrganizationID() > 0 && res.OrganizationID() != u.OrganizationID() {
