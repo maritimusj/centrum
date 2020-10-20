@@ -10,6 +10,7 @@ const (
 	_ = iota
 	ZhCN
 	EnUS
+	ZhTW
 )
 
 var (
