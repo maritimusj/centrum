@@ -62,6 +62,7 @@ func createMsg(res model.Resource, data interface{}) {
 }
 
 //将新创建的点位授权给对设备有相应权限的用户
+//暂时采用循环遍历用户来判断
 func AssignPermissionsToUsers(device model.Device, measure model.Measure) error {
 	if app.Config.DefaultEffect() == resource.Allow {
 		return nil
