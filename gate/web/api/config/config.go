@@ -37,12 +37,20 @@ type LogConfig struct {
 	FileName string `json:"filename"`
 }
 
+type GeTuiConfig struct {
+	AppID        string `json:"appId"`
+	AppKey       string `json:"appKey"`
+	AppSecret    string `json:"appSecret"`
+	MasterSecret string `json:"masterSecret"`
+}
+
 type Form struct {
-	Sys     *SysConfig     `json:"sys"`
-	Api     *APIConfig     `json:"api"`
-	Def     *DefaultConfig `json:"default"`
-	Log     *LogConfig     `json:"log"`
-	Inverse *InverseConfig `json:"inverse"`
+	Sys         *SysConfig     `json:"sys"`
+	Api         *APIConfig     `json:"api"`
+	Def         *DefaultConfig `json:"default"`
+	Log         *LogConfig     `json:"log"`
+	Inverse     *InverseConfig `json:"inverse"`
+	GeTuiConfig *GeTuiConfig   `json:"getui"`
 }
 
 type Stream struct {
@@ -138,6 +146,13 @@ func UpdateBase(ctx iris.Context) hero.Result {
 
 		if form.Inverse != nil {
 			_ = app.Config.BaseConfig.SetOption(config.InversePortPath, form.Inverse.Port)
+		}
+
+		if form.GeTuiConfig != nil {
+			_ = app.Config.BaseConfig.SetOption(config.GeTuiAppIDPath, form.GeTuiConfig.AppID)
+			_ = app.Config.BaseConfig.SetOption(config.GeTuiAppKeyPath, form.GeTuiConfig.AppKey)
+			_ = app.Config.BaseConfig.SetOption(config.GeTuiAppSecret, form.GeTuiConfig.AppSecret)
+			_ = app.Config.BaseConfig.SetOption(config.GeTuiMasterSecret, form.GeTuiConfig.MasterSecret)
 		}
 
 		return app.Config.BaseConfig.Save()
