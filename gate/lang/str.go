@@ -295,6 +295,7 @@ const (
 
 	GeTuiRegisterUserFailed
 	GeTuiSendMessageFailed
+	GeTuiNotInitialized
 
 	ExportInitialized
 	ExportingData

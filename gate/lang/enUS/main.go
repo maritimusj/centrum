@@ -314,6 +314,7 @@ var (
 		lang.UserProfileUpdateOk:               "%s profile updating ok.",
 		lang.GeTuiRegisterUserFailed:           "GeTui register user %s failed！",
 		lang.GeTuiSendMessageFailed:            "GeTui send message failed: %s",
+		lang.GeTuiNotInitialized:               "GeTui was not initialized properly",
 		lang.ExportInitialized:                 "Initializing...",
 		lang.ExportingData:                     "Exporting %s => %s...",
 		lang.ArrangingData:                     "Arrange data...",

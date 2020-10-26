@@ -330,6 +330,7 @@ var (
 		lang.UserProfileUpdateOk:               "用戶 %s 更新資料成功！",
 		lang.GeTuiRegisterUserFailed:           "個推註冊用戶%s失敗！",
 		lang.GeTuiSendMessageFailed:            "無法推送警報消息：%s",
+		lang.GeTuiNotInitialized:               "個推沒有正確配置！",
 		lang.ExportInitialized:                 "正在準備導出...",
 		lang.ExportingData:                     "正在導出數據 %s => %s...",
 		lang.ArrangingData:                     "正在整理數據...",

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/maritimusj/centrum/gate/lang"
+
 	"github.com/gogf/gf/util/grand"
 
 	"github.com/gogf/gf/encoding/gjson"
@@ -216,7 +218,7 @@ func (client *Client) getToken() (string, error) {
 
 func (client *Client) toSingle(cid string, title, body string) error {
 	if client == nil || client.AppId == "" || client.AppKey == "" {
-		return errors.New("GeTui service not properly initialized")
+		return errors.New(lang.GeTuiNotInitialized.Str())
 	}
 
 	token, err := gcache.Get("token")
