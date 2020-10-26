@@ -45,6 +45,9 @@ var (
 		lang.RoleOrganizationAdminTitle: "管理员",
 		lang.RoleGuestTitle:             "普通用户",
 
+		lang.AlarmNotifyTitle:   "警报通知",
+		lang.AlarmNotifyContent: "点位：%s, 名称：%s，数值：%s 异常，请关注！",
+
 		lang.MenuRoleGalleryTitle:        "设备总览",
 		lang.MenuRoleDevicesTitle:        "设备管理",
 		lang.MenuRoleAlertTitle:          "报警查询",
@@ -325,6 +328,8 @@ var (
 		lang.UserLoginFailedCauseDisabled:      "用户 %s 从 %s 登录失败：已禁用！",
 		lang.UserLoginFailedCausePasswordWrong: "用户 %s 从 %s 登录失败：密码错误！",
 		lang.UserProfileUpdateOk:               "用户 %s 更新资料成功！",
+		lang.GeTuiRegisterUserFailed:           "个推注册用户%s失败！",
+		lang.GeTuiSendMessageFailed:            "无法推送警报消息：%s",
 		lang.ExportInitialized:                 "正在准备导出...",
 		lang.ExportingData:                     "正在导出数据 %s => %s...",
 		lang.ArrangingData:                     "正在整理数据...",

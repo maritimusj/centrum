@@ -51,6 +51,9 @@ const (
 	RoleOrganizationAdminTitle
 	RoleGuestTitle
 
+	AlarmNotifyTitle
+	AlarmNotifyContent
+
 	MenuRoleGalleryTitle
 	MenuRoleDevicesTitle
 	MenuRoleAlertTitle
@@ -289,6 +292,9 @@ const (
 	UserLoginFailedCauseDisabled
 	UserLoginFailedCausePasswordWrong
 	UserProfileUpdateOk
+
+	GeTuiRegisterUserFailed
+	GeTuiSendMessageFailed
 
 	ExportInitialized
 	ExportingData

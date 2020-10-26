@@ -45,6 +45,9 @@ var (
 		lang.RoleOrganizationAdminTitle: "admin",
 		lang.RoleGuestTitle:             "guest",
 
+		lang.AlarmNotifyTitle:   "alarm warning",
+		lang.AlarmNotifyContent: "point：%s, name: %s，value：%s is abnormal!",
+
 		lang.MenuRoleGalleryTitle:        "Overview",
 		lang.MenuRoleDevicesTitle:        "Devices",
 		lang.MenuRoleAlertTitle:          "Alarm",
@@ -309,6 +312,8 @@ var (
 		lang.UserLoginFailedCauseDisabled:      "%s logging in failed from %s: disabled.",
 		lang.UserLoginFailedCausePasswordWrong: "%s logging in failed from %s: invalid password.",
 		lang.UserProfileUpdateOk:               "%s profile updating ok.",
+		lang.GeTuiRegisterUserFailed:           "GeTui register user %s failed！",
+		lang.GeTuiSendMessageFailed:            "GeTui send message failed: %s",
 		lang.ExportInitialized:                 "Initializing...",
 		lang.ExportingData:                     "Exporting %s => %s...",
 		lang.ArrangingData:                     "Arrange data...",
