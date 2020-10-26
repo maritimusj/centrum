@@ -415,6 +415,13 @@ func Start(ctx context.Context, logLevel string) error {
 
 	ge := Config.GeTuiConfig()
 
+	if ge["app_id"] == "" || ge["app_key"] == "" {
+		ge["app_id"] = viper.GetString(config.GeTuiAppIDPath)
+		ge["app_key"] = viper.GetString(config.GeTuiAppKeyPath)
+		ge["app_secret"] = viper.GetString(config.GeTuiAppSecretPath)
+		ge["master_secret"] = viper.GetString(config.GeTuiMasterSecretPath)
+	}
+
 	Getui.SetAppId(ge["app_id"]).
 		SetAppKey(ge["app_key"]).
 		SetAppSecret(ge["app_secret"]).
