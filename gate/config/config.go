@@ -31,6 +31,10 @@ const (
 	LogFileNamePath            = "log.filename"
 	StreamURLsPath             = "stream.urls"
 	WebViewURLsPath            = "web.urls"
+	GeTuiAppIDPath             = "getui.app.id"
+	GeTuiAppKeyPath            = "getui.app.key"
+	GeTuiAppSecret             = "getui.app.secret"
+	GeTuiMasterSecret          = "getui.master.secret"
 
 	InfluxDBUrl      = "influxdb.url"
 	InfluxDBUserName = "influxdb.username"
@@ -248,5 +252,14 @@ func (c *Config) InfluxDBConfig() map[string]string {
 		"url":      c.BaseConfig.GetOption(InfluxDBUrl).String(),
 		"username": c.BaseConfig.GetOption(InfluxDBUserName).String(),
 		"password": c.BaseConfig.GetOption(InfluxDBPassword).String(),
+	}
+}
+
+func (c *Config) GeTuiConfig() map[string]string {
+	return map[string]string{
+		"app_id":        c.BaseConfig.GetOption(GeTuiAppIDPath).String(),
+		"app_key":       c.BaseConfig.GetOption(GeTuiAppKeyPath).String(),
+		"app_secret":    c.BaseConfig.GetOption(GeTuiAppSecret).String(),
+		"master_secret": c.BaseConfig.GetOption(GeTuiMasterSecret).String(),
 	}
 }
