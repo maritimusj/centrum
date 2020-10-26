@@ -151,8 +151,8 @@ func UpdateBase(ctx iris.Context) hero.Result {
 		if form.GeTuiConfig != nil {
 			_ = app.Config.BaseConfig.SetOption(config.GeTuiAppIDPath, form.GeTuiConfig.AppID)
 			_ = app.Config.BaseConfig.SetOption(config.GeTuiAppKeyPath, form.GeTuiConfig.AppKey)
-			_ = app.Config.BaseConfig.SetOption(config.GeTuiAppSecret, form.GeTuiConfig.AppSecret)
-			_ = app.Config.BaseConfig.SetOption(config.GeTuiMasterSecret, form.GeTuiConfig.MasterSecret)
+			_ = app.Config.BaseConfig.SetOption(config.GeTuiAppSecretPath, form.GeTuiConfig.AppSecret)
+			_ = app.Config.BaseConfig.SetOption(config.GeTuiMasterSecretPath, form.GeTuiConfig.MasterSecret)
 		}
 
 		return app.Config.BaseConfig.Save()

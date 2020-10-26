@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/maritimusj/centrum/gate/Getui"
+
 	"github.com/maritimusj/centrum/gate/web/model"
 
 	"github.com/maritimusj/centrum/gate/web/app"
@@ -85,6 +87,29 @@ func AssignPermissionsToUsers(device model.Device, measure model.Measure) error 
 		}
 	}
 
+	return nil
+}
+
+func NotifyAllUsers(alarm model.Alarm) error {
+	measure, err := alarm.Measure()
+	if err != nil {
+		return err
+	}
+
+	alarmType := alarm.GetOption("tags.alarm").String()
+	val := alarm.GetOption("fields.val").String()
+	unit := alarm.GetOption("tags.unit").String()
+	str := fmt.Sprintf("%s%s(%s)", val, unit, alarmType)
+
+	users, _, err := app.Store().GetUserList()
+	if err != nil {
+		return err
+	}
+	for _, user := range users {
+		if app.Allow(user, measure, resource.View) {
+			Getui.SendTo(user, lang.AlarmNotifyTitle.Str(), lang.AlarmNotifyContent.Str(measure.TagName(), measure.Title(), str))
+		}
+	}
 	return nil
 }
 
@@ -197,6 +222,10 @@ func Feedback(deviceID int64, ctx iris.Context) {
 			})
 			if err != nil {
 				log.Debugln("[Feedback 10]", err)
+			} else {
+				go func() {
+					_ = NotifyAllUsers(alarm)
+				}()
 			}
 		} else {
 			alarm.Updated()

@@ -33,12 +33,19 @@ const (
 	WebViewURLsPath            = "web.urls"
 	GeTuiAppIDPath             = "getui.app.id"
 	GeTuiAppKeyPath            = "getui.app.key"
-	GeTuiAppSecret             = "getui.app.secret"
-	GeTuiMasterSecret          = "getui.master.secret"
+	GeTuiAppSecretPath         = "getui.app.secret"
+	GeTuiMasterSecretPath      = "getui.master.secret"
 
 	InfluxDBUrl      = "influxdb.url"
 	InfluxDBUserName = "influxdb.username"
 	InfluxDBPassword = "influxdb.password"
+)
+
+const (
+	GeTuiAppIDEnvStr        = "GETUI_APP_ID"
+	GeTuiAppKeyEnvStr       = "GETUI_APP_KEY"
+	GeTuiAppSecretEnvStr    = "GETUI_APP_SECRET"
+	GeTuiMasterSecretEnvStr = "GETUI_MASTER_SECRET"
 )
 
 const (
@@ -259,7 +266,7 @@ func (c *Config) GeTuiConfig() map[string]string {
 	return map[string]string{
 		"app_id":        c.BaseConfig.GetOption(GeTuiAppIDPath).String(),
 		"app_key":       c.BaseConfig.GetOption(GeTuiAppKeyPath).String(),
-		"app_secret":    c.BaseConfig.GetOption(GeTuiAppSecret).String(),
-		"master_secret": c.BaseConfig.GetOption(GeTuiMasterSecret).String(),
+		"app_secret":    c.BaseConfig.GetOption(GeTuiAppSecretPath).String(),
+		"master_secret": c.BaseConfig.GetOption(GeTuiMasterSecretPath).String(),
 	}
 }

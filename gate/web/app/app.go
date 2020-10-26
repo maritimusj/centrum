@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/maritimusj/centrum/gate/Getui"
+
 	"github.com/kataras/iris"
 
 	"github.com/maritimusj/centrum/gate/web/SysInfo"
@@ -410,6 +412,13 @@ func Start(ctx context.Context, logLevel string) error {
 	}); err != nil {
 		return err
 	}
+
+	ge := Config.GeTuiConfig()
+
+	Getui.SetAppId(ge["app_id"]).
+		SetAppKey(ge["app_key"]).
+		SetAppSecret(ge["app_secret"]).
+		SetMasterSecret(ge["master_secret"])
 
 	return nil
 }

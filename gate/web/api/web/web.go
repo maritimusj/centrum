@@ -4,6 +4,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/maritimusj/centrum/gate/Getui"
+
 	"github.com/maritimusj/centrum/global"
 
 	"github.com/dgrijalva/jwt-go"
@@ -81,6 +83,7 @@ func Login(ctx iris.Context) hero.Result {
 		var form struct {
 			Username string `json:"username" valid:"required"`
 			Password string `json:"password" valid:"required"`
+			CID      string `json:"cid,omitempty"` //client ID: 消息推送标识
 		}
 
 		if err := ctx.ReadJSON(&form); err != nil {
@@ -95,6 +98,7 @@ func Login(ctx iris.Context) hero.Result {
 			log.WithField("src", logStore.SystemLog).Infoln(lang.UserLoginFailedCauseDisabled.Str(user.Name(), ctx.RemoteAddr()))
 			return lang.ErrUserDisabled
 		}
+
 		if !user.CheckPassword(form.Password) {
 			log.WithField("src", logStore.SystemLog).Infoln(lang.UserLoginFailedCausePasswordWrong.Str(user.Name(), ctx.RemoteAddr()))
 			return lang.ErrPasswordWrong
@@ -113,6 +117,13 @@ func Login(ctx iris.Context) hero.Result {
 
 		if !ctx.URLParamExists("refresh") {
 			log.WithField("src", logStore.SystemLog).Infoln(lang.UserLoginOk.Str(user.Name(), ctx.RemoteAddr()))
+		}
+
+		if form.CID != "" {
+			err = Getui.Register(form.CID, user)
+			if err != nil {
+				log.WithField("src", logStore.SystemLog).Infoln(lang.GeTuiRegisterUserFailed.Str(user.Name()))
+			}
 		}
 
 		//注册用户，接收消息

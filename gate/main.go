@@ -9,6 +9,10 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/maritimusj/centrum/gate/config"
+
+	"github.com/maritimusj/centrum/gate/properties"
+
 	edgeLang "github.com/maritimusj/centrum/edge/lang"
 
 	"github.com/maritimusj/durafmt"
@@ -39,7 +43,7 @@ func main() {
 	}()
 
 	//命令行参数
-	config := flag.String("config", "gate.yaml", "config file name")
+	configFileName := flag.String("config", "gate.yaml", "config file name")
 	logLevel := flag.String("l", "", "log level, [trace,debug,info,warn,error,fatal]")
 	resetDefaultUserPassword := flag.Bool("reset", false, "reset default user password")
 	flushDB := flag.Bool("flush", false, "erase all data in database")
@@ -67,6 +71,11 @@ func main() {
 		os.Exit(0)
 	}
 
+	if err := properties.Open("properties.db"); err != nil {
+		log.Fatal(err)
+		os.Exit(0)
+	}
+
 	if *langID == lang.ZhCN || *langID == lang.EnUS {
 		lang.Active(*langID)
 		edgeLang.Active(*langID)
@@ -90,11 +99,16 @@ func main() {
 		*webDir = langWebDir
 	}
 
-	viper.SetConfigFile(*config)
+	viper.SetConfigFile(*configFileName)
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
 
-	viper.SetDefault("influxdb.url", "http://localhost:8086")
+	viper.SetDefault(config.GeTuiAppIDPath, os.Getenv(config.GeTuiAppIDEnvStr))
+	viper.SetDefault(config.GeTuiAppKeyPath, os.Getenv(config.GeTuiAppKeyEnvStr))
+	viper.SetDefault(config.GeTuiAppSecretPath, os.Getenv(config.GeTuiAppSecretEnvStr))
+	viper.SetDefault(config.GeTuiMasterSecretPath, os.Getenv(config.GeTuiMasterSecretEnvStr))
+
+	viper.SetDefault(config.InfluxDBUrl, "http://localhost:8086")
 
 	err := viper.ReadInConfig()
 	if err != nil {
