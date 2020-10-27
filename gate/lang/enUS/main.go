@@ -46,7 +46,7 @@ var (
 		lang.RoleGuestTitle:             "guest",
 
 		lang.AlarmNotifyTitle:   "alarm warning",
-		lang.AlarmNotifyContent: "point：%s, name: %s，value：%s is abnormal!",
+		lang.AlarmNotifyContent: "new alarm occurs, please deal with it in time!",
 
 		lang.MenuRoleGalleryTitle:        "Overview",
 		lang.MenuRoleDevicesTitle:        "Devices",
@@ -312,14 +312,12 @@ var (
 		lang.UserLoginFailedCauseDisabled:      "%s logging in failed from %s: disabled.",
 		lang.UserLoginFailedCausePasswordWrong: "%s logging in failed from %s: invalid password.",
 		lang.UserProfileUpdateOk:               "%s profile updating ok.",
-		lang.GeTuiRegisterUserFailed:           "GeTui register user %s failed！",
-		lang.GeTuiSendMessageFailed:            "GeTui send message failed: %s",
-		lang.GeTuiNotInitialized:               "GeTui was not initialized properly",
-		lang.ExportInitialized:                 "Initializing...",
-		lang.ExportingData:                     "Exporting %s => %s...",
-		lang.ArrangingData:                     "Arrange data...",
-		lang.WritingData:                       "Writing data %d%%...",
-		lang.ExportReady:                       "Export ok.",
+
+		lang.ExportInitialized: "Initializing...",
+		lang.ExportingData:     "Exporting %s => %s...",
+		lang.ArrangingData:     "Arrange data...",
+		lang.WritingData:       "Writing data %d%%...",
+		lang.ExportReady:       "Export ok.",
 
 		lang.CVSHeaderDevice:      "device",
 		lang.CVSHeaderPoint:       "point",
@@ -389,5 +387,8 @@ var (
 		lang.ErrInvalidRegCode:                  "Invalid registry code.",
 		lang.ErrDeviceDisconnected:              "Device disconnected.",
 		lang.ErrNoEdgeAvailable:                 "No edge is available",
+		lang.ErrGeTuiRegisterUserFailed:         "GeTui register user %s failed！",
+		lang.ErrGeTuiSendMessageFailed:          "GeTui send message failed: %s",
+		lang.ErrGeTuiNotInitialized:             "GeTui was not initialized properly",
 	}
 )

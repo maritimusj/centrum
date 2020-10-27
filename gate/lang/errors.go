@@ -84,6 +84,10 @@ const (
 	ErrDeviceNotExistsOrActive
 
 	ErrNoEdgeAvailable
+
+	ErrGeTuiRegisterUserFailed
+	ErrGeTuiSendMessageFailed
+	ErrGeTuiNotInitialized
 )
 
 func ErrorStr(index ErrIndex, params ...interface{}) string {

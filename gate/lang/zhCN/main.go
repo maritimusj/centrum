@@ -46,7 +46,7 @@ var (
 		lang.RoleGuestTitle:             "普通用户",
 
 		lang.AlarmNotifyTitle:   "警报通知",
-		lang.AlarmNotifyContent: "点位：%s, 名称：%s，数值：%s 异常，请关注！",
+		lang.AlarmNotifyContent: "发生新的警报，请及时处理！",
 
 		lang.MenuRoleGalleryTitle:        "设备总览",
 		lang.MenuRoleDevicesTitle:        "设备管理",
@@ -328,14 +328,12 @@ var (
 		lang.UserLoginFailedCauseDisabled:      "用户 %s 从 %s 登录失败：已禁用！",
 		lang.UserLoginFailedCausePasswordWrong: "用户 %s 从 %s 登录失败：密码错误！",
 		lang.UserProfileUpdateOk:               "用户 %s 更新资料成功！",
-		lang.GeTuiRegisterUserFailed:           "个推注册用户%s失败！",
-		lang.GeTuiSendMessageFailed:            "无法推送警报消息：%s",
-		lang.GeTuiNotInitialized:               "个推没有正确配置！",
-		lang.ExportInitialized:                 "正在准备导出...",
-		lang.ExportingData:                     "正在导出数据 %s => %s...",
-		lang.ArrangingData:                     "正在整理数据...",
-		lang.WritingData:                       "正在写入数据 %d%%...",
-		lang.ExportReady:                       "导出完成！",
+
+		lang.ExportInitialized: "正在准备导出...",
+		lang.ExportingData:     "正在导出数据 %s => %s...",
+		lang.ArrangingData:     "正在整理数据...",
+		lang.WritingData:       "正在写入数据 %d%%...",
+		lang.ExportReady:       "导出完成！",
 
 		lang.CVSHeaderDevice:      "设备",
 		lang.CVSHeaderPoint:       "点位",
@@ -405,5 +403,8 @@ var (
 		lang.ErrInvalidRegCode:                  "无效的注册码！",
 		lang.ErrDeviceDisconnected:              "断开连接！",
 		lang.ErrNoEdgeAvailable:                 "没有可用的edge程序，请重启系统！",
+		lang.ErrGeTuiRegisterUserFailed:         "个推注册用户%s失败！",
+		lang.ErrGeTuiSendMessageFailed:          "无法推送警报消息：%s",
+		lang.ErrGeTuiNotInitialized:             "个推没有正确配置！",
 	}
 )

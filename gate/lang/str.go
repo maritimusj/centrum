@@ -293,10 +293,6 @@ const (
 	UserLoginFailedCausePasswordWrong
 	UserProfileUpdateOk
 
-	GeTuiRegisterUserFailed
-	GeTuiSendMessageFailed
-	GeTuiNotInitialized
-
 	ExportInitialized
 	ExportingData
 	ArrangingData

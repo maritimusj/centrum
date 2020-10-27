@@ -37,7 +37,7 @@ func SendTo(user model.User, title, content string) {
 	for clientID := range result {
 		err := defaultClient.toSingle(clientID, title, content)
 		if err != nil {
-			user.Logger().Warnln(lang.GeTuiSendMessageFailed.Str(err))
+			user.Logger().Warnln(lang.ErrGeTuiSendMessageFailed.Str(err))
 		}
 	}
 }

@@ -96,18 +96,13 @@ func NotifyAllUsers(alarm model.Alarm) error {
 		return err
 	}
 
-	alarmType := alarm.GetOption("tags.alarm").String()
-	val := alarm.GetOption("fields.val").String()
-	unit := alarm.GetOption("tags.unit").String()
-	str := fmt.Sprintf("%s%s(%s)", val, unit, alarmType)
-
 	users, _, err := app.Store().GetUserList()
 	if err != nil {
 		return err
 	}
 	for _, user := range users {
 		if app.Allow(user, measure, resource.View) {
-			Getui.SendTo(user, lang.AlarmNotifyTitle.Str(), lang.AlarmNotifyContent.Str(measure.TagName(), measure.Title(), str))
+			Getui.SendTo(user, lang.AlarmNotifyTitle.Str(), lang.AlarmNotifyContent.Str())
 		}
 	}
 	return nil

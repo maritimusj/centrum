@@ -46,7 +46,7 @@ var (
 		lang.RoleGuestTitle:             "普通用戶",
 
 		lang.AlarmNotifyTitle:   "警報通知",
-		lang.AlarmNotifyContent: "點位：%s, 名稱：%s，數值：%s 異常，請關註！",
+		lang.AlarmNotifyContent: "發生新的警報，請及時處理！",
 
 		lang.MenuRoleGalleryTitle:        "設備總覽",
 		lang.MenuRoleDevicesTitle:        "設備管理",
@@ -328,14 +328,12 @@ var (
 		lang.UserLoginFailedCauseDisabled:      "用戶 %s 從 %s 登錄失敗：已禁用！",
 		lang.UserLoginFailedCausePasswordWrong: "用戶 %s 從 %s 登錄失敗：密碼錯誤！",
 		lang.UserProfileUpdateOk:               "用戶 %s 更新資料成功！",
-		lang.GeTuiRegisterUserFailed:           "個推註冊用戶%s失敗！",
-		lang.GeTuiSendMessageFailed:            "無法推送警報消息：%s",
-		lang.GeTuiNotInitialized:               "個推沒有正確配置！",
-		lang.ExportInitialized:                 "正在準備導出...",
-		lang.ExportingData:                     "正在導出數據 %s => %s...",
-		lang.ArrangingData:                     "正在整理數據...",
-		lang.WritingData:                       "正在寫入數據 %d%%...",
-		lang.ExportReady:                       "導出完成！",
+
+		lang.ExportInitialized: "正在準備導出...",
+		lang.ExportingData:     "正在導出數據 %s => %s...",
+		lang.ArrangingData:     "正在整理數據...",
+		lang.WritingData:       "正在寫入數據 %d%%...",
+		lang.ExportReady:       "導出完成！",
 
 		lang.CVSHeaderDevice:      "設備",
 		lang.CVSHeaderPoint:       "點位",
@@ -405,5 +403,8 @@ var (
 		lang.ErrInvalidRegCode:                  "無效的註冊碼！",
 		lang.ErrDeviceDisconnected:              "斷開連接！",
 		lang.ErrNoEdgeAvailable:                 "沒有可用的edge程序，請重啟系統！",
+		lang.ErrGeTuiRegisterUserFailed:         "個推註冊用戶%s失敗！",
+		lang.ErrGeTuiSendMessageFailed:          "無法推送警報消息：%s",
+		lang.ErrGeTuiNotInitialized:             "個推沒有正確配置！",
 	}
 )

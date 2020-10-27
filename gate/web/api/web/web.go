@@ -122,7 +122,7 @@ func Login(ctx iris.Context) hero.Result {
 		if form.CID != "" {
 			err = Getui.Register(form.CID, user)
 			if err != nil {
-				log.WithField("src", logStore.SystemLog).Infoln(lang.GeTuiRegisterUserFailed.Str(user.Name()))
+				log.WithField("src", logStore.SystemLog).Infoln(lang.ErrGeTuiRegisterUserFailed.Str(user.Name()))
 			}
 		}
 
