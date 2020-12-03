@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/maritimusj/centrum/edge/TurboBlower"
+
 	"github.com/maritimusj/centrum/edge/logStore"
 
 	"github.com/maritimusj/centrum/edge/devices/InverseServer"
@@ -208,26 +210,49 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 			if err != nil {
 				return values, err
 			}
-
-			entry := map[string]interface{}{
-				"tag":   ai.GetConfig().TagName,
-				"title": ai.GetConfig().Title,
-				"unit":  ai.GetConfig().Uint,
-			}
-
-			if v, ok := r.GetAIValue(i, ai.GetConfig().Point); ok {
-				av, x := ai.CheckAlarm(v)
-
-				entry["alarm"] = ep6v2.AlarmDesc(av)
-				entry["value"] = v
-
-				if av != ep6v2.AlarmNormal {
-					entry["threshold"] = x
+			//空浮风机点位分析
+			if TurboBlower.Match(ai.GetConfig().Title) {
+				v, ok := r.GetInt(i)
+				if ok {
+					for _, p := range TurboBlower.Analysis(ai.GetConfig().Title, v) {
+						entry := map[string]interface{}{
+							"tag":   "AI-" + p.Name,
+							"title": p.Name,
+						}
+						if v, exists := p.GetField("val"); exists && v.(int) == 1 {
+							alarm, _ := p.GetTag("alarm")
+							entry["alarm"] = alarm
+							entry["value"] = alarm
+						} else {
+							threshold, _ := p.GetTag("threshold")
+							entry["alarm"] = ""
+							entry["value"] = threshold
+						}
+						values = append(values, entry)
+						adapter.OnMeasureDiscovered("AI-"+p.Name, p.Name)
+					}
 				}
-			}
+			} else {
+				entry := map[string]interface{}{
+					"tag":   ai.GetConfig().TagName,
+					"title": ai.GetConfig().Title,
+					"unit":  ai.GetConfig().Uint,
+				}
 
-			values = append(values, entry)
-			adapter.OnMeasureDiscovered(ai.GetConfig().TagName, ai.GetConfig().Title)
+				if v, ok := r.GetAIValue(i, ai.GetConfig().Point); ok {
+					av, x := ai.CheckAlarm(v)
+
+					entry["alarm"] = ep6v2.AlarmDesc(av)
+					entry["value"] = v
+
+					if av != ep6v2.AlarmNormal {
+						entry["threshold"] = x
+					}
+				}
+
+				values = append(values, entry)
+				adapter.OnMeasureDiscovered(ai.GetConfig().TagName, ai.GetConfig().Title)
+			}
 		}
 
 		for i := 0; i < r.AONum(); i++ {
@@ -523,30 +548,44 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 			if err != nil {
 				return err
 			}
-			v, ok := data.GetAIValue(i, ai.GetConfig().Point)
-			if ok {
-				av, x := ai.CheckAlarm(v)
+			//空浮风机点位分析
+			if TurboBlower.Match(ai.GetConfig().Title) {
+				v, ok := data.GetInt(i)
+				if ok {
+					for _, p := range TurboBlower.Analysis(ai.GetConfig().Title, v) {
+						adapter.OnMeasureDiscovered("AI-"+p.Name, p.Name)
+						if v, exists := p.GetField("val"); exists && v.(int) == 1 {
+							adapter.OnMeasureAlarm(p.Clone())
+						}
+					}
+				}
+			} else {
+				v, ok := data.GetAIValue(i, ai.GetConfig().Point)
+				if ok {
+					av, x := ai.CheckAlarm(v)
 
-				data := measure.New(ai.GetConfig().TagName)
-				data.AddTag("uid", adapter.conf.UID)
-				data.AddTag("address", adapter.conf.Address)
-				data.AddTag("tag", ai.GetConfig().TagName)
-				data.AddTag("title", ai.GetConfig().Title)
-				data.AddTag("alarm", ep6v2.AlarmDesc(av))
-				data.AddField("val", v)
+					data := measure.New(ai.GetConfig().TagName)
 
-				if av != ep6v2.AlarmNormal {
-					data.AddTag("unit", ai.GetConfig().Uint)
-					data.AddField("threshold", x)
+					data.AddTag("uid", adapter.conf.UID)
+					data.AddTag("address", adapter.conf.Address)
+					data.AddTag("tag", ai.GetConfig().TagName)
+					data.AddTag("title", ai.GetConfig().Title)
+					data.AddTag("alarm", ep6v2.AlarmDesc(av))
+					data.AddField("val", v)
+
+					if av != ep6v2.AlarmNormal {
+						data.AddTag("unit", ai.GetConfig().Uint)
+						data.AddField("threshold", x)
+					}
+
+					adapter.measureDataCH <- data
+					if av != 0 {
+						adapter.OnMeasureAlarm(data.Clone())
+					}
 				}
 
-				adapter.measureDataCH <- data
-				if av != 0 {
-					adapter.OnMeasureAlarm(data.Clone())
-				}
+				adapter.OnMeasureDiscovered(ai.GetConfig().TagName, ai.GetConfig().Title)
 			}
-
-			adapter.OnMeasureDiscovered(ai.GetConfig().TagName, ai.GetConfig().Title)
 			return nil
 		})
 		if err != nil {
