@@ -57,7 +57,17 @@ func (measure *Data) AddTag(name, val string) *Data {
 	return measure
 }
 
+func (measure *Data) GetTag(name string) (interface{}, bool) {
+	v, ok := measure.Tags[name]
+	return v, ok
+}
+
 func (measure *Data) AddField(name string, val interface{}) *Data {
 	measure.Fields[name] = val
 	return measure
+}
+
+func (measure *Data) GetField(name string) (interface{}, bool) {
+	v, ok := measure.Fields[name]
+	return v, ok
 }
