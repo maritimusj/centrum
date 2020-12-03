@@ -189,7 +189,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 			measure.SetTitle(form.Measure.Title)
 			err = measure.Save()
 			if err != nil {
-				log.Debugln("[Feedback 8]", err)
+				log.Debugln("[Feedback 18]", err)
 			}
 		}
 	}
@@ -199,14 +199,14 @@ func Feedback(deviceID int64, ctx iris.Context) {
 		tag, _ := form.Alarm.Tags["tag"]
 		measure, err := app.Store().GetMeasureFromTagName(device.GetID(), tag)
 		if err != nil {
-			log.Debugln("[Feedback 8] [", tag, "]", err)
+			log.Debugln("[Feedback 9] [", tag, "]", err)
 			return
 		}
 
 		alarm, _, err := app.Store().GetLastUnconfirmedAlarm(helper.Device(device.GetID()), helper.Measure(measure.GetID()))
 		if err != nil {
 			if err != lang.ErrAlarmNotFound.Error() {
-				log.Debugln("[Feedback 9]", err)
+				log.Debugln("[Feedback 10]", err)
 				return
 			}
 			alarm, err = app.Store().CreateAlarm(device, measure.GetID(), map[string]interface{}{
@@ -216,7 +216,7 @@ func Feedback(deviceID int64, ctx iris.Context) {
 				"time":   form.Alarm.Time,
 			})
 			if err != nil {
-				log.Debugln("[Feedback 10]", err)
+				log.Debugln("[Feedback 11]", err)
 			} else {
 				go func() {
 					_ = NotifyAllUsers(alarm)
