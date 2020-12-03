@@ -150,7 +150,7 @@ func (r *Data) getFloat32(index int) (float32, bool) {
 	return 0, false
 }
 
-func (r *Data) getInt(index int) (int, bool) {
+func (r *Data) GetInt(index int) (int, bool) {
 	pos := index * 4
 	if r.data.Len() >= pos+4 && index < r.ready.Len() && r.ready.Bytes()[index] == 0 {
 		return int(binary.BigEndian.Uint32(r.data.Bytes()[pos:])), true
@@ -166,7 +166,7 @@ func (r *Data) setInt(index int, value uint32) {
 }
 
 func (r *Data) getBool(index int) (bool, bool) {
-	v, ready := r.getInt(index)
+	v, ready := r.GetInt(index)
 	if ready {
 		return v > 0, ready
 	}
