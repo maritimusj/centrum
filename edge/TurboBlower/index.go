@@ -11,8 +11,8 @@ const (
 )
 
 var (
-	alarmTitle1 = []string{"Alarm", "Normal"}
-	alarmTitle2 = []string{"ON", "OFF"}
+	StateTitle1 = []string{"Alarm", "Normal"}
+	StateTitle2 = []string{"ON", "OFF"}
 )
 
 func isSet(v uint16, n int) bool {
@@ -46,25 +46,25 @@ func Analysis(name string, v int) []*measure.Data {
 	return fn(uint16(v))
 }
 
-func newData(name string, alarm bool, title []string) *measure.Data {
+func newData(name string, stateOn bool, title []string, setAlarmStatus bool) *measure.Data {
 	data := measure.New(name)
 
 	data.AddTag("tag", "AI-"+name)
 	data.AddTag("title", name)
 
-	var alarmTitle string
-	if alarm {
-		alarmTitle = title[0]
-	} else {
-		alarmTitle = title[1]
+	if setAlarmStatus {
+		if stateOn {
+			data.AddTag("alarm", title[0])
+		}
 	}
 
-	data.AddTag("alarm", alarmTitle)
 	data.AddTag("threshold", title[1])
 
-	var v = 0
-	if alarm {
-		v = 1
+	var v string
+	if stateOn {
+		v = title[0]
+	} else {
+		v = title[1]
 	}
 
 	data.AddField("val", v)
@@ -83,12 +83,12 @@ func newData(name string, alarm bool, title []string) *measure.Data {
 func f1(v uint16) []*measure.Data {
 	dataList := make([]*measure.Data, 0, 6)
 	dataList = append(dataList,
-		newData("紧急停止", isSet(v, 0), alarmTitle1),
-		newData("EOCR跳闸", isSet(v, 1), alarmTitle1),
-		newData("变频器反馈错误", isSet(v, 4), alarmTitle1),
-		newData("喘振跳闸", isSet(v, 5), alarmTitle1),
-		newData("变频器通信错误", isSet(v, 14), alarmTitle1),
-		newData("远程通信错误", isSet(v, 15), alarmTitle1),
+		newData("紧急停止", isSet(v, 0), StateTitle1, true),
+		newData("EOCR跳闸", isSet(v, 1), StateTitle1, true),
+		newData("变频器反馈错误", isSet(v, 4), StateTitle1, true),
+		newData("喘振跳闸", isSet(v, 5), StateTitle1, true),
+		newData("变频器通信错误", isSet(v, 14), StateTitle1, true),
+		newData("远程通信错误", isSet(v, 15), StateTitle1, true),
 	)
 	return dataList
 }
@@ -110,17 +110,17 @@ func f1(v uint16) []*measure.Data {
 func f2(v uint16) []*measure.Data {
 	dataList := make([]*measure.Data, 0, 11)
 	dataList = append(dataList,
-		newData("出口压力超高跳闸", isSet(v, 1), alarmTitle1),
-		newData("过滤器超压跳闸", isSet(v, 2), alarmTitle1),
-		newData("泵压力超高跳闸", isSet(v, 3), alarmTitle1),
-		newData("泵压力过低跳闸", isSet(v, 4), alarmTitle1),
-		newData("吸气温度过高跳闸", isSet(v, 5), alarmTitle1),
-		newData("电机温度过高跳闸", isSet(v, 7), alarmTitle1),
-		newData("变频器超温跳闸", isSet(v, 10), alarmTitle1),
-		newData("吸入压力传感器断开", isSet(v, 12), alarmTitle1),
-		newData("出口压力传感器断开", isSet(v, 13), alarmTitle1),
-		newData("过滤器压力传感器断开", isSet(v, 14), alarmTitle1),
-		newData("泵压力传感器断开", isSet(v, 15), alarmTitle1),
+		newData("出口压力超高跳闸", isSet(v, 1), StateTitle1, true),
+		newData("过滤器超压跳闸", isSet(v, 2), StateTitle1, true),
+		newData("泵压力超高跳闸", isSet(v, 3), StateTitle1, true),
+		newData("泵压力过低跳闸", isSet(v, 4), StateTitle1, true),
+		newData("吸气温度过高跳闸", isSet(v, 5), StateTitle1, true),
+		newData("电机温度过高跳闸", isSet(v, 7), StateTitle1, true),
+		newData("变频器超温跳闸", isSet(v, 10), StateTitle1, true),
+		newData("吸入压力传感器断开", isSet(v, 12), StateTitle1, true),
+		newData("出口压力传感器断开", isSet(v, 13), StateTitle1, true),
+		newData("过滤器压力传感器断开", isSet(v, 14), StateTitle1, true),
+		newData("泵压力传感器断开", isSet(v, 15), StateTitle1, true),
 	)
 	return dataList
 }
@@ -146,21 +146,21 @@ func f2(v uint16) []*measure.Data {
 func f3(v uint16) []*measure.Data {
 	dataList := make([]*measure.Data, 0, 15)
 	dataList = append(dataList,
-		newData("变频器未知故障", isSet(v, 0), alarmTitle1),
-		newData("变频器过电压", isSet(v, 1), alarmTitle1),
-		newData("变频器欠电压", isSet(v, 2), alarmTitle1),
-		newData("变频器直联打开", isSet(v, 3), alarmTitle1),
-		newData("变频器轮廓打开", isSet(v, 4), alarmTitle1),
-		newData("变频器过热", isSet(v, 5), alarmTitle1),
-		newData("变频器保险丝开路", isSet(v, 6), alarmTitle1),
-		newData("变频器过载", isSet(v, 7), alarmTitle1),
-		newData("变频器过电流", isSet(v, 8), alarmTitle1),
-		newData("变频器频率过高", isSet(v, 9), alarmTitle1),
-		newData("变频器零序电流", isSet(v, 10), alarmTitle1),
-		newData("变频器装置短路", isSet(v, 11), alarmTitle1),
-		newData("变频器modbus错误", isSet(v, 12), alarmTitle1),
-		newData("变频器风扇错误", isSet(v, 13), alarmTitle1),
-		newData("电机过电流", isSet(v, 14), alarmTitle1),
+		newData("变频器未知故障", isSet(v, 0), StateTitle1, true),
+		newData("变频器过电压", isSet(v, 1), StateTitle1, true),
+		newData("变频器欠电压", isSet(v, 2), StateTitle1, true),
+		newData("变频器直联打开", isSet(v, 3), StateTitle1, true),
+		newData("变频器轮廓打开", isSet(v, 4), StateTitle1, true),
+		newData("变频器过热", isSet(v, 5), StateTitle1, true),
+		newData("变频器保险丝开路", isSet(v, 6), StateTitle1, true),
+		newData("变频器过载", isSet(v, 7), StateTitle1, true),
+		newData("变频器过电流", isSet(v, 8), StateTitle1, true),
+		newData("变频器频率过高", isSet(v, 9), StateTitle1, true),
+		newData("变频器零序电流", isSet(v, 10), StateTitle1, true),
+		newData("变频器装置短路", isSet(v, 11), StateTitle1, true),
+		newData("变频器modbus错误", isSet(v, 12), StateTitle1, true),
+		newData("变频器风扇错误", isSet(v, 13), StateTitle1, true),
+		newData("电机过电流", isSet(v, 14), StateTitle1, true),
 	)
 	return dataList
 }
@@ -174,7 +174,7 @@ func f3(v uint16) []*measure.Data {
 	3	风机报警状态
 	4	风机故障状态
 	5	电机运行状态
-	8	定频率支行模式状态
+	8	定频率运行模式状态
 	9	定流量运行模式状态
 	10	定功率运行模式状态
 	11	比例控制运行模式状态
@@ -186,19 +186,19 @@ func f3(v uint16) []*measure.Data {
 func f4(v uint16) []*measure.Data {
 	dataList := make([]*measure.Data, 0, 13)
 	dataList = append(dataList,
-		newData("本地准备状态", isSet(v, 0), alarmTitle2),
-		newData("远程准备状态", isSet(v, 1), alarmTitle2),
-		newData("风机运行状态", isSet(v, 2), alarmTitle2),
-		newData("风机报警状态", isSet(v, 3), alarmTitle2),
-		newData("风机故障状态", isSet(v, 4), alarmTitle2),
-		newData("电机运行状态", isSet(v, 5), alarmTitle2),
-		newData("定频率支行模式状态", isSet(v, 8), alarmTitle2),
-		newData("定流量运行模式状态", isSet(v, 9), alarmTitle2),
-		newData("定功率运行模式状态", isSet(v, 10), alarmTitle2),
-		newData("比例控制运行模式状态", isSet(v, 11), alarmTitle2),
-		newData("溶解氧运行模式状态", isSet(v, 12), alarmTitle2),
-		newData("恒压运行模式", isSet(v, 13), alarmTitle2),
-		newData("DCS 通讯检查脉冲", isSet(v, 15), alarmTitle2),
+		newData("本地准备状态", isSet(v, 0), StateTitle2, false),
+		newData("远程准备状态", isSet(v, 1), StateTitle2, false),
+		newData("风机运行状态", isSet(v, 2), StateTitle2, false),
+		newData("风机报警状态", isSet(v, 3), StateTitle2, false),
+		newData("风机故障状态", isSet(v, 4), StateTitle2, false),
+		newData("电机运行状态", isSet(v, 5), StateTitle2, false),
+		newData("定频率运行模式状态", isSet(v, 8), StateTitle2, false),
+		newData("定流量运行模式状态", isSet(v, 9), StateTitle2, false),
+		newData("定功率运行模式状态", isSet(v, 10), StateTitle2, false),
+		newData("比例控制运行模式状态", isSet(v, 11), StateTitle2, false),
+		newData("溶解氧运行模式状态", isSet(v, 12), StateTitle2, false),
+		newData("恒压运行模式", isSet(v, 13), StateTitle2, false),
+		newData("DCS 通讯检查脉冲", isSet(v, 15), StateTitle2, false),
 	)
 	return dataList
 }
@@ -223,20 +223,20 @@ func f4(v uint16) []*measure.Data {
 func f5(v uint16) []*measure.Data {
 	dataList := make([]*measure.Data, 0, 14)
 	dataList = append(dataList,
-		newData("吸入压力过高报警", isSet(v, 0), alarmTitle1),
-		newData("排气压力过高报警", isSet(v, 1), alarmTitle1),
-		newData("过滤压力过高报警", isSet(v, 2), alarmTitle1),
-		newData("水泵压力过高报警", isSet(v, 3), alarmTitle1),
-		newData("水泵压力过低报警", isSet(v, 4), alarmTitle1),
-		newData("吸气温度过高报警", isSet(v, 5), alarmTitle1),
-		newData("排气温度过高报警", isSet(v, 6), alarmTitle1),
-		newData("电机温度过高报警", isSet(v, 7), alarmTitle1),
-		newData("外界温度过高报警", isSet(v, 8), alarmTitle1),
-		newData("外界温度过低报警", isSet(v, 9), alarmTitle1),
-		newData("变频器温度过高报警", isSet(v, 10), alarmTitle1),
-		newData("喘振控制器报警", isSet(v, 11), alarmTitle1),
-		newData("压力传感器断开警报", isSet(v, 14), alarmTitle1),
-		newData("温度传感器断开警报", isSet(v, 15), alarmTitle1),
+		newData("吸入压力过高报警", isSet(v, 0), StateTitle1, true),
+		newData("排气压力过高报警", isSet(v, 1), StateTitle1, true),
+		newData("过滤压力过高报警", isSet(v, 2), StateTitle1, true),
+		newData("水泵压力过高报警", isSet(v, 3), StateTitle1, true),
+		newData("水泵压力过低报警", isSet(v, 4), StateTitle1, true),
+		newData("吸气温度过高报警", isSet(v, 5), StateTitle1, true),
+		newData("排气温度过高报警", isSet(v, 6), StateTitle1, true),
+		newData("电机温度过高报警", isSet(v, 7), StateTitle1, true),
+		newData("外界温度过高报警", isSet(v, 8), StateTitle1, true),
+		newData("外界温度过低报警", isSet(v, 9), StateTitle1, true),
+		newData("变频器温度过高报警", isSet(v, 10), StateTitle1, true),
+		newData("喘振控制器报警", isSet(v, 11), StateTitle1, true),
+		newData("压力传感器断开警报", isSet(v, 14), StateTitle1, true),
+		newData("温度传感器断开警报", isSet(v, 15), StateTitle1, true),
 	)
 	return dataList
 }

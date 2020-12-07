@@ -212,22 +212,21 @@ func (runner *Runner) GetRealtimeData(uid string) ([]map[string]interface{}, err
 			}
 			//空浮风机点位分析
 			if TurboBlower.Match(ai.GetConfig().Title) {
-				v, ok := r.GetInt(i)
+				v, ok := r.GetAIValue(i, 0)
 				if ok {
-					for _, p := range TurboBlower.Analysis(ai.GetConfig().Title, v) {
+					for _, p := range TurboBlower.Analysis(ai.GetConfig().Title, int(v)) {
 						entry := map[string]interface{}{
 							"tag":   "AI-" + p.Name,
 							"title": p.Name,
 						}
-						if v, exists := p.GetField("val"); exists && v.(int) == 1 {
-							alarm, _ := p.GetTag("alarm")
-							entry["alarm"] = alarm
-							entry["value"] = alarm
-						} else {
-							threshold, _ := p.GetTag("threshold")
-							entry["alarm"] = ""
-							entry["value"] = threshold
+
+						val, _ := p.GetField("val")
+						entry["value"] = val
+
+						if v, exists := p.GetTag("alarm"); exists && v.(string) != "" {
+							entry["alarm"] = v
 						}
+
 						values = append(values, entry)
 						adapter.OnMeasureDiscovered("AI-"+p.Name, p.Name)
 					}
@@ -550,11 +549,11 @@ func (runner *Runner) gatherData(adapter *Adapter) error {
 			}
 			//空浮风机点位分析
 			if TurboBlower.Match(ai.GetConfig().Title) {
-				v, ok := data.GetInt(i)
+				v, ok := data.GetAIValue(i, 0)
 				if ok {
-					for _, p := range TurboBlower.Analysis(ai.GetConfig().Title, v) {
+					for _, p := range TurboBlower.Analysis(ai.GetConfig().Title, int(v)) {
 						adapter.OnMeasureDiscovered("AI-"+p.Name, p.Name)
-						if v, exists := p.GetField("val"); exists && v.(int) == 1 {
+						if v, exists := p.GetTag("alarm"); exists && v.(string) != "" {
 							adapter.OnMeasureAlarm(p.Clone())
 						}
 					}
