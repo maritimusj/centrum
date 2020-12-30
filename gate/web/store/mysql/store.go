@@ -2343,7 +2343,7 @@ func (s *mysqlStore) GetAlarmList(start, end *time.Time, options ...helper.Optio
 	option := parseOption(options...)
 
 	var (
-		from  = "FROM " + TbAlarms + " a"
+		from  = "FROM " + TbAlarms + " a INNER JOIN " + TbDevices + " d ON a.device_id=d.id"
 		where = " WHERE 1"
 
 		params []interface{}
@@ -2449,7 +2449,12 @@ WHERE p.role_id IN (SELECT role_id FROM %s WHERE user_id=%d)
 	for _, id := range ids {
 		alarm, err := s.GetAlarm(id)
 		if err != nil {
-			return nil, 0, err
+			//return nil, 0, err
+			continue
+		}
+
+		if _, err := alarm.Device(); err != nil {
+			continue
 		}
 
 		result = append(result, alarm)

@@ -140,14 +140,27 @@ func (alarm *Alarm) Simple() model.Map {
 }
 
 func (alarm *Alarm) Brief() model.Map {
-	device, _ := alarm.Device()
-	measure, _ := alarm.Measure()
+	deviceBrief := func() interface{} {
+		device, _ := alarm.Device()
+		if device != nil {
+			return device.Brief()
+		}
+		return model.Map{}
+	}
+	measureBrief := func() interface{} {
+		measure, _ := alarm.Measure()
+		if measure != nil {
+			return measure.Brief()
+		}
+		return model.Map{}
+	}
+
 	return model.Map{
 		"id":          alarm.GetID(),
 		"status":      alarm.status,
 		"status_desc": lang.AlarmStatusDesc(alarm.status),
-		"device":      device.Brief(),
-		"measure":     measure.Brief(),
+		"device":      deviceBrief(),
+		"measure":     measureBrief(),
 		"raw":         alarm.Option(),
 		"created_at":  alarm.createdAt.Format(lang.DatetimeFormatterStr.Str()),
 		"updated_at":  alarm.updatedAt.Format(lang.DatetimeFormatterStr.Str()),
