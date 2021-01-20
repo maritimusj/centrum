@@ -8,12 +8,13 @@ import (
 	"sync"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
+
 	"github.com/maritimusj/centrum/gate/lang"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/rpc/v2/json"
-	jsoniter "github.com/json-iterator/go"
 	. "github.com/maritimusj/centrum/json_rpc"
 )
 

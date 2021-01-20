@@ -318,7 +318,8 @@ func (server *server) Start(ctx context.Context, webDir string, _ *cfg.Config) {
 
 		select {
 		case <-ctx.Done():
-			timeout, _ := context.WithTimeout(ctx, 6*time.Second)
+			timeout, cancel := context.WithTimeout(ctx, 6*time.Second)
+			defer cancel()
 			err := server.app.Shutdown(timeout)
 			if err != nil {
 				log.Tracef("shutdown http server: ", err)
