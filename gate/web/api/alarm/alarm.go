@@ -287,12 +287,12 @@ func Statistics(alarmID int64, ctx iris.Context) hero.Result {
 		if interval < device.GetOption("params.interval").Int() {
 			result, err = app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, &end, nil)
 			if err != nil {
-				return lang.InternalError(err)
+				return err
 			}
 		} else {
 			result, err = app.StatsDB.GetMeasureStats(org.Name(), device.GetID(), measure.TagName(), &start, &end, time.Duration(interval)*time.Second)
 			if err != nil {
-				return lang.InternalError(err)
+				return err
 			}
 		}
 
